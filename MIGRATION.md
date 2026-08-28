@@ -81,8 +81,8 @@ These are real problems in the current build. Recommended handling is noted; all
 | # | Severity | Defect | Recommended action |
 | --- | --- | --- | --- |
 | 1 | ~~High~~ **RESOLVED** | ~~All `service` and `portfolio` detail URLs return 404.~~ Permalinks were reset on 28 Aug 2026. All service and portfolio URLs now return 200 and the homepage "Read More" links resolve. | Done at source. Service detail template now audited — see section B.4. |
-| 2 | High | **Inner page banners are broken on every page.** `.page__banner-content` is `display:none`, so the H1 and breadcrumb are hidden, and the background image is referenced over `http://` so browsers block it as mixed content. Result: a 226px empty grey band on About, Services, Testimonials, Contact, Blog **and all four service detail pages**. | **Decided (Q1): restore the title and breadcrumb**, serve the image over https. |
-| 3 | High | **No visible H1 on any inner page** (direct consequence of #2). Note `mortgage-solutions` has no H1 in the markup at all, while the other three do. | Resolved by the Q1 decision. Add the missing title for Mortgage Solutions. |
+| 2 | ~~High~~ **RESOLVED (m08)** | **Inner page banners are broken on every page.** `.page__banner-content` is `display:none`, so the H1 and breadcrumb are hidden, and the background image is referenced over `http://` so browsers block it as mixed content. Result: a 226px empty grey band on About, Services, Testimonials, Contact, Blog **and all four service detail pages**. | **Decided (Q1): restore the title and breadcrumb**, serve the image over https. |
+| 3 | ~~High~~ **RESOLVED (m08)** | **No visible H1 on any inner page** (direct consequence of #2). Note `mortgage-solutions` has no H1 in the markup at all, while the other three do. | Resolved by the Q1 decision. Add the missing title for Mortgage Solutions. |
 | 4 | High | **Three different phone numbers.** Topbar `+971561924606`, contact page `+97156192460` (missing final digit), footer `+971 - 561924606`. All `tel:` hrefs are malformed as `tel:+971%20-%20561924606`. | Confirm the correct number, then use one canonical value with a clean `tel:+971561924606`. |
 | 5 | High | **Header logo, hero slides, service icons, about and FAQ images are hotlinked from the theme author's demo server** `finaxio.nextwpcook.com`. The site breaks if that server goes away or blocks hotlinking. Also a licensing exposure. | Download locally. Flag the stock photography for licence review — see Open Questions Q4. |
 | 6 | Medium | `Discover More` on the homepage points to `/~anchor/about/`, a leftover subdirectory install path. | Point to `/about/`. |
@@ -229,7 +229,7 @@ Confirm this exclusion list before implementation (Q6).
 | --- | --- |
 | `PageBanner` | All inner pages (currently broken, see defect #2) |
 | `ServiceCard` | Services page — icon, title, "Read More →" |
-| `SkillBars` | Services — "Strategy is at the Heart of Growth", Financial Advisory 63%, Market Analysis 60%, animated |
+| `SkillBars` | Services — "Strategy is at the Heart of Growth", Financial Advisory 92%, Market Analysis 88%, animated (the 63/60 first recorded were read mid-animation) |
 | `TestimonialGrid` | Testimonials page — 7 items |
 | `ContactInfoList` | Contact — 3 rows with right-aligned icons |
 | `ContactForm` | Contact — Full Name, Email, Phone, Question, Submit Now |
@@ -1000,6 +1000,56 @@ exactly the two extra calculator rows requested in Q3.
 
 **Homepage output:** 76 KB of HTML, 1.5 MB total build including every image
 variant. The original homepage alone transferred 3.30 MB.
+
+
+### Inner pages — Milestone 08 COMPLETE
+- [x] `PageBanner` — the Q1 decision, shipped
+- [x] About
+- [x] Services
+- [x] Testimonials
+- [x] `services` content collection populated with the four real services
+
+**Every measured metric is exact; all three page heights land within 1px.**
+
+| Page | Metrics | Result |
+| --- | --- | --- |
+| About | banner, both sections, all four image positions, eyebrow, h2 | **all exact**, page 2540 vs 2541 |
+| Services | both sections, card grid, card height, icon offset, skill image | **all exact**, page 2255 vs 2256 |
+| Testimonials | all three row positions, grid origin and width | **all exact**, page 1657 vs 1658 |
+
+#### Defects #2 and #3 closed
+
+The banner was an empty 226px grey strip on five pages, with no visible h1
+anywhere. It now carries the page title and a breadcrumb over the
+purpose-made 1520x266 images recovered from the client's own library.
+
+Three corrections were needed beyond simply un-hiding the original markup:
+
+- The original puts `opacity: 0.8` on the banner element itself, which would
+  fade the restored text along with the photograph. The dim is a separate
+  overlay here, so the copy stays at full strength.
+- The breadcrumb was `#777` on a dark ground. It is white at 75% now.
+- The referenced images 404; these are the recovered ones.
+
+#### Findings
+
+- The About page's image column is **10px inside** the section's padding box
+  on both edges, and its second image is absolutely positioned, so the column
+  needs an explicit height to enclose it. Its second section carries **90px
+  below the copy column**.
+- Service cards follow a precise rhythm: 60px padding, 80px icon, 61px gap,
+  36px-per-line title with 20px beneath, then a 26px "Read More" line. That
+  produces exactly the original's 343px for a one-line title and 379px for two.
+- The **skill bars are 92% and 88%**, not the 63% / 60% recorded during the
+  audit. Those earlier figures were read mid-animation. Section F of this
+  document has been corrected.
+- The "Skillset" eyebrow is `#EC1113` — the only red on the entire site.
+- Hit the **stale dev content store** again (same as milestone 00): newly added
+  collection entries render in `astro build` but not in an already-running dev
+  server. Clearing `.astro/collections` and restarting fixes it.
+
+**Known interim state:** the service cards link to `/services/<slug>/`, which
+milestone 09 creates. Those four links 404 until then.
 
 ## Open Questions
 

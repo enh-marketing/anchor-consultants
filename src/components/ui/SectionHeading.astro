@@ -22,6 +22,7 @@ export interface Props {
   gap?: number;
   class?: string;
   titleClass?: string;
+  eyebrowClass?: string;
 }
 
 const {
@@ -33,11 +34,18 @@ const {
   gap = 22,
   class: className = '',
   titleClass = '',
+  eyebrowClass = '',
 } = Astro.props;
 ---
 
 <div class:list={[align === 'center' && 'text-center', className]}>
-  {eyebrow && <Eyebrow onDark={onDark}>{eyebrow}</Eyebrow>}
+  {
+    eyebrow && (
+      <Eyebrow onDark={onDark} class={eyebrowClass}>
+        {eyebrow}
+      </Eyebrow>
+    )
+  }
   <Tag
     class:list={['text-section font-bold', onDark ? 'text-white' : 'text-ink', titleClass]}
     style={eyebrow ? `margin-top:${gap}px` : undefined}

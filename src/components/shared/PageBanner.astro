@@ -1,0 +1,59 @@
+---
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+/**
+ * Inner-page banner.
+ *
+ * Measured from the original: 226px tall, 113px padding top and bottom,
+ * h1 70px/700 white on an 80px line box, breadcrumb beneath.
+ *
+ * On the live site this band renders as an empty grey strip
+ * (audit defects #2 and #3): the title block is `display:none`, the
+ * breadcrumb is #777 on dark, the whole element carries `opacity:0.8`
+ * which would fade the text along with the image, and the referenced
+ * image 404s. Per the client's decision on Q1 the title and breadcrumb
+ * are restored here, with three corrections that keep the intent:
+ *
+ *   - the dim is a separate overlay, so the text stays at full opacity
+ *   - the breadcrumb is white at 75% rather than #777 on a dark ground
+ *   - the images are the purpose-made 1520x266 banners recovered from the
+ *     client's own media library
+ */
+interface Props {
+  title: string;
+  /** Trail after Home. The last entry is the current page. */
+  crumb: string;
+  image: ImageMetadata;
+}
+const { title, crumb, image } = Astro.props;
+---
+
+<section
+  class="bg-ink relative isolate flex min-h-[226px] items-center overflow-hidden py-8 lg:py-0"
+>
+  <Image
+    src={image}
+    alt=""
+    aria-hidden="true"
+    class="absolute inset-0 -z-20 h-full w-full object-cover"
+    loading="eager"
+    widths={[760, 1520]}
+    sizes="100vw"
+  />
+  <!-- Dim layer rather than opacity on the container, so the copy stays crisp. -->
+  <div aria-hidden="true" class="bg-ink/45 absolute inset-0 -z-10"></div>
+
+  <div class="mx-auto w-full max-w-[1320px] px-3 lg:px-[10px]">
+    <h1 class="text-[40px] leading-[1.15] font-bold text-white lg:text-[70px] lg:leading-[80px]">
+      {title}
+    </h1>
+    <nav aria-label="Breadcrumb" class="mt-2">
+      <ol class="flex flex-wrap items-center gap-2 text-base text-white/75">
+        <li><a href="/" class="transition-colors hover:text-white">Home</a></li>
+        <li aria-hidden="true">|</li>
+        <li aria-current="page" class="text-white">{crumb}</li>
+      </ol>
+    </nav>
+  </div>
+</section>
