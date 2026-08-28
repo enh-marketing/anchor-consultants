@@ -859,6 +859,53 @@ Two findings during the build:
 
 ---
 
+
+### Homepage part 2 — Milestone 05 COMPLETE
+- [x] Services carousel — 3 cards, GSAP track, 4s autoplay, 1500ms, loop, arrows
+- [x] Leader profile — Samaira Nichani card
+- [x] Appointment CTA (shares the leader's section and background on the original)
+
+**Measured against the original at 1440:**
+
+| Element | Result |
+| --- | --- |
+| Services section height, eyebrow, h2, card, icon, title offsets | **exact** |
+| Slide positions (72 / 504 / 936) and card size (432x324) | **exact** |
+| Leader section height, h2, card (1140x488 at x=150), portrait | **exact** |
+| Appointment copy and link offsets | **exact** |
+| Role / name / bio | within 1px |
+
+Findings:
+
+- Both sections sit on `services.jpg` under a **#436B88 overlay at 0.9**.
+- The carousel highlights the **centre** of the three visible cards, not the
+  first: that card takes a `#F7F7F7` tint and is the only one whose navy
+  "Services Details" bar is visible. Every card has one; the rest are at
+  opacity 0.
+- Card width is a third of the container, which is exactly 432px at 1440.
+
+**Two bugs found in our own code:**
+
+1. `bg-mist` was toggled from script only. Tailwind's scanner never sees
+   classes that appear solely inside `<script>`, so the utility was never
+   generated and the active card silently stayed white. Active state now
+   lives in scoped CSS driven by a `data-active` attribute, which cannot fail
+   this way.
+2. The carousel's loop reset ran on tween completion. With `requestAnimationFrame`
+   throttled (background tab), tweens never complete, so the index grew past
+   the end of the track and *no* card stayed highlighted. Normalisation now
+   runs before each move, so the index is always bounded.
+
+Also fixed: an inline `--card-w` custom property outranked the responsive
+media queries, pinning cards at 432px on tablet.
+
+**Safety net added:** if ScrollTrigger never fires (throttled rAF, or an
+error), anything at or above the fold that is still hidden after 3s is
+force-shown. Content below the fold keeps its animation.
+
+**Responsive:** no horizontal overflow at 390 / 768 / 1440 / 1920. Cards go
+three-up, two-up, then full width.
+
 ## Open Questions
 
 These need your input. None of them block starting at Milestone 0; I have noted the assumption I will proceed with if you would rather decide later.

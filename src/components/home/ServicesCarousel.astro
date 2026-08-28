@@ -1,0 +1,266 @@
+---
+import { Image } from 'astro:assets';
+import SectionHeading from '../ui/SectionHeading.astro';
+import bg from '../../assets/images/services/carousel-bg.jpg';
+import iconMortgage from '../../assets/images/services/carousel-icon-mortgage.png';
+import iconCommercial from '../../assets/images/services/carousel-icon-commercial.png';
+import iconDeveloper from '../../assets/images/services/carousel-icon-developer.png';
+
+// Measured from the original at 1440:
+//   section 620px tall, padding 30px/0, services.jpg background with a
+//     #436B88 overlay at 0.9
+//   eyebrow + h2 centred, white
+//   track 1296px wide starting at x=72, cards 432x324 with 60px padding
+//   icon 50x50 centred, 97px from the card top
+//   title 24px/700 #1C1E22 on a 34px line box, 210px from the card top
+//   the ACTIVE (middle) card takes a #F7F7F7 tint and is the only one whose
+//     navy "Services Details" bar (432x60) is visible
+//   arrows 50x50, 1px #E76E72 border, 5px radius, at x=10 and x=1380
+//   Swiper: loop, 3 per view, 4s autoplay, 1500ms
+
+const cards = [
+  { title: 'Mortgage Solutions', icon: iconMortgage },
+  { title: 'Commercial Finance', icon: iconCommercial },
+  { title: 'Developer Finance', icon: iconDeveloper },
+];
+
+// Three sets so the track can translate continuously and reset seamlessly,
+// which is what Swiper's loop mode does with duplicate slides.
+const track = [...cards, ...cards, ...cards];
+---
+
+<section class="services-carousel relative isolate overflow-hidden pt-[33px] pb-[45px]">
+  <Image
+    src={bg}
+    alt=""
+    aria-hidden="true"
+    class="absolute inset-0 -z-20 h-full w-full object-cover"
+    loading="lazy"
+    widths={[768, 1440]}
+    sizes="100vw"
+  />
+  <div aria-hidden="true" class="absolute inset-0 -z-10 bg-[#436B88] opacity-90"></div>
+
+  <div class="container-bs">
+    <SectionHeading eyebrow="Services" title="What We Offer for You" onDark align="center" />
+  </div>
+
+  <div class="relative mt-[45px]">
+    <div class="container-bs overflow-hidden">
+      <div class="sc-track flex" role="list" aria-label="What we offer">
+        {
+          track.map((card, i) => (
+            <div class="sc-slide w-[var(--card-w)] shrink-0" role="listitem" data-slide={i}>
+              <div class="sc-card flex min-h-[324px] flex-col items-center p-[60px] transition-colors duration-300">
+                <Image
+                  src={card.icon}
+                  alt=""
+                  aria-hidden="true"
+                  class="mt-[37px] h-[50px] w-[50px] object-contain"
+                  loading="lazy"
+                  densities={[1, 2]}
+                />
+                <h3 class="text-ink mt-[63px] text-center text-[24px] leading-[34px] font-bold">
+                  {card.title}
+                </h3>
+              </div>
+              <a
+                href="/services/"
+                class="sc-btn bg-navy hover:bg-navy-600 flex h-[60px] items-center justify-center rounded-b-[5px] text-base font-bold text-white transition-[opacity,background-color] duration-300"
+                tabindex="-1"
+                aria-hidden="true"
+              >
+                Services Details
+              </a>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+
+    <button
+      type="button"
+      class="sc-prev absolute top-[215px] left-[10px] z-10 hidden h-[50px] w-[50px] items-center justify-center rounded-[5px] border border-[#E76E72] text-white transition-colors hover:bg-white/10 lg:flex"
+      aria-label="Previous services"
+    >
+      <svg width="22" height="14" viewBox="0 0 22 14" fill="none" aria-hidden="true">
+        <path
+          d="M21 7H1m0 0 6-6M1 7l6 6"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+      </svg>
+    </button>
+    <button
+      type="button"
+      class="sc-next absolute top-[215px] right-[10px] z-10 hidden h-[50px] w-[50px] items-center justify-center rounded-[5px] border border-[#E76E72] text-white transition-colors hover:bg-white/10 lg:flex"
+      aria-label="Next services"
+    >
+      <svg width="22" height="14" viewBox="0 0 22 14" fill="none" aria-hidden="true">
+        <path
+          d="M1 7h20m0 0-6-6m6 6-6 6"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+      </svg>
+    </button>
+  </div>
+</section>
+
+<style>
+  /* Active-state styling lives here rather than as Tailwind classes toggled
+     from script: a class that only ever appears inside <script> is never
+     seen by Tailwind's scanner, so `bg-mist` was silently never generated. */
+  .sc-card {
+    background-color: #ffffff;
+  }
+  .sc-slide[data-active] .sc-card {
+    background-color: #f7f7f7;
+  }
+  .sc-btn {
+    opacity: 0;
+  }
+  .sc-slide[data-active] .sc-btn {
+    opacity: 1;
+  }
+
+  /* Card width is a fraction of the container, not a fixed pixel value.
+     At 1440 the container is 1296, so a third is exactly the original's
+     432px, and the same rule keeps three-up working at every width.
+     Defined here rather than inline: an inline custom property would beat
+     these media queries and pin the card at one size. */
+  .sc-track {
+    --card-w: 100%;
+  }
+  @media (min-width: 768px) {
+    .sc-track {
+      --card-w: 50%;
+    }
+  }
+  @media (min-width: 992px) {
+    .sc-track {
+      --card-w: 33.3333%;
+    }
+  }
+</style>
+
+<script>
+  import { gsap, prefersReducedMotion } from '../../lib/animations';
+
+  const root = document.querySelector<HTMLElement>('.services-carousel');
+  if (root) {
+    const track = root.querySelector<HTMLElement>('.sc-track');
+    const slides = [...root.querySelectorAll<HTMLElement>('.sc-slide')];
+    const prev = root.querySelector<HTMLButtonElement>('.sc-prev');
+    const next = root.querySelector<HTMLButtonElement>('.sc-next');
+
+    if (track && slides.length) {
+      const REAL = slides.length / 3; // three duplicated sets
+      const AUTOPLAY = 4000;
+      const SPEED = 1.5; // 1500ms, matching the original
+
+      // Start in the middle set so the track can move both ways.
+      let index = REAL;
+      let timer: number | undefined;
+      let tween: gsap.core.Tween | undefined;
+
+      const perView = () => (window.innerWidth >= 992 ? 3 : window.innerWidth >= 768 ? 2 : 1);
+
+      /** The original highlights the centre of the three visible cards. */
+      const highlight = () => {
+        const centre = (index + Math.floor(perView() / 2)) % slides.length;
+        slides.forEach((s, i) => {
+          const on = i === centre;
+          s.toggleAttribute('data-active', on);
+          const btn = s.querySelector<HTMLAnchorElement>('.sc-btn');
+          if (btn) {
+            btn.tabIndex = on ? 0 : -1;
+            if (on) btn.removeAttribute('aria-hidden');
+            else btn.setAttribute('aria-hidden', 'true');
+          }
+        });
+      };
+
+      const offsetFor = (i: number) => -(i * (slides[0]?.offsetWidth ?? 0));
+
+      const apply = (animate: boolean) => {
+        const x = offsetFor(index);
+        tween?.kill();
+        if (animate && !prefersReducedMotion()) {
+          tween = gsap.to(track, { x, duration: SPEED, ease: 'power2.inOut' });
+        } else {
+          gsap.set(track, { x });
+        }
+        highlight();
+      };
+
+      /**
+       * Snap back into the middle set without animating.
+       *
+       * This runs BEFORE each move rather than on tween completion. If it
+       * only ran onComplete, a tween interrupted by throttled rAF (hidden
+       * tab) would leave `index` growing without bound until it ran past the
+       * end of the track and nothing was highlighted at all.
+       */
+      const normalise = () => {
+        if (index >= REAL * 2 || index < REAL) {
+          index = REAL + (((index % REAL) + REAL) % REAL);
+          gsap.set(track, { x: offsetFor(index) });
+          highlight();
+        }
+      };
+
+      const go = (delta: number) => {
+        normalise();
+        index += delta;
+        apply(true);
+      };
+
+      const start = () => {
+        stop();
+        if (!prefersReducedMotion()) timer = window.setInterval(() => go(1), AUTOPLAY);
+      };
+      const stop = () => {
+        if (timer) window.clearInterval(timer);
+        timer = undefined;
+      };
+      const settle = () => {
+        if (tween?.isActive()) tween.progress(1);
+      };
+
+      prev?.addEventListener('click', () => {
+        go(-1);
+        start();
+      });
+      next?.addEventListener('click', () => {
+        go(1);
+        start();
+      });
+
+      root.addEventListener('mouseenter', stop);
+      root.addEventListener('mouseleave', start);
+      root.addEventListener('focusin', stop);
+      root.addEventListener('focusout', start);
+      document.addEventListener('visibilitychange', () => {
+        settle();
+        document.hidden ? stop() : start();
+      });
+      new IntersectionObserver(
+        ([e]) => {
+          if (e && e.isIntersecting) start();
+          else {
+            settle();
+            stop();
+          }
+        },
+        { threshold: 0.15 },
+      ).observe(root);
+      window.addEventListener('resize', () => apply(false));
+
+      apply(false);
+      start();
+    }
+  }
+</script>

@@ -35,6 +35,23 @@ export function initReveals(root: ParentNode = document) {
       scrollTrigger: { trigger: el, start: 'top 88%', once: true },
     });
   });
+
+  /**
+   * Safety net. ScrollTrigger depends on requestAnimationFrame, which browsers
+   * throttle in background tabs. If a trigger never fires, anything already
+   * scrolled into view would sit at opacity 0 indefinitely. After a short
+   * grace period, force-show anything at or above the fold that is still
+   * hidden. Elements further down keep their animation.
+   */
+  window.setTimeout(() => {
+    targets.forEach((el) => {
+      const r = el.getBoundingClientRect();
+      const inOrAboveView = r.top < window.innerHeight;
+      if (inOrAboveView && Number(getComputedStyle(el).opacity) < 0.99) {
+        gsap.set(el, { opacity: 1, y: 0 });
+      }
+    });
+  }, 3000);
 }
 
 /**

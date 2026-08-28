@@ -1,0 +1,91 @@
+---
+import { Image } from 'astro:assets';
+import SectionHeading from '../ui/SectionHeading.astro';
+import Icon from '../ui/Icon.astro';
+import bg from '../../assets/images/services/carousel-bg.jpg';
+import portrait from '../../assets/images/team/samaira-nichani.png';
+
+// One section on the original (top 3661, 762px tall) holding both the leader
+// card and the appointment CTA, over services.jpg with a #436B88 overlay
+// at 0.9 — the same treatment as the services carousel.
+//
+//   h2 "Our Leader" centred, white, 60px/700 on a 70px line box
+//   card 1140x488 at x=150, white, 5px radius, 10px padding
+//   portrait 533x468 at x=177
+//   role 16px/500 #084876, name 60px/700 #1C1E22, bio 16px/400 #777 (530px wide)
+//   CTA copy 30px/700 white on a 40px line box, centred
+//
+// The original's "Get An Appointment" link is #777 on this dark overlay,
+// roughly 1.9:1 (audit defect #27). Rendered white here, which keeps the
+// same understated text-link treatment while being readable.
+---
+
+<section class="relative isolate overflow-hidden pt-[30px]">
+  <Image
+    src={bg}
+    alt=""
+    aria-hidden="true"
+    class="absolute inset-0 -z-20 h-full w-full object-cover"
+    loading="lazy"
+    widths={[768, 1440]}
+    sizes="100vw"
+  />
+  <div aria-hidden="true" class="absolute inset-0 -z-10 bg-[#436B88] opacity-90"></div>
+
+  <div class="container-bs">
+    <SectionHeading title="Our Leader" onDark align="center" />
+
+    <!-- Leader card -->
+    <!-- The card is 1140px wide on the original, inset 78px inside the 1296px
+         container rather than filling it. -->
+    <div class="reveal mx-auto mt-[30px] max-w-[1140px] rounded-[5px] bg-white p-[10px]">
+      <div
+        class="grid items-center gap-8 lg:grid-cols-[533px_minmax(0,1fr)] lg:gap-[30px] lg:pl-[17px]"
+      >
+        <Image
+          src={portrait}
+          alt="Samaira Nichani, Managing Director and Founder of Anchor Consultants"
+          class="mx-auto h-auto w-[533px] max-w-full"
+          loading="lazy"
+          widths={[533, 1066]}
+          sizes="(min-width: 992px) 533px, 90vw"
+        />
+
+        <div class="px-4 pb-8 lg:px-0 lg:pb-0">
+          <p class="text-navy text-base leading-[21px] font-medium">
+            Managing Director &amp; Founder
+          </p>
+          <h3 class="text-section text-ink -mt-[6px] font-bold">Samaira Nichani</h3>
+          <p class="text-body mt-[20px] max-w-[530px] text-base leading-[26px]">
+            Anchor Consultants is led by <strong class="text-ink-strong"
+              >Samaira Nichani (The Founder)</strong
+            >, who brings <strong class="text-ink-strong">15+ years of experience</strong> across home
+            loans, mortgage-backed finance, working capital finance and risk analysis. She has worked
+            with leading institutions including
+            <strong class="text-ink-strong"
+              >Mashreq Bank, Abu Dhabi Commercial Bank and RAKBANK</strong
+            >, and now focuses on building financing solutions for
+            <strong class="text-ink-strong"
+              >HNIs, SMEs, first-time buyers, and real-estate investors across the UAE</strong
+            >.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Appointment CTA -->
+    <div class="pt-[30px] pb-[20px] text-center">
+      <p class="text-[30px] leading-[40px] font-bold text-white">
+        You can request an appointment to discuss your financing options.
+      </p>
+      <!-- TODO(milestone 10): opens the contact modal once it exists. -->
+      <a
+        href="/contact/"
+        class="text-small mt-[30px] inline-flex items-center gap-2 font-bold text-white underline-offset-4 transition-colors hover:underline"
+      >
+        Get An Appointment
+        <Icon name="chevron-right" size={13} />
+      </a>
+    </div>
+  </div>
+</section>
