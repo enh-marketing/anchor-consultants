@@ -834,25 +834,25 @@ Two findings during the build:
 
 ### SEO
 
-- [ ] Unique titles
-- [ ] Hand-written meta descriptions
-- [ ] Canonicals
-- [ ] Open Graph + Twitter cards
-- [ ] JSON-LD: Organization, WebSite, WebPage, BreadcrumbList, BlogPosting, FAQPage, Service
-- [ ] `sitemap.xml` (no 404 URLs)
-- [ ] `robots.txt`
-- [ ] Internal links all resolve
+- [x] Unique titles
+- [x] Hand-written meta descriptions (all 14 within 120–160)
+- [x] Canonicals
+- [x] Open Graph + Twitter cards
+- [x] JSON-LD: Organization, WebSite, BreadcrumbList, BlogPosting, Blog, FAQPage, Service, ContactPage
+- [x] `sitemap.xml` (no 404 URLs)
+- [x] `robots.txt`
+- [x] Internal links all resolve
 
 ### Accessibility
 
-- [ ] Keyboard navigable throughout
-- [ ] Visible focus states
-- [ ] Contrast checked (note: `#777` on white is 4.48:1, passes AA for normal text but is marginal)
-- [ ] Carousels keyboard + screen-reader usable
-- [ ] Modals: focus trap, Esc, restore focus
-- [ ] Forms fully labelled
-- [ ] Landmarks correct
-- [ ] Tested with a screen reader
+- [x] Keyboard navigable throughout (59 focusables on the busiest page, no positive `tabindex`)
+- [x] Visible focus states
+- [x] Contrast checked — `#777` was **4.48:1, which fails AA**, not marginal. Fixed in m13.
+- [x] Carousels keyboard + screen-reader usable
+- [x] Modals: focus trap, restore focus (Esc is native; unverifiable in this preview)
+- [x] Forms fully labelled
+- [x] Landmarks correct
+- [ ] **Tested with a screen reader — not done. Needs a human with VoiceOver or NVDA.**
 
 ### Responsive
 
@@ -1328,6 +1328,66 @@ What could not be verified there, and is covered by 13 unit tests in
 no-IntersectionObserver path, the reduced-motion branch, delay handling,
 listener unbinding, and idempotency. The visual transition itself still wants
 a real browser.
+
+### SEO and accessibility — Milestone 13 COMPLETE
+
+- [x] `robots.txt` added, environment-gated, both branches verified
+- [x] FAQPage structured data on the homepage
+- [x] All 14 meta descriptions brought inside 120–160
+- [x] Four real contrast failures fixed
+- [x] Skip link now actually moves focus
+
+**Audit method.** Rather than eyeballing pages, the build output is parsed and
+asserted: one `<h1>` per route, no skipped heading levels, landmarks present,
+exactly one `<main>`, skip link present and focusable, `lang`, canonical,
+description length, every link and button with an accessible name, every
+`<iframe>` titled, every `<img>` with an `alt`, and every JSON-LD block
+parsing. **All 14 routes pass with zero findings.**
+
+**Contrast: four genuine failures, all inherited from the original.**
+
+| Colour             | Where                          | Before                                        | After                                   |
+| ------------------ | ------------------------------ | --------------------------------------------- | --------------------------------------- |
+| `--color-body`     | all body copy                  | 4.48:1 white / 4.18:1 on `#F7F7F7`            | **4.88 / 4.56** (`#777777` → `#717171`) |
+| `--color-danger`   | form validation messages       | 4.51 / **4.21 on the grey form panel**        | **4.84 / 4.51** (`#EC1113` → `#E4090B`) |
+| tile body + link   | homepage highlight tiles       | 3.97:1 at the brightest pixel behind the text | **4.62** (`#F0EDED`/`#F3F3F3` → white)  |
+| hardcoded literals | 11 places bypassing the tokens | unchanged by the token fix                    | routed through `var(--color-*)`         |
+
+The audit had recorded `#777` on white as "passes AA but is marginal". That
+was wrong: 4.48:1 is _below_ the 4.5:1 floor, so it failed. Corrected above.
+
+Every change is a few values per channel and is visually indistinguishable
+from the original, which is the bar the brief sets for accessibility fixes.
+
+**Text over photographs was measured properly rather than guessed.** A naive
+sweep flags white text on the tiles and the leader band as 1:1, because it
+resolves the background to the body's white — those sections layer an
+absolutely positioned `<img>` under a colour overlay. Sampling the actual
+pixels behind each text block gives:
+
+| Surface                     | Overlay          | Worst pixel behind text                | Verdict |
+| --------------------------- | ---------------- | -------------------------------------- | ------- |
+| Tiles 1 and 3               | `#1C1E22` @ 0.70 | 5.29:1                                 | passes  |
+| Tile 2                      | `#0E6C90` @ 0.80 | 3.97 → **4.62** after the white change | passes  |
+| Leader band                 | `#436B88` @ 0.90 | 5.00:1                                 | passes  |
+| Footer, white @ 90% on navy | —                | 8.06:1                                 | passes  |
+
+**`robots.txt`** is gated on `IS_PRODUCTION_HOST`, the same flag as the robots
+meta tag. Verified by building both branches: staging emits `Disallow: /` with
+no sitemap line, production emits `Allow: /`, `Disallow: /api/` and the
+sitemap URL. The placeholder privacy page stays out of the sitemap.
+
+**Skip link.** It existed and pointed at `#main`, but `<main>` had no
+`tabindex`, so browsers only moved the sequential-navigation starting point —
+inconsistent, and silently nothing in some assistive tech. `<main>` now
+carries `tabindex="-1"` with its focus ring suppressed, and focus movement is
+verified.
+
+**Not done: screen-reader testing.** The structural groundwork is right —
+landmarks, headings, labels, `aria-roledescription="carousel"`, slide groups,
+a tablist for the testimonial pagination, live regions on the forms — but none
+of that is a substitute for listening to it. This needs a human with VoiceOver
+or NVDA and is the one checklist item left open.
 
 ## Open Questions
 

@@ -188,7 +188,7 @@ const compact = variant === 'modal';
   }
   .contact-form input::placeholder,
   .contact-form textarea::placeholder {
-    color: #777;
+    color: var(--color-body);
   }
   .contact-form input:focus-visible,
   .contact-form textarea:focus-visible {
@@ -203,7 +203,7 @@ const compact = variant === 'modal';
     width: 16px;
     height: 16px;
     transform: translateY(-50%);
-    color: #777;
+    color: var(--color-body);
     pointer-events: none;
   }
   .field-icon-top {
@@ -214,7 +214,7 @@ const compact = variant === 'modal';
   /* Invalid state is driven by the script, not :invalid, so errors only
      appear once the visitor has actually tried the field. */
   .contact-form [aria-invalid='true'] {
-    border-color: #ec1113;
+    border-color: var(--color-danger);
   }
 
   .err {
@@ -222,7 +222,7 @@ const compact = variant === 'modal';
     margin-top: 6px;
     font-size: 14px;
     line-height: 20px;
-    color: #ec1113;
+    color: var(--color-danger);
   }
   .err:not(:empty) {
     display: block;
@@ -264,7 +264,7 @@ const compact = variant === 'modal';
     color: #1b6b50;
   }
   .status[data-state='error'] {
-    color: #ec1113;
+    color: var(--color-danger);
   }
 </style>
 

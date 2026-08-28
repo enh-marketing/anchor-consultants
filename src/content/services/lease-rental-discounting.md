@@ -8,7 +8,7 @@ heroImage: ../../assets/images/services/detail-hero-shared.jpg
 bannerImage: ../../assets/images/banners/service-lease-rental-discounting.jpg
 order: 4
 seo:
-  metaDescription: 'Raise funds against committed rental income from leased UAE properties through structured lease rental discounting.'
+  metaDescription: 'Raise funds against committed rental income from leased UAE properties through structured lease rental discounting, arranged by Anchor Consultants.'
 ---
 
 Ready to unlock the value of your rental assets? Lease Rental Discounting (LRD) is a structured financing solution that allows property owners and investors to raise funds against committed rental income from leased properties.

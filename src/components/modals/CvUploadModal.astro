@@ -80,7 +80,7 @@ import Dialog from './Dialog.astro';
   .cv-form input[type='file'] {
     width: 100%;
     font-size: 14px;
-    color: #777;
+    color: var(--color-body);
   }
   .cv-form input[type='file']::file-selector-button {
     margin-right: 12px;
@@ -96,14 +96,14 @@ import Dialog from './Dialog.astro';
     outline-offset: -1px;
   }
   .cv-form [aria-invalid='true'] {
-    border-color: #ec1113;
+    border-color: var(--color-danger);
   }
   .err {
     display: none;
     margin-top: 6px;
     font-size: 14px;
     line-height: 20px;
-    color: #ec1113;
+    color: var(--color-danger);
   }
   .err:not(:empty) {
     display: block;
@@ -140,7 +140,7 @@ import Dialog from './Dialog.astro';
     color: #1b6b50;
   }
   .status[data-state='error'] {
-    color: #ec1113;
+    color: var(--color-danger);
   }
 </style>
 

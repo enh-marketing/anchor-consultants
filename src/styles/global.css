@@ -31,19 +31,29 @@
   --color-sky: #1595ce;
 
   /* Service card icons sample amber/orange on the live site */
+  /* Measured from the original but currently unused. Note before reaching
+     for it: 3.06:1 on white, so it is large-text or decorative only. */
   --color-ember: #e2762a;
   --color-ember-soft: #f0a35c;
 
   /* Ink and surfaces */
   --color-ink: #1c1e22; /* headings */
   --color-ink-strong: #333333;
-  --color-body: #777777; /* default body copy — 363 elements */
+  /* The original uses #777777, which is 4.48:1 on white and 4.18:1 on the
+     #F7F7F7 panels — both under the 4.5:1 WCAG AA minimum for body text.
+     Darkened by six values per channel, which clears AA on both grounds
+     (4.88:1 and 4.56:1) and is visually indistinguishable from the original.
+     See milestone 13. */
+  --color-body: #717171; /* default body copy — 363 elements */
   --color-mist: #f7f7f7; /* alternating section background */
   --color-carbon: #1e1f21; /* copyright bar */
   --color-line: #e6e6e6;
   --color-line-strong: #d6d6d6;
   --color-line-muted: #cccccc;
-  --color-danger: #ec1113;
+  /* #EC1113 in the original: 4.51:1 on white but only 4.21:1 on the
+     #F7F7F7 form panel, where the validation messages actually appear.
+     Darkened to clear AA on both (4.84:1 and 4.51:1). */
+  --color-danger: #e4090b;
 
   /* Copyright bar text. The original sets #0E6C90 and #084876 on the
      #1E1F21 bar, which measures 1.73:1 — far below the 4.5:1 AA minimum
@@ -148,6 +158,13 @@
     outline: 2px solid var(--color-navy);
     outline-offset: 2px;
     border-radius: 2px;
+  }
+
+  /* <main> carries tabindex="-1" so the skip link can move focus into it.
+     It should never draw a focus ring of its own. */
+  main:focus,
+  main:focus-visible {
+    outline: none;
   }
 
   /* The source site never sets these; images without them cause layout

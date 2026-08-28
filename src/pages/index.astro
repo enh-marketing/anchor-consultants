@@ -1,4 +1,5 @@
 ---
+import { getCollection } from 'astro:content';
 import PageLayout from '../layouts/PageLayout.astro';
 import HeroCarousel from '../components/home/HeroCarousel.astro';
 import ServiceHighlightRow from '../components/home/ServiceHighlightRow.astro';
@@ -8,17 +9,24 @@ import EmiCalculator from '../components/home/EmiCalculator.astro';
 import LeaderProfile from '../components/home/LeaderProfile.astro';
 import FaqAccordion from '../components/home/FaqAccordion.astro';
 import TestimonialCarousel from '../components/home/TestimonialCarousel.astro';
+import { faqSchema } from '../lib/seo';
 
 // Homepage, complete:
 //   milestone 04 — hero, service highlight row, about split
 //   milestone 05 — services carousel, leader, appointment CTA
 //   milestone 06 — EMI calculator
-//   milestone 07 — FAQ accordion, testimonials                 (this commit)
+//   milestone 07 — FAQ accordion, testimonials
+//   milestone 13 — FAQPage structured data for the accordion below
+
+// The accordion renders these same entries, so the markup and the structured
+// data cannot drift apart.
+const faqs = (await getCollection('faqs')).sort((a, b) => a.data.order - b.data.order);
 ---
 
 <PageLayout
-  description="UAE mortgage and real-estate finance specialists. Anchor Consultants compares leading UAE lenders and structures the right financing for buying, refinancing, building or unlocking equity."
+  description="UAE mortgage and real-estate finance specialists. We compare leading UAE lenders and structure the right financing for buying, refinancing or building."
   path="/"
+  schemas={[faqSchema(faqs.map((f) => ({ question: f.data.question, answer: f.data.answer })))]}
 >
   <HeroCarousel />
   <ServiceHighlightRow />

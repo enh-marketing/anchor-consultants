@@ -67,7 +67,10 @@ const graphs = [organizationSchema(), ...schemas];
 
     <slot name="header" />
 
-    <main id="main" class="flex-1">
+    <!-- tabindex="-1" so the skip link actually moves focus here. Without it
+         browsers only move the sequential-navigation starting point, which is
+         inconsistent and silently does nothing in some assistive tech. -->
+    <main id="main" tabindex="-1" class="flex-1">
       <slot />
     </main>
 

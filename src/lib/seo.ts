@@ -109,3 +109,22 @@ export function breadcrumbSchema(trail: Array<{ name: string; path: string }>) {
     })),
   };
 }
+
+/**
+ * FAQPage for the homepage accordion.
+ *
+ * Only valid because the answers are visible on the page — Google requires
+ * the marked-up content to be present, and hiding it behind the accordion is
+ * fine since the panels are in the DOM and reachable.
+ */
+export function faqSchema(items: Array<{ question: string; answer: string }>) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: items.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: { '@type': 'Answer', text: item.answer },
+    })),
+  };
+}
