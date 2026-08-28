@@ -31,8 +31,10 @@ export interface ResolvedSeo {
   image: string;
   type: 'website' | 'article';
   robots: string;
-  publishedTime?: string;
-  modifiedTime?: string;
+  // Explicit `| undefined` rather than `?`, because `exactOptionalPropertyTypes`
+  // distinguishes "absent" from "present and undefined".
+  publishedTime: string | undefined;
+  modifiedTime: string | undefined;
 }
 
 const DEFAULT_OG_IMAGE = '/og-default.png';

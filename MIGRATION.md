@@ -583,16 +583,29 @@ Each milestone ends with a visual comparison against the WordPress original befo
 
 Updated continuously. `[ ]` pending, `[x]` done, `[~]` in progress, `[!]` blocked.
 
-### Setup
-- [ ] Astro project initialised
-- [ ] Git repository initialised
-- [ ] Tailwind 4 configured with Anchor tokens
-- [ ] Bootstrap-aligned breakpoints configured
-- [ ] TypeScript strict mode
-- [ ] GSAP + ScrollTrigger installed
-- [ ] DM Sans self-hosted (400/500/600/700)
-- [ ] Prettier + ESLint
-- [ ] Content collection schemas defined
+### Setup — Milestone 00 COMPLETE (commit `d1921ba` + follow-up)
+- [x] Astro project initialised — Astro **7.2.9** (newer than the 5 assumed in section H.1)
+- [x] Git repository initialised
+- [x] Tailwind 4.3.3 configured with Anchor tokens, all 8 colours verified in-browser
+- [x] Bootstrap-aligned breakpoints configured (576/768/992/1200/1400) + `.container-bs`
+- [x] TypeScript — using `astro/tsconfigs/strictest`, plus `~/*` path alias
+- [x] GSAP 3.15 installed (ScrollTrigger ships with the package)
+- [x] DM Sans self-hosted as woff2, 4 files emitted, load confirmed (no fallback)
+- [x] Prettier configured with Astro + Tailwind plugins
+- [~] ESLint — **deferred.** `astro check` (0 errors/warnings/hints) plus Prettier
+      covers this project's needs; revisit only if lint gaps appear.
+- [x] Content collection schemas defined, shaped to the planned Sanity types
+- [x] BaseLayout with SEO, JSON-LD, skip link, environment-gated robots
+- [x] `site.ts` single source for contact data (fixes defect #4 structurally)
+- [x] Sticky footer (fixes defect #25)
+- [x] Scroll-reveal safe base state (fixes the G.2 content-loss risk)
+
+**Verification:** build clean, `astro check` 0/0/0, homepage 168 KB total against
+WordPress's 3.30 MB. Body renders 16px/26px `#777` and H1 80px/700 `#1C1E22`,
+matching the source exactly.
+
+**Bonus, pulled forward from milestone 08:** the 6 real FAQs and 7 real
+testimonials are already migrated into content collections and rendering.
 
 ### Assets
 - [ ] 11 theme-demo images downloaded and localised

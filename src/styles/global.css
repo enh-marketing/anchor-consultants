@@ -46,8 +46,7 @@
   --color-danger: #ec1113;
 
   /* Type */
-  --font-sans: 'DM Sans Variable', 'DM Sans', system-ui, -apple-system,
-    'Segoe UI', sans-serif;
+  --font-sans: 'DM Sans Variable', 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   /* Scale observed on the live site. Hero and section headings are fluid
      so the theme's dozen ad-hoc patch breakpoints (440/430/396/390/385/359)
