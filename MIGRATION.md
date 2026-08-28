@@ -607,16 +607,46 @@ matching the source exactly.
 **Bonus, pulled forward from milestone 08:** the 6 real FAQs and 7 real
 testimonials are already migrated into content collections and rendering.
 
-### Assets
-- [ ] 11 theme-demo images downloaded and localised
-- [ ] Anchor-hosted images downloaded
-- [ ] Logo (both variants)
-- [ ] Favicon
-- [ ] Service icons extracted as SVG
-- [ ] UI icons inlined as SVG
-- [ ] Images converted to WebP/AVIF
-- [ ] Real alt text written for every image
-- [ ] Zero references to WordPress or `finaxio.nextwpcook.com`
+### Assets — Milestone 01 COMPLETE
+- [x] Client supplied the full WordPress media export: 164 files, 9.8 MB
+- [x] 41 required assets sorted into `src/assets/images/<category>/`
+- [x] **The 11 "hotlinked" files were in the export all along**, byte-identical
+      (sha256 verified against the theme demo server). Defect #5 was gratuitous:
+      the files were uploaded to Anchor's library, but the Elementor markup
+      pointed at `finaxio.nextwpcook.com`. Nothing had to be fetched from a
+      third party.
+- [x] Logo trimmed 1932×821 → 1505×362, removing dead padding
+- [x] Favicon (custom SVG) + `og-default.png` 1200×630 generated
+- [x] Images optimised: **4.82 MB → 1.13 MB, saving 3.69 MB.** Ten 1520×266
+      banner photographs were stored as PNG with no transparency and are now
+      JPEG q88 4:4:4 (e.g. 548 KB → 101 KB, visually identical). Files with
+      genuine alpha — hero cutouts, icons, the portrait — stay PNG.
+- [x] Astro `<Image>` handles WebP/AVIF conversion at build from these sources
+- [ ] Service icons extracted as SVG — **deferred**, current PNGs are 3–4 KB
+      each so the gain is marginal; revisit if a retina issue appears
+- [ ] UI icons inlined as SVG — due with the component work (milestone 03)
+- [ ] Real alt text written for every image — due as each component is built
+- [x] Zero references to WordPress or `finaxio.nextwpcook.com`
+
+**Total shipped assets: 2.6 MB source** (banners 1.3 MB, hero 660 KB,
+services 392 KB, rest small), before Astro's build-time WebP/AVIF conversion.
+
+#### Banner images: a better outcome than expected
+
+Defect #2 was diagnosed as mixed content. The real cause is worse and simpler:
+**the referenced banner files do not exist on the server.** `2026/02/1.webp`,
+`3.webp`, `4.webp`, `2.jpg` and `2023/08/Add-a-heading.webp` all return 404,
+and the media library has no `2026/02/` uploads at all.
+
+The export, however, contains **14 purpose-made 1520×266 banner images** whose
+filenames map cleanly to pages: `about`, `service`, `testi`, `cont`/`contact`,
+plus `motr` (Mortgage Solutions), `cf` (Commercial Finances) and `rent` (Lease
+Rental Discounting). They carry a blue tint overlay, clearly designed to sit
+behind white title text — exactly what the Q1 decision calls for.
+
+So the banners were designed and uploaded, then lost their wiring. Two gaps
+remain: **no banner for Construction & Developer Finance, and none for Blog**
+(see Q13).
 
 ### Global components
 - [ ] TopBar
@@ -771,3 +801,10 @@ These need your input. None of them block starting at Milestone 0; I have noted 
 **Q11. Service imagery.** All four service pages currently share one photo and one icon set. Will distinct images be supplied per service? *Assumption: build the template to support per-service images, ship with the shared photo until you provide replacements.*
 
 **Q12. Service page CTA.** The service detail pages end abruptly at the checklist with no call to action, which wastes the page's intent. *Assumption: add a consistent "Book a Free Consultation" CTA block at the end of the template, matching the existing button style.*
+
+**Q13. Missing banner images.** The export has purpose-made page banners for
+About, Services, Testimonials, Contact, Mortgage Solutions, Commercial Finances
+and Lease Rental Discounting, but **none for Construction & Developer Finance
+or for the Blog**. *Assumption: reuse one of the three generic 1520×266 banners
+(`generic-1/2/3.jpg`) for those two until you supply specific ones.*
+
