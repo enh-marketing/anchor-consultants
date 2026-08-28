@@ -1,0 +1,504 @@
+---
+import { Image } from 'astro:assets';
+import SectionHeading from '../ui/SectionHeading.astro';
+import { EMI_LIMITS } from '../../lib/emi';
+import planImage from '../../assets/images/about/plan.jpg';
+import { site } from '../../data/site';
+
+// Measured from the original at 1440:
+//   spacer band above: 100px, #F7F7F7, padding 30/70
+//   section 832px, #F7F7F7, padding 30/30
+//   h2 at x=70 (60px/700, 70px line box), image plan.jpg 570x500 at x=800
+//   card 640 wide, white, 8px radius, shadow 0 0 5px rgba(0,0,0,.2)
+//     inner boxes: inputs (331px) and results, each 1px #CCC, 15px padding,
+//     separated by 15px
+//   row: label 18px/600 black at x=86 (203 wide); number input 44px tall,
+//     1px #D6D6D6, radius 3px 0 0 3px; unit chip #D6D6D6, #495057,
+//     radius 0 4px 4px 0, padding 6px 12px
+//   slider track 608x6 #E6E6E6 radius 10, fill #2A78C0,
+//     handle 25px circle #2A78C0 with a 0 0 8px rgba(0,0,0,.3) shadow
+//   result label 16px/400 #666, value 18px/700 #777
+//   helper copy 16px/400 #777 on a 26px line box
+//   disclaimer 18px/700 ITALIC #1C1E22
+//
+// Per the client's decision on Q3 all three results are shown (the original
+// hides two of them) and the months slider reaches 360 rather than 30.
+
+const A = EMI_LIMITS.amount;
+const R = EMI_LIMITS.rate;
+const Y = EMI_LIMITS.years;
+const M = EMI_LIMITS.months;
+---
+
+{/* Spacer band above the calculator, part of the original's rhythm. */}
+<div class="bg-mist h-[100px]"></div>
+
+<section class="bg-mist py-[30px]">
+  <!-- This section uses the Elementor gutter, not the Bootstrap container:
+       1300px of content from x=70 to x=1370, holding a 640px column and a
+       570px column with a 90px gap. -->
+  <div class="mx-auto w-full max-w-[1320px] px-3 lg:px-[10px]">
+    <div class="grid items-start gap-10 lg:grid-cols-[640px_570px] lg:justify-between lg:gap-0">
+      <div>
+        <SectionHeading title="Calculate Your Financing Path" />
+
+        <form
+          class="emi mt-5"
+          novalidate
+          aria-label="Financing estimator"
+          data-limits={JSON.stringify({ A, R, Y, M })}
+        >
+          <div class="overflow-hidden rounded-[8px] bg-white shadow-[0_0_5px_0_rgba(0,0,0,0.2)]">
+            <!-- Inputs -->
+            <div class="border border-[#ccc] p-[15px]">
+              <!-- Loan amount -->
+              <div class="emi-row">
+                <div class="flex flex-wrap items-center gap-y-2">
+                  <label
+                    for="emi-amount"
+                    class="w-[203px] text-[18px] leading-[26px] font-semibold text-black"
+                  >
+                    Loan Amount
+                  </label>
+                  <div class="flex min-w-0 flex-1 sm:ml-[15px] sm:w-[275px] sm:flex-none">
+                    <input
+                      id="emi-amount"
+                      name="amount"
+                      type="number"
+                      inputmode="numeric"
+                      value={A.default}
+                      min={A.min}
+                      max={A.max}
+                      step={A.step}
+                      class="emi-input"
+                    />
+                    <span class="emi-unit" aria-hidden="true">AED</span>
+                  </div>
+                </div>
+                <input
+                  type="range"
+                  class="emi-range mt-[15px]"
+                  aria-labelledby="emi-amount-label"
+                  aria-label="Loan amount slider"
+                  value={A.default}
+                  min={A.min}
+                  max={A.max}
+                  step={A.step}
+                  data-sync="emi-amount"
+                />
+              </div>
+
+              <!-- Interest rate -->
+              <div class="emi-row mt-[15px]">
+                <div class="flex flex-wrap items-center gap-y-2">
+                  <label
+                    for="emi-rate"
+                    class="w-[203px] text-[18px] leading-[26px] font-semibold text-black"
+                  >
+                    Interest Rate
+                  </label>
+                  <div class="flex min-w-0 flex-1 sm:ml-[15px] sm:w-[275px] sm:flex-none">
+                    <input
+                      id="emi-rate"
+                      name="rate"
+                      type="number"
+                      inputmode="decimal"
+                      value={R.default}
+                      min={R.min}
+                      max={R.max}
+                      step={R.step}
+                      class="emi-input"
+                    />
+                    <span class="emi-unit" aria-hidden="true">%</span>
+                  </div>
+                </div>
+                <input
+                  type="range"
+                  class="emi-range mt-[15px]"
+                  aria-label="Interest rate slider"
+                  value={R.default}
+                  min={R.min}
+                  max={R.max}
+                  step={R.step}
+                  data-sync="emi-rate"
+                />
+              </div>
+
+              <!-- Tenure -->
+              <div class="emi-row mt-[15px]">
+                <div class="flex flex-wrap items-center gap-y-2">
+                  <label
+                    for="emi-tenure"
+                    class="w-[203px] text-[18px] leading-[26px] font-semibold text-black"
+                  >
+                    Loan Tenure
+                  </label>
+                  <div class="flex min-w-0 flex-1 sm:ml-[15px] sm:w-[275px] sm:flex-none">
+                    <input
+                      id="emi-tenure"
+                      name="tenure"
+                      type="number"
+                      inputmode="numeric"
+                      value={Y.default}
+                      min={Y.min}
+                      max={Y.max}
+                      step={Y.step}
+                      class="emi-input"
+                    />
+                    <fieldset class="flex shrink-0">
+                      <legend class="sr-only-focusable absolute">Tenure unit</legend>
+                      <label class="emi-toggle" data-unit="years">
+                        <input
+                          type="radio"
+                          name="unit"
+                          value="years"
+                          checked
+                          class="sr-only-focusable absolute"
+                        />
+                        <span>Yr</span>
+                      </label>
+                      <label class="emi-toggle emi-toggle-last" data-unit="months">
+                        <input
+                          type="radio"
+                          name="unit"
+                          value="months"
+                          class="sr-only-focusable absolute"
+                        />
+                        <span>Mo</span>
+                      </label>
+                    </fieldset>
+                  </div>
+                </div>
+                <input
+                  type="range"
+                  class="emi-range mt-[15px]"
+                  aria-label="Loan tenure slider"
+                  value={Y.default}
+                  min={Y.min}
+                  max={Y.max}
+                  step={Y.step}
+                  data-sync="emi-tenure"
+                />
+              </div>
+            </div>
+
+            <!-- Results. The original hides the last two (audit defect #11);
+                 all three are shown here per Q3. -->
+            <div class="mt-[15px] border border-[#ccc] p-[15px]">
+              <dl class="divide-y divide-[#e6e6e6]" aria-live="polite">
+                <div class="py-3 text-center first:pt-1">
+                  <dt class="text-[16px] leading-5 text-[#666]">Loan EMI</dt>
+                  <dd id="emi-out-emi" class="mt-1 text-[18px] leading-6 font-bold text-[#777]">
+                    —
+                  </dd>
+                </div>
+                <div class="py-3 text-center">
+                  <dt class="text-[16px] leading-5 text-[#666]">Total Interest Payable</dt>
+                  <dd
+                    id="emi-out-interest"
+                    class="mt-1 text-[18px] leading-6 font-bold text-[#777]"
+                  >
+                    —
+                  </dd>
+                </div>
+                <div class="py-3 text-center last:pb-1">
+                  <dt class="text-[16px] leading-5 text-[#666]">
+                    Total Payment (Principal + Interest)
+                  </dt>
+                  <dd id="emi-out-total" class="mt-1 text-[18px] leading-6 font-bold text-[#777]">
+                    —
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+
+          <p class="emi-error text-danger text-small mt-3 hidden" role="alert"></p>
+        </form>
+
+        <p class="text-body mt-5 max-w-[640px] text-base leading-[26px]">
+          Use this quick estimator as a starting point. For accurate numbers, we&rsquo;ll review
+          your profile, property details, and documentation to match lender policy and maximize
+          approval probability.
+        </p>
+
+        <p class="text-ink mt-5 max-w-[612px] text-[18px] leading-[18px] font-bold italic">
+          {site.disclaimers.calculator}
+        </p>
+      </div>
+
+      <div class="reveal">
+        <Image
+          src={planImage}
+          alt="Advisers reviewing financing options with a client"
+          class="h-auto w-full max-w-[570px] lg:ml-auto"
+          loading="lazy"
+          widths={[570, 1140]}
+          sizes="(min-width: 992px) 570px, 100vw"
+        />
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .emi-input {
+    min-width: 0;
+    flex: 1 1 auto;
+    height: 44px;
+    padding: 8px;
+    font-size: 16px;
+    color: #1c1e22;
+    background: #fff;
+    border: 1px solid #d6d6d6;
+    border-radius: 3px 0 0 3px;
+  }
+  .emi-input:focus-visible {
+    outline: 2px solid #084876;
+    outline-offset: -1px;
+  }
+  /* Hide the spinner: the sliders are the primary control. */
+  .emi-input::-webkit-outer-spin-button,
+  .emi-input::-webkit-inner-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+  .emi-input[type='number'] {
+    appearance: textfield;
+  }
+
+  .emi-unit {
+    display: inline-flex;
+    align-items: center;
+    height: 44px;
+    padding: 6px 12px;
+    font-size: 16px;
+    color: #495057;
+    background: #d6d6d6;
+    border: 1px solid #d6d6d6;
+    border-radius: 0 4px 4px 0;
+  }
+
+  /* Yr / Mo segmented control. The original marks the selected unit with a
+     #D6D6D6 fill and leaves the other transparent. */
+  .emi-toggle {
+    display: inline-flex;
+    align-items: center;
+    height: 44px;
+    padding: 6px 12px;
+    font-size: 18px;
+    color: #000;
+    border: 1px solid #d6d6d6;
+    cursor: pointer;
+    user-select: none;
+  }
+  .emi-toggle-last {
+    border-radius: 0 4px 4px 0;
+  }
+  .emi-toggle:has(input:checked) {
+    background: #d6d6d6;
+  }
+  .emi-toggle:has(input:focus-visible) {
+    outline: 2px solid #084876;
+    outline-offset: -2px;
+  }
+
+  /* Range slider: 608x6 track, #2A78C0 fill, 25px handle. The fill is drawn
+     with a gradient driven by a --pct custom property set from script. */
+  .emi-range {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    width: 100%;
+    height: 6px;
+    border-radius: 10px;
+    background: linear-gradient(
+      to right,
+      #2a78c0 0%,
+      #2a78c0 var(--pct, 0%),
+      #e6e6e6 var(--pct, 0%),
+      #e6e6e6 100%
+    );
+    cursor: pointer;
+  }
+  .emi-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 25px;
+    height: 25px;
+    border: 0;
+    border-radius: 50%;
+    background: #2a78c0;
+    box-shadow: 0 0 8px 0 rgba(0, 0, 0, 0.3);
+    cursor: grab;
+  }
+  .emi-range::-moz-range-thumb {
+    width: 25px;
+    height: 25px;
+    border: 0;
+    border-radius: 50%;
+    background: #2a78c0;
+    box-shadow: 0 0 8px 0 rgba(0, 0, 0, 0.3);
+    cursor: grab;
+  }
+  .emi-range:focus-visible {
+    outline: 2px solid #084876;
+    outline-offset: 4px;
+  }
+
+  @media (max-width: 575px) {
+    .emi-row label[for] {
+      width: 100%;
+    }
+  }
+</style>
+
+<script>
+  import { calculateEmi, formatAed, toMonths, clamp } from '../../lib/emi';
+
+  const form = document.querySelector<HTMLFormElement>('form.emi');
+  if (form) {
+    const amount = form.querySelector<HTMLInputElement>('#emi-amount')!;
+    const rate = form.querySelector<HTMLInputElement>('#emi-rate')!;
+    const tenure = form.querySelector<HTMLInputElement>('#emi-tenure')!;
+    const ranges = [...form.querySelectorAll<HTMLInputElement>('.emi-range')];
+    const unitInputs = [...form.querySelectorAll<HTMLInputElement>('input[name="unit"]')];
+    const out = {
+      emi: form.querySelector<HTMLElement>('#emi-out-emi')!,
+      interest: form.querySelector<HTMLElement>('#emi-out-interest')!,
+      total: form.querySelector<HTMLElement>('#emi-out-total')!,
+    };
+    const errorEl = form.querySelector<HTMLElement>('.emi-error')!;
+
+    const limits = JSON.parse(form.dataset['limits'] ?? '{}');
+    const unit = () => (unitInputs.find((i) => i.checked)?.value ?? 'years') as 'years' | 'months';
+
+    const rangeFor = (id: string) => ranges.find((r) => r.dataset['sync'] === id);
+
+    /** Paint the filled portion of a track. */
+    const paint = (el: HTMLInputElement) => {
+      const min = Number(el.min);
+      const max = Number(el.max);
+      const pct = max > min ? ((Number(el.value) - min) / (max - min)) * 100 : 0;
+      el.style.setProperty('--pct', `${pct}%`);
+    };
+
+    // Tracks which unit the tenure value is currently expressed in, so a
+    // change converts exactly once. Without this the initial call would
+    // "convert" years to years and turn the default 5 into 1.
+    let currentUnit = unit();
+
+    /**
+     * Re-range the tenure controls for the active unit.
+     * `convert` is false on first run, when the markup value is already
+     * in the right unit.
+     */
+    const applyUnit = (convert: boolean) => {
+      const u = unit();
+      const lim = u === 'years' ? limits.Y : limits.M;
+      const r = rangeFor('emi-tenure');
+
+      let value = Number(tenure.value);
+      if (!Number.isFinite(value)) value = lim.default;
+      if (convert && u !== currentUnit) {
+        value = u === 'years' ? Math.max(1, Math.round(value / 12)) : Math.round(value * 12);
+      }
+
+      for (const el of [tenure, r]) {
+        if (!el) continue;
+        el.min = String(lim.min);
+        el.max = String(lim.max);
+        el.step = String(lim.step);
+      }
+      const next = clamp(value, lim.min, lim.max);
+      tenure.value = String(next);
+      if (r) r.value = String(next);
+      currentUnit = u;
+    };
+
+    const validate = () => {
+      const messages: string[] = [];
+      const a = Number(amount.value);
+      const rt = Number(rate.value);
+      const t = Number(tenure.value);
+      if (!Number.isFinite(a) || a < limits.A.min || a > limits.A.max) {
+        messages.push(
+          `Loan amount must be between ${limits.A.min.toLocaleString('en-AE')} and ${limits.A.max.toLocaleString('en-AE')} AED.`,
+        );
+      }
+      if (!Number.isFinite(rt) || rt < limits.R.min || rt > limits.R.max) {
+        messages.push(`Interest rate must be between ${limits.R.min}% and ${limits.R.max}%.`);
+      }
+      const lim = unit() === 'years' ? limits.Y : limits.M;
+      if (!Number.isFinite(t) || t < lim.min || t > lim.max) {
+        messages.push(
+          `Tenure must be between ${lim.min} and ${lim.max} ${unit() === 'years' ? 'years' : 'months'}.`,
+        );
+      }
+      errorEl.textContent = messages[0] ?? '';
+      errorEl.classList.toggle('hidden', messages.length === 0);
+      return messages.length === 0;
+    };
+
+    const recalc = () => {
+      ranges.forEach(paint);
+      const ok = validate();
+
+      const a = clamp(Number(amount.value), limits.A.min, limits.A.max);
+      const rt = clamp(Number(rate.value), limits.R.min, limits.R.max);
+      const lim = unit() === 'years' ? limits.Y : limits.M;
+      const t = clamp(Number(tenure.value), lim.min, lim.max);
+
+      const result = calculateEmi({
+        principal: a,
+        annualRatePercent: rt,
+        months: toMonths(t, unit()),
+      });
+
+      // Out-of-range input still shows the clamped result rather than blanking,
+      // so the panel never looks broken while someone is typing.
+      out.emi.textContent = formatAed(result.emi);
+      out.interest.textContent = formatAed(result.totalInterest);
+      out.total.textContent = formatAed(result.totalPayment);
+      form.dataset['valid'] = String(ok);
+    };
+
+    // Number field <-> slider stay in sync both ways.
+    for (const field of [amount, rate, tenure]) {
+      field.addEventListener('input', () => {
+        const r = rangeFor(field.id);
+        if (r) {
+          r.value = String(clamp(Number(field.value), Number(r.min), Number(r.max)));
+          paint(r);
+        }
+        recalc();
+      });
+      field.addEventListener('blur', () => {
+        const min = Number(field.min);
+        const max = Number(field.max);
+        field.value = String(clamp(Number(field.value), min, max));
+        recalc();
+      });
+    }
+
+    for (const r of ranges) {
+      r.addEventListener('input', () => {
+        const target = form.querySelector<HTMLInputElement>(`#${r.dataset['sync']}`);
+        if (target) target.value = r.value;
+        recalc();
+      });
+    }
+
+    for (const u of unitInputs) {
+      u.addEventListener('change', () => {
+        applyUnit(true);
+        recalc();
+      });
+    }
+
+    form.addEventListener('submit', (e) => e.preventDefault());
+
+    applyUnit(false);
+    recalc();
+  }
+</script>

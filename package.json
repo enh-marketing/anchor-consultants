@@ -13,7 +13,8 @@
     "check": "astro check",
     "lint:types": "tsc --noEmit",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test": "node --experimental-strip-types --test \"src/**/*.test.ts\""
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",

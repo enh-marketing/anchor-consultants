@@ -906,6 +906,49 @@ force-shown. Content below the fold keeps its animation.
 **Responsive:** no horizontal overflow at 390 / 768 / 1440 / 1920. Cards go
 three-up, two-up, then full width.
 
+
+### EMI calculator — Milestone 06 COMPLETE
+- [x] Rebuilt from scratch in TypeScript; the plugin, Chart.js and
+      rangeslider.js are all gone
+- [x] Pure calculation in `src/lib/emi.ts`, **12 unit tests** via Node's
+      built-in runner (`npm test`) — no test framework added
+- [x] All three outputs shown (Q3), months slider extended to 360 (Q3)
+- [x] Consistent thousands separators, fixing defect #12
+- [x] Two-way sync between each number field and its slider
+- [x] Yr/Mo switch converts the value and re-ranges the controls
+- [x] Inline validation with `role="alert"`; out-of-range input still shows a
+      clamped result rather than blanking the panel
+- [x] Labelled inputs, aria-labelled sliders, `aria-live` results, keyboard
+      operable throughout
+
+**Output at the defaults matches the original exactly: 1,189 / 21,370 / 71,370.**
+
+**Geometry — every metric exact but two 1px roundings:**
+
+| Metric | WordPress | Astro |
+| --- | --- | --- |
+| h2 / card left, card width | 70 / 70 / 640 | identical |
+| Label left + width | 86 / 203 | identical |
+| Amount input left + width | 304 / 218 | identical |
+| Rate + tenure input widths | 236 / 182 | 236 / 181 |
+| Unit chip | 57x44 | identical (left +1) |
+| Slider left / width / offset | 86 / 608 / 75 | identical |
+| Image | 570x500 at 800 | identical |
+
+This section uses the **Elementor gutter** (1300px of content from x=70), not
+the Bootstrap container, and its columns are a fixed 640 + 570 with a 90px
+gap rather than an even split.
+
+**Two bugs found, one in the original and one in my own code:**
+
+1. `applyUnit()` ran on first load and "converted" years to years, turning the
+   default 5-year tenure into 1. Conversion now only happens when the unit
+   actually changes.
+2. The tests caught **my own arithmetic error**: I had recorded the exact EMI
+   as 1,189.35 and concluded the original's totals were derived from a rounded
+   instalment. The real figure is 1,189.4965 and the original's totals are
+   correct. The audit note in section D.2 has been corrected.
+
 ## Open Questions
 
 These need your input. None of them block starting at Milestone 0; I have noted the assumption I will proceed with if you would rather decide later.
