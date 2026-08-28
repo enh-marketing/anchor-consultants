@@ -1,0 +1,48 @@
+---
+/**
+ * Small label above a heading. Two forms exist on the original:
+ *
+ *   plain  section eyebrows ("About Us", "Services", "FAQ's") —
+ *          16px/500, #084876, no decoration
+ *   pill   the hero eyebrow — same type, plus a 7px dot and a navy
+ *          background at 15% opacity with a 15px radius, both drawn
+ *          as pseudo-elements
+ */
+interface Props {
+  pill?: boolean;
+  /** Use on dark backgrounds, where the original switches to white. */
+  onDark?: boolean;
+  class?: string;
+}
+const { pill = false, onDark = false, class: className = '' } = Astro.props;
+---
+
+{
+  pill ? (
+    <span
+      class:list={[
+        'relative inline-block py-1 pr-[15px] pl-[30px] text-base font-medium',
+        onDark ? 'text-white' : 'text-navy',
+        // dot
+        'before:absolute before:top-[14px] before:left-[15px] before:h-[7px] before:w-[7px] before:rounded-full before:content-[""]',
+        onDark ? 'before:bg-white' : 'before:bg-navy',
+        // tinted pill behind the text
+        'after:absolute after:inset-0 after:-z-10 after:rounded-[15px] after:opacity-15 after:content-[""]',
+        onDark ? 'after:bg-white' : 'after:bg-navy',
+        className,
+      ]}
+    >
+      <slot />
+    </span>
+  ) : (
+    <p
+      class:list={[
+        'text-base leading-[21px] font-medium',
+        onDark ? 'text-white' : 'text-navy',
+        className,
+      ]}
+    >
+      <slot />
+    </p>
+  )
+}

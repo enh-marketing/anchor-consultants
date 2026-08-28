@@ -31,11 +31,7 @@ const isActive = (href: string) =>
       <!-- The original reserves a 150px slot for the logo, inside which the
            padded PNG's wordmark rendered at ~117px, centred. Reproducing the
            slot keeps the wordmark and the nav in their original positions. -->
-      <a
-        href="/"
-        class="flex w-[150px] shrink-0 justify-center"
-        aria-label={`${site.name} — home`}
-      >
+      <a href="/" class="flex w-[150px] shrink-0 justify-center" aria-label={`${site.name} — home`}>
         <Image
           src={logo}
           alt={`${site.name} logo`}
@@ -50,7 +46,7 @@ const isActive = (href: string) =>
            At 1440 the original places the nav 148px after the logo slot, which
            is left of centre rather than centred. Reproduced from xl up; below
            that the offset tightens so the row cannot overflow the container. -->
-      <nav aria-label="Primary" class="hidden lg:block lg:ml-6 xl:ml-[148px]">
+      <nav aria-label="Primary" class="hidden lg:ml-6 lg:block xl:ml-[148px]">
         <ul class="flex items-center gap-6 xl:gap-[44px]">
           {
             site.nav.map((item) => (
@@ -71,7 +67,7 @@ const isActive = (href: string) =>
       <div class="ml-auto flex items-center gap-3">
         <a
           href={site.cta.header.href}
-          class="hidden h-[60px] items-center rounded-[3px] bg-navy px-[35px] text-base font-medium text-white transition-colors hover:bg-navy-600 lg:inline-flex"
+          class="bg-navy hover:bg-navy-600 hidden h-[60px] items-center rounded-[3px] px-[35px] text-base font-medium text-white transition-colors lg:inline-flex"
         >
           {site.cta.header.label}
         </a>
@@ -81,7 +77,7 @@ const isActive = (href: string) =>
         <button
           type="button"
           id="nav-toggle"
-          class="inline-flex h-11 w-11 items-center justify-center rounded-[3px] text-ink transition-colors hover:bg-mist lg:hidden"
+          class="text-ink hover:bg-mist inline-flex h-11 w-11 items-center justify-center rounded-[3px] transition-colors lg:hidden"
           aria-expanded="false"
           aria-controls="mobile-nav"
         >
@@ -99,10 +95,10 @@ const isActive = (href: string) =>
     id="mobile-nav"
     aria-label="Primary (mobile)"
     hidden
-    class="border-t border-line bg-white lg:hidden"
+    class="border-line border-t bg-white lg:hidden"
   >
     <div class="container-bs">
-      <ul class="divide-y divide-line py-1">
+      <ul class="divide-line divide-y py-1">
         {
           site.nav.map((item) => (
             <li>
@@ -119,7 +115,7 @@ const isActive = (href: string) =>
         <li class="pt-4 pb-5">
           <a
             href={site.cta.header.href}
-            class="inline-flex h-[52px] items-center rounded-[3px] bg-navy px-8 text-base font-medium text-white"
+            class="bg-navy inline-flex h-[52px] items-center rounded-[3px] px-8 text-base font-medium text-white"
           >
             {site.cta.header.label}
           </a>

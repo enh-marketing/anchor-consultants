@@ -1,0 +1,85 @@
+---
+import { Image } from 'astro:assets';
+import Icon from '../ui/Icon.astro';
+import tile1 from '../../assets/images/features/tile-1.jpg';
+import tile2 from '../../assets/images/features/tile-2.jpg';
+import tile3 from '../../assets/images/features/tile-3.jpg';
+
+// Measured from the original at 1440:
+//   full-bleed 3-column row, 381px tall, each column 475px wide
+//   padding 70px 60px per column
+//   photographic background per column, cover / centred
+//   title 30px/700 white on a 35px line box
+//   body 16px/400 #F0EDED on a 26px line box
+//   link "Read More" 16px/500 #F3F3F3
+//
+// Each column carries an Elementor background overlay, which is what makes
+// the text legible over the photography:
+//   tiles 1 and 3  #1C1E22 at 0.7, rising to 0.8 on hover
+//   tile 2         #0E6C90 at 0.8  (this, not the photo, is why it reads blue)
+// with a 0.3s transition.
+
+const tiles = [
+  {
+    title: 'Home Loan',
+    body: 'Finance of villas, apartments and even off-plan properties for salaried and self-employed individuals',
+    href: '/services/mortgage-solutions/',
+    image: tile1,
+    overlay: 'bg-ink',
+    overlayOpacity: 'opacity-70 group-hover:opacity-80',
+  },
+  {
+    title: 'Commercial Finance',
+    body: 'Asset backed financing solutions for Self-Employed Individuals, UAE based entities such as SMEs, Large and Mid-Corporates, Trusts, Offshore Companies, etc.',
+    href: '/services/commercial-finances/',
+    image: tile2,
+    // The middle tile reads blue because of this teal overlay, not the photo.
+    overlay: 'bg-teal',
+    overlayOpacity: 'opacity-80',
+  },
+  {
+    title: 'Construction & Developer Finance',
+    body: 'Finance against commercial properties, construction and rental backed finance',
+    href: '/services/construction-developer-finance/',
+    image: tile3,
+    overlay: 'bg-ink',
+    overlayOpacity: 'opacity-70 group-hover:opacity-80',
+  },
+];
+---
+
+<section aria-label="Financing at a glance" class="grid md:grid-cols-3">
+  {
+    tiles.map((tile) => (
+      <article class="group relative isolate flex min-h-[381px] flex-col justify-start px-8 py-16 lg:px-[60px] lg:py-[70px]">
+        <Image
+          src={tile.image}
+          alt=""
+          aria-hidden="true"
+          class="absolute inset-0 -z-20 h-full w-full object-cover"
+          loading="lazy"
+          widths={[480, 960]}
+          sizes="(min-width: 768px) 33vw, 100vw"
+        />
+        <div
+          aria-hidden="true"
+          class:list={[
+            'absolute inset-0 -z-10 transition-opacity duration-300',
+            tile.overlay,
+            tile.overlayOpacity,
+          ]}
+        />
+
+        <h3 class="text-display leading-[35px] font-bold text-white">{tile.title}</h3>
+        <p class="mt-5 text-base leading-[26px] text-[#F0EDED]">{tile.body}</p>
+        <a
+          href={tile.href}
+          class="mt-7 inline-flex items-center gap-2 text-base font-medium text-[#F3F3F3] transition-colors hover:text-white"
+        >
+          Read More
+          <Icon name="chevron-right" size={14} />
+        </a>
+      </article>
+    ))
+  }
+</section>

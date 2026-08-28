@@ -1,0 +1,76 @@
+---
+import { Image } from 'astro:assets';
+import SectionHeading from '../ui/SectionHeading.astro';
+import Button from '../ui/Button.astro';
+import img1 from '../../assets/images/about/split-2.jpg';
+import img2 from '../../assets/images/about/split-1.jpg';
+
+// Measured from the original at 1440:
+//   section 790px tall, padding 110px / 30px
+//   two 420x420 images, the second offset +170 right and +210 down
+//   eyebrow at y=1503, h2 at y=1546 (60px/700, 70px line box)
+//   body at y=1716, 16px/400 #777 on a 26px line box, 640px wide
+//   CTA at y=2023, 202x60 — note the background is teal #0E6C90 here,
+//   not the navy used by every other button on the page.
+---
+
+<section class="overflow-hidden pt-[110px] pb-[30px]">
+  <!-- Elementor sections use their own gutters, narrower than the theme's
+       Bootstrap container: two 660px columns flush to the 1320px container
+       edge, each inset 10px. Header and footer keep .container-bs. -->
+  <div class="mx-auto w-full max-w-[1320px] px-3 lg:px-0">
+    <div class="grid items-start gap-12 lg:grid-cols-2 lg:gap-0 lg:[&>*]:pl-[10px]">
+      <!-- Overlapping image pair. On the original the two 420x420 images sit
+           at x=63 / x=233 and y=1544 / y=1754, i.e. the second offset +170
+           right and +210 down, inside a column padded 10px top and bottom. -->
+      <div class="reveal relative mx-auto w-full max-w-[590px] lg:mx-0 lg:py-[10px]">
+        <Image
+          src={img1}
+          alt="Anchor advisers discussing mortgage options with a client"
+          class="h-auto w-[71.2%] lg:w-[420px]"
+          loading="lazy"
+          widths={[420, 840]}
+          sizes="(min-width: 992px) 420px, 71vw"
+        />
+        <Image
+          src={img2}
+          alt="Client reviewing property financing paperwork with an adviser"
+          class="-mt-[36%] ml-[28.8%] h-auto w-[71.2%] lg:-mt-[210px] lg:ml-[170px] lg:w-[420px]"
+          loading="lazy"
+          widths={[420, 840]}
+          sizes="(min-width: 992px) 420px, 71vw"
+        />
+      </div>
+
+      <!-- Copy -->
+      <!-- The original's text block overflows its column upward: the copy
+           starts 31px above the section's padding box. Reproduced directly
+           rather than by imitating Elementor's flex-overflow quirk. -->
+      <div class="reveal lg:-mt-[31px]" data-reveal-delay="0.1">
+        <SectionHeading eyebrow="About Us" title="Real-World Banking Experience" />
+
+        <p class="text-body mt-[30px] max-w-[640px] text-base leading-[26px]">
+          <b class="text-ink-strong">
+            Anchor Mortgage Consultants UAE-Expert Mortgage Advisory &amp; Home Loans
+          </b><br /><br />
+          <b class="text-ink-strong">
+            Secure Your Ideal Home Loan &amp; Property Financing in Dubai, Abu Dhabi, and Across the
+            UAE
+          </b><br /><br />
+          Anchor Mortgage Consultants UAE is a <b class="text-ink-strong"
+            >leading mortgage advisory firm</b
+          > dedicated to helping residents, expatriates, and property investors navigate the UAE mortgage
+          market with confidence. Whether you are buying your first home, investing in commercial property,
+          or looking to refinance your existing mortgage, our expert consultants provide
+          <b class="text-ink-strong">tailored mortgage solutions</b> that meet your financial goals.
+        </p>
+
+        <!-- The original points this at /~anchor/about/, a leftover
+             subdirectory path that redirects (audit defect #6). -->
+        <Button href="/about/" icon="chevron-right" class="!bg-teal hover:!bg-navy mt-[47px]">
+          Discover More
+        </Button>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,43 @@
+---
+import Eyebrow from './Eyebrow.astro';
+
+/**
+ * Eyebrow + section title. Measured on the original:
+ *   eyebrow 16px/500, 21px line box
+ *   22px gap
+ *   h2 60px/700 on a 70px line box
+ */
+export interface Props {
+  eyebrow?: string;
+  title: string;
+  onDark?: boolean;
+  align?: 'left' | 'center';
+  /** Render as h1 where the section is the page's primary heading. */
+  as?: 'h1' | 'h2';
+  class?: string;
+  titleClass?: string;
+}
+
+const {
+  eyebrow,
+  title,
+  onDark = false,
+  align = 'left',
+  as: Tag = 'h2',
+  class: className = '',
+  titleClass = '',
+} = Astro.props;
+---
+
+<div class:list={[align === 'center' && 'text-center', className]}>
+  {eyebrow && <Eyebrow onDark={onDark}>{eyebrow}</Eyebrow>}
+  <Tag
+    class:list={[
+      'text-section font-bold',
+      onDark ? 'text-white' : 'text-ink',
+      eyebrow && 'mt-[22px]',
+      titleClass,
+    ]}
+    set:html={title}
+  />
+</div>

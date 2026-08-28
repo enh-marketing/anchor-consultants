@@ -565,6 +565,58 @@ Each milestone ends with a visual comparison against the WordPress original befo
 | 1 | **Asset acquisition** | All 42 assets downloaded, organised, optimised. Nothing pointing at WordPress or the theme demo server. |
 | 2 | **Global chrome** | TopBar, Header, MobileNav, Footer, disclaimer, copyright bar, WhatsApp, scroll-to-top. Correct at all 5 viewports. |
 | 3 | **Design system** | Button, Card, Container, Section, headings, Icon set as inline SVG |
+
+### Design system — Milestone 03 COMPLETE
+- [x] `Container` (Bootstrap max-widths), `Button` (primary / onDark / link),
+      `Eyebrow` (plain + pill), `SectionHeading`, `Icon` (inline SVG set)
+- [x] Eyebrow pill reproduced from the original's pseudo-elements: a 7px dot
+      and a navy panel at **15% opacity** with a 15px radius
+- [x] Corrected two type tokens against measurement: hero line box is 90px at
+      80px (1.125, was 1.06) and section line box 70px at 60px (1.1667)
+
+### Homepage part 1 — Milestone 04 COMPLETE
+- [x] Hero carousel — 3 slides, GSAP crossfade, 6s autoplay, 300ms, dots
+- [x] Service highlight row — 3 full-bleed tiles
+- [x] About split — overlapping images + copy
+
+**Measured against the original at 1440. All deltas zero unless noted:**
+
+| Element | Result |
+| --- | --- |
+| Hero section, pill, h1, paragraph, CTA, figure | exact (0 on top/left/width/height) |
+| Service tiles: top, height, padding, title line box | exact |
+| Tile title baselines (all three) | exact at y=1113 |
+| About section, both images, eyebrow, h2, paragraph | exact |
+| About CTA | 1px narrow |
+
+Findings during the build:
+
+- The hero figure is **bottom-aligned** to the section edge (797px ending on
+  the 907px boundary), not centred with the copy.
+- The service tiles carry **Elementor background overlays** that make the text
+  legible: `#1C1E22` at 0.7 on tiles 1 and 3, rising to 0.8 on hover, and
+  `#0E6C90` at 0.8 on tile 2. The middle tile reads blue because of that
+  overlay, not because the photograph is blue. Without these the white text
+  sits unreadably on light photography.
+- Elementor sections use **different gutters** from the theme's Bootstrap
+  container: two 660px columns flush to the 1320px edge, each inset 10px.
+  Header and footer keep `.container-bs`; the About section does not.
+- The About copy block deliberately **overflows its column 31px upward**.
+- Tile content **top-aligns** to its 70px padding rather than centring.
+
+**Bug found and fixed in our own code:** when a tab is hidden,
+`requestAnimationFrame` throttles and GSAP's ticker pauses. A crossfade
+interrupted that way never completed, so the `animating` guard latched on and
+left two slides half-faded permanently. In-flight timelines are now snapped to
+completion on `visibilitychange` and on leaving the viewport. Verified over 10
+samples: exactly one slide at opacity 1 at all times.
+
+**Responsive:** no horizontal overflow at 390 / 768 / 992 / 1920.
+
+**Note for milestone 12/14:** GSAP + ScrollTrigger is a 112 KB raw chunk
+(~40 KB gzipped). Worth revisiting whether ScrollTrigger is needed everywhere
+or can be loaded per-section.
+
 | 4 | **Homepage part 1** | Hero carousel, service highlight row, about split |
 | 5 | **Homepage part 2** | Services carousel, leader, appointment CTA |
 | 6 | **EMI calculator** | Full rebuild with unit tests on the maths |

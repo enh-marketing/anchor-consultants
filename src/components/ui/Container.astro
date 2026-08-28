@@ -1,0 +1,16 @@
+---
+/**
+ * Bootstrap-equivalent container. The source theme is Bootstrap 5, so
+ * reproducing its max-widths keeps every section on the original's
+ * horizontal rhythm (1320px with 12px gutters at 1440).
+ */
+export interface Props {
+  as?: 'div' | 'section' | 'header' | 'footer';
+  class?: string;
+}
+const { as: Tag = 'div', class: className = '' } = Astro.props;
+---
+
+<Tag class:list={['container-bs', className]}>
+  <slot />
+</Tag>

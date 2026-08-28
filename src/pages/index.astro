@@ -1,141 +1,20 @@
 ---
-import { getCollection } from 'astro:content';
 import PageLayout from '../layouts/PageLayout.astro';
-import { site } from '../data/site';
+import HeroCarousel from '../components/home/HeroCarousel.astro';
+import ServiceHighlightRow from '../components/home/ServiceHighlightRow.astro';
+import AboutSplit from '../components/home/AboutSplit.astro';
 
-// Proves the content collections parse and validate against their schemas.
-const faqs = (await getCollection('faqs')).sort((a, b) => a.data.order - b.data.order);
-const testimonials = (await getCollection('testimonials')).sort(
-  (a, b) => a.data.order - b.data.order,
-);
-
-// MILESTONE 00 SCAFFOLD ONLY.
-// This page exists to prove the toolchain, tokens and fonts resolve.
-// It is replaced by the real homepage at milestones 04, 05 and 07.
-
-// `cls` uses a real Tailwind utility so each token is genuinely exercised
-// by the compiler, rather than being faked with an inline hex.
-const swatches = [
-  { name: 'navy', hex: '#084876', cls: 'bg-navy', role: 'Primary — topbar, footer, buttons' },
-  { name: 'azure', hex: '#2A78C0', cls: 'bg-azure', role: 'Highlighted service tile' },
-  { name: 'ember', hex: '#E2762A', cls: 'bg-ember', role: 'Service card icons' },
-  { name: 'teal', hex: '#0E6C90', cls: 'bg-teal', role: 'Accent' },
-  { name: 'ink', hex: '#1C1E22', cls: 'bg-ink', role: 'Headings' },
-  { name: 'body', hex: '#777777', cls: 'bg-body', role: 'Body copy — 363 elements' },
-  { name: 'mist', hex: '#F7F7F7', cls: 'bg-mist', role: 'Alternating sections' },
-  { name: 'carbon', hex: '#1E1F21', cls: 'bg-carbon', role: 'Copyright bar' },
-];
-
-const scale = [
-  { token: 'text-hero', label: 'Hero H1', target: '80px' },
-  { token: 'text-section', label: 'Section H2', target: '60px' },
-  { token: 'text-display', label: 'Sub-heading', target: '30px' },
-  { token: 'text-card', label: 'Card title', target: '24px' },
-  { token: 'text-lead', label: 'Lead', target: '18px' },
-  { token: 'text-base', label: 'Body', target: '16px / 26px' },
-];
+// Homepage, built in three passes:
+//   milestone 04 — hero, service highlight row, about split   (this commit)
+//   milestone 05 — services carousel, leader, appointment CTA
+//   milestone 07 — FAQ accordion, testimonials
 ---
 
 <PageLayout
-  description="Scaffold verification page for the Anchor Consultants Astro rebuild. Confirms design tokens, typography and the build pipeline resolve correctly."
+  description="UAE mortgage and real-estate finance specialists. Anchor Consultants compares leading UAE lenders and structures the right financing for buying, refinancing, building or unlocking equity."
   path="/"
-  noindex
 >
-  <div class="container-bs py-16">
-    <p class="text-small text-navy mb-3 font-mono tracking-[0.16em] uppercase">
-      Milestone 00 · Scaffold
-    </p>
-    <h1 class="text-hero text-ink">{site.name}</h1>
-    <p class="text-lead mt-4 max-w-[60ch]">
-      Astro + Tailwind + GSAP toolchain verified. Design tokens below are read from computed styles
-      on the live WordPress site. This page is replaced by the real homepage at milestone 04.
-    </p>
-
-    <section class="mt-14">
-      <h2 class="text-display text-ink">Colour tokens</h2>
-      <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {
-          swatches.map((s) => (
-            <div class="border-line overflow-hidden rounded border">
-              <div class={`h-20 ${s.cls}`} data-token={s.name} />
-              <div class="p-3">
-                <p class="text-small text-ink font-mono">{s.name}</p>
-                <p class="text-small text-body font-mono">{s.hex}</p>
-                <p class="text-small text-body mt-1">{s.role}</p>
-              </div>
-            </div>
-          ))
-        }
-      </div>
-    </section>
-
-    <section class="mt-14">
-      <h2 class="text-display text-ink">Type scale — DM Sans</h2>
-      <div class="divide-line border-line mt-6 divide-y border-y">
-        {
-          scale.map((t) => (
-            <div class="flex flex-wrap items-baseline gap-x-6 gap-y-1 py-4">
-              <span class="text-small text-body w-40 shrink-0 font-mono">{t.token}</span>
-              <span class={`text-ink ${t.token}`} style="font-weight:700">
-                {t.label}
-              </span>
-              <span class="text-small text-body ml-auto font-mono">{t.target}</span>
-            </div>
-          ))
-        }
-      </div>
-    </section>
-
-    <section class="mt-14">
-      <h2 class="text-display text-ink">Content collections</h2>
-      <p class="mt-2 max-w-[60ch]">
-        Real content migrated from WordPress, validated against the Zod schemas that mirror the
-        planned Sanity document types.
-      </p>
-      <div class="mt-6 grid gap-6 lg:grid-cols-2">
-        <div class="border-line rounded border p-5">
-          <p class="text-small text-navy font-mono tracking-[0.12em] uppercase">
-            faqs · {faqs.length} entries
-          </p>
-          <ul class="mt-3 space-y-2">
-            {faqs.map((f) => <li class="text-small text-ink">{f.data.question}</li>)}
-          </ul>
-        </div>
-        <div class="border-line rounded border p-5">
-          <p class="text-small text-navy font-mono tracking-[0.12em] uppercase">
-            testimonials · {testimonials.length} entries
-          </p>
-          <ul class="mt-3 space-y-2">
-            {
-              testimonials.map((t) => (
-                <li class="text-small">
-                  <span class="text-ink">
-                    {t.data.name} – {t.data.location}
-                  </span>
-                </li>
-              ))
-            }
-          </ul>
-        </div>
-      </div>
-    </section>
-
-    <section class="mt-14">
-      <h2 class="text-display text-ink">Breakpoints — Bootstrap 5 aligned</h2>
-      <p class="mt-2 max-w-[60ch]">
-        Resize the window. The active breakpoint is highlighted, confirming the 992px primary switch
-        where the mobile nav will activate.
-      </p>
-      <div class="text-small mt-6 flex flex-wrap gap-2 font-mono">
-        <span class="bg-mist text-ink sm:bg-navy rounded px-3 py-2 sm:text-white">
-          base &lt; 576
-        </span>
-        <span class="bg-mist text-ink md:bg-navy rounded px-3 py-2 md:text-white">sm 576</span>
-        <span class="bg-mist text-ink lg:bg-navy rounded px-3 py-2 lg:text-white">md 768</span>
-        <span class="bg-mist text-ink xl:bg-navy rounded px-3 py-2 xl:text-white">lg 992</span>
-        <span class="bg-mist text-ink 2xl:bg-navy rounded px-3 py-2 2xl:text-white">xl 1200</span>
-        <span class="bg-mist text-ink rounded px-3 py-2">2xl 1400</span>
-      </div>
-    </section>
-  </div>
+  <HeroCarousel />
+  <ServiceHighlightRow />
+  <AboutSplit />
 </PageLayout>

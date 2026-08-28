@@ -29,3 +29,15 @@ const pathname = Astro.url.pathname;
     <ScrollToTop />
   </Fragment>
 </BaseLayout>
+
+<script>
+  import { initReveals, ensureRevealed } from '../lib/animations';
+
+  try {
+    initReveals();
+  } catch (err) {
+    // Never let an animation failure leave content invisible.
+    console.error('[reveals] falling back to static', err);
+    ensureRevealed();
+  }
+</script>

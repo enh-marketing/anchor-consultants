@@ -1,0 +1,41 @@
+---
+import Icon, { type IconName } from './Icon.astro';
+
+/**
+ * Button styles measured from the original:
+ *
+ *   primary  60px tall, #084876, white, 16px/500, padding 0 35px, radius 3px
+ *            (header CTA and hero CTA are the same button)
+ *   onDark   39px tall, white, #084876, 15px/700, padding 12px 24px, radius 5px
+ *            (the two footer buttons)
+ *   link     inline "Read More →" style used on cards
+ */
+type Variant = 'primary' | 'onDark' | 'link';
+
+interface Props {
+  href: string;
+  variant?: Variant;
+  icon?: IconName;
+  class?: string;
+  external?: boolean;
+}
+
+const { href, variant = 'primary', icon, class: className = '', external = false } = Astro.props;
+
+const base = 'inline-flex items-center transition-colors';
+const styles: Record<Variant, string> = {
+  primary:
+    'h-[60px] gap-2 rounded-[3px] bg-navy px-[35px] text-base font-medium text-white hover:bg-navy-600',
+  onDark:
+    'gap-2 rounded-[5px] bg-white px-6 py-3 text-meta leading-[15px] font-bold text-navy hover:bg-white/90',
+  link: 'gap-2 text-base font-medium text-ink hover:text-navy',
+};
+
+const rel = external ? 'noopener noreferrer' : undefined;
+const target = external ? '_blank' : undefined;
+---
+
+<a href={href} class:list={[base, styles[variant], className]} rel={rel} target={target}>
+  <slot />
+  {icon && <Icon name={icon} size={variant === 'link' ? 16 : 15} class="shrink-0" />}
+</a>

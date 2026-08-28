@@ -1,0 +1,240 @@
+---
+import { Image } from 'astro:assets';
+import Eyebrow from '../ui/Eyebrow.astro';
+import Button from '../ui/Button.astro';
+import backdrop from '../../assets/images/hero/backdrop.jpg';
+import slide1 from '../../assets/images/hero/slide-1.png';
+import slide2 from '../../assets/images/hero/slide-2.png';
+import slide3 from '../../assets/images/hero/slide-3.png';
+
+// Measured from the original at 1440 (client width 1425):
+//   section 907px tall
+//   content column 740px wide starting at x=65 (container content edge)
+//   eyebrow pill top 381, h1 top 437 (80px/700, 90px line box, 20px margin)
+//   paragraph top 637 (18px/400 #777, 28px line box, 45px margin)
+//   CTA top 738, 258x60
+//   figure 492x797 at x=869, top 246
+//   backdrop banner-bg.jpg, cover, centred
+//   Swiper: fade, 6s autoplay, loop, 300ms
+
+const slides = [
+  {
+    eyebrow: 'UAE Mortgage & Real-Estate Finance Specialists',
+    title: 'Unlocking Your Financing Potential',
+    body: 'We help you compare leading UAE lenders and structure the right financing whether you’re buying, refinancing, building, or unlocking equity.',
+    image: slide1,
+    alt: 'Mortgage consultant ready to advise on UAE property finance',
+  },
+  {
+    eyebrow: 'Expert Financial Strategy',
+    title: 'Unlocking Your Future Wealth',
+    body: 'We help clients from around the world find and use the best tools and opportunities to grow their portfolio.',
+    image: slide2,
+    alt: 'Financial strategist advising on portfolio growth',
+  },
+  {
+    eyebrow: 'Strategic UAE Development',
+    title: 'Fueling Your Growth Potential',
+    body: 'We help clients from around the world find and use the best tools and opportunities to fund their UAE projects.',
+    image: slide3,
+    alt: 'Adviser supporting UAE development project funding',
+  },
+];
+---
+
+<section
+  class="hero relative overflow-hidden"
+  aria-roledescription="carousel"
+  aria-label="Anchor Consultants highlights"
+>
+  <!-- Backdrop -->
+  <Image
+    src={backdrop}
+    alt=""
+    aria-hidden="true"
+    class="absolute inset-0 h-full w-full object-cover"
+    loading="eager"
+    widths={[768, 1280, 1920]}
+    sizes="100vw"
+  />
+
+  <!-- Slides are stacked, not laid out in flow, so a crossfade never
+       reflows the page. Slide 1 keeps `relative` to give the section its
+       natural height at small sizes; the rest overlay it. -->
+  <div class="hero-track relative">
+    {
+      slides.map((slide, i) => (
+        <div
+          class:list={['hero-slide', i === 0 ? 'relative' : 'absolute inset-0']}
+          data-index={i}
+          role="group"
+          aria-roledescription="slide"
+          aria-label={`${i + 1} of ${slides.length}`}
+          aria-hidden={i === 0 ? undefined : 'true'}
+          style={i === 0 ? undefined : 'opacity:0;pointer-events:none;'}
+        >
+          <div class="container-bs h-full">
+            <div class="grid h-full items-center gap-8 lg:grid-cols-12">
+              <div class="lg:col-span-7">
+                <div class="max-w-[740px] py-16 lg:py-0">
+                  <Eyebrow pill>{slide.eyebrow}</Eyebrow>
+                  <h1 class="text-hero text-ink mt-[22px] mb-5 font-bold">{slide.title}</h1>
+                  <p class="text-lead text-body mb-[45px] max-w-[640px] leading-7">{slide.body}</p>
+                  <Button href="/contact/">Book a Free Consultation</Button>
+                </div>
+              </div>
+
+              <!-- The figure sits flush with the bottom of the section on the
+                   original (797px tall ending exactly on the 907px edge), so
+                   it must bottom-align rather than centre with the copy. -->
+              <div class="hidden h-full items-end justify-end lg:col-span-5 lg:flex">
+                <Image
+                  src={slide.image}
+                  alt={slide.alt}
+                  class="block h-auto w-[492px] max-w-full"
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                  widths={[492, 984]}
+                  sizes="492px"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      ))
+    }
+  </div>
+
+  <!-- Controls. The original has none on desktop; these are keyboard- and
+       screen-reader-reachable without changing the visual design. -->
+  <div class="absolute inset-x-0 bottom-6 z-10 flex justify-center gap-2 lg:bottom-8">
+    {
+      slides.map((_, i) => (
+        <button
+          type="button"
+          class="hero-dot h-2 w-2 rounded-full bg-navy/25 transition-[background-color,width] data-[active]:w-6 data-[active]:bg-navy"
+          data-dot={i}
+          aria-label={`Show slide ${i + 1}`}
+        />
+      ))
+    }
+  </div>
+</section>
+
+<style>
+  /* 907px is the original's hero height at 1440. Below lg the section
+     grows with its content, as the original does. */
+  @media (min-width: 992px) {
+    .hero-track {
+      min-height: 907px;
+    }
+    .hero-slide {
+      min-height: 907px;
+    }
+  }
+</style>
+
+<script>
+  import { gsap, prefersReducedMotion } from '../../lib/animations';
+
+  const root = document.querySelector<HTMLElement>('.hero');
+  if (root) {
+    const slides = [...root.querySelectorAll<HTMLElement>('.hero-slide')];
+    const dots = [...root.querySelectorAll<HTMLButtonElement>('.hero-dot')];
+    const AUTOPLAY = 6000; // matches the original Swiper config
+    const FADE = 0.3; // 300ms
+
+    let current = 0;
+    let timer: number | undefined;
+    let animating = false;
+    let tl: gsap.core.Timeline | undefined;
+
+    const setDots = (i: number) =>
+      dots.forEach((d, n) => (n === i ? d.setAttribute('data-active', '') : d.removeAttribute('data-active')));
+
+    const show = (next: number) => {
+      if (animating || next === current) return;
+      const from = slides[current];
+      const to = slides[next];
+      if (!from || !to) return;
+
+      animating = true;
+      to.removeAttribute('aria-hidden');
+      to.style.pointerEvents = '';
+
+      const finish = () => {
+        from.setAttribute('aria-hidden', 'true');
+        from.style.pointerEvents = 'none';
+        current = next;
+        setDots(next);
+        animating = false;
+      };
+
+      if (prefersReducedMotion()) {
+        gsap.set(from, { opacity: 0 });
+        gsap.set(to, { opacity: 1 });
+        finish();
+        return;
+      }
+
+      tl = gsap
+        .timeline({ onComplete: finish })
+        .to(from, { opacity: 0, duration: FADE, ease: 'none' }, 0)
+        .to(to, { opacity: 1, duration: FADE, ease: 'none' }, 0);
+    };
+
+    /**
+     * requestAnimationFrame is throttled while the tab is hidden, which pauses
+     * GSAP's ticker. Without this, a tween interrupted that way never
+     * completes and the `animating` guard latches on, leaving two slides
+     * half-faded and the carousel dead. Snap any in-flight tween to its end.
+     */
+    const settle = () => {
+      if (tl && tl.isActive()) tl.progress(1);
+    };
+
+    const advance = () => show((current + 1) % slides.length);
+    const start = () => {
+      stop();
+      if (!prefersReducedMotion() && slides.length > 1) timer = window.setInterval(advance, AUTOPLAY);
+    };
+    const stop = () => {
+      if (timer) window.clearInterval(timer);
+      timer = undefined;
+    };
+
+    dots.forEach((dot, i) =>
+      dot.addEventListener('click', () => {
+        show(i);
+        start();
+      }),
+    );
+
+    // Pause while hovered, focused, or off-screen.
+    root.addEventListener('mouseenter', stop);
+    root.addEventListener('mouseleave', start);
+    root.addEventListener('focusin', stop);
+    root.addEventListener('focusout', start);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        settle();
+        stop();
+      } else {
+        settle();
+        start();
+      }
+    });
+    new IntersectionObserver(
+      ([entry]) => {
+        if (entry && entry.isIntersecting) start();
+        else {
+          settle();
+          stop();
+        }
+      },
+      { threshold: 0.15 },
+    ).observe(root);
+
+    setDots(0);
+    start();
+  }
+</script>
