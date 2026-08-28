@@ -32,7 +32,9 @@ const json = (body: Result, status = 200) =>
   });
 
 /** Returns null when reCAPTCHA is not configured, so the flow still works. */
-async function verifyRecaptcha(token: string | undefined): Promise<{ ok: boolean; reason?: string } | null> {
+async function verifyRecaptcha(
+  token: string | undefined,
+): Promise<{ ok: boolean; reason?: string } | null> {
   const secret = env('RECAPTCHA_SECRET_KEY');
   if (!secret) return null;
   if (!token) return { ok: false, reason: 'Missing reCAPTCHA token.' };
@@ -77,7 +79,10 @@ export const POST: APIRoute = async ({ request }) => {
   if (kind === 'cv') {
     const entry = form.get('cv');
     cv = entry instanceof File ? entry : null;
-    errors = { ...errors, ...validateCv(cv ? { name: cv.name, size: cv.size, type: cv.type } : null) };
+    errors = {
+      ...errors,
+      ...validateCv(cv ? { name: cv.name, size: cv.size, type: cv.type } : null),
+    };
     // A CV submission still needs a way to reply.
     const contactErrors = validateContact({ ...payload, message: '' });
     if (contactErrors.email) errors.email = contactErrors.email;
@@ -94,7 +99,10 @@ export const POST: APIRoute = async ({ request }) => {
 
   const captcha = await verifyRecaptcha(String(form.get('token') ?? '') || undefined);
   if (captcha && !captcha.ok) {
-    return json({ ok: false, delivered: false, reason: captcha.reason ?? 'Verification failed.' }, 403);
+    return json(
+      { ok: false, delivered: false, reason: captcha.reason ?? 'Verification failed.' },
+      403,
+    );
   }
 
   const smtpConfigured = Boolean(env('SMTP_HOST') && env('SMTP_USER') && env('SMTP_PASSWORD'));

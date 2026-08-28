@@ -25,9 +25,24 @@ const mapSrc = `https://maps.google.com/maps?q=${encodeURIComponent(
 )}&t=m&z=14&output=embed`;
 
 const rows = [
-  { icon: 'map-pin' as const, text: site.contact.address.single, href: site.contact.address.mapsUrl, external: true },
-  { icon: 'envelope' as const, text: site.contact.email.address, href: site.contact.email.href, external: false },
-  { icon: 'phone' as const, text: site.contact.phone.display, href: site.contact.phone.href, external: false },
+  {
+    icon: 'map-pin' as const,
+    text: site.contact.address.single,
+    href: site.contact.address.mapsUrl,
+    external: true,
+  },
+  {
+    icon: 'envelope' as const,
+    text: site.contact.email.address,
+    href: site.contact.email.href,
+    external: false,
+  },
+  {
+    icon: 'phone' as const,
+    text: site.contact.phone.display,
+    href: site.contact.phone.href,
+    external: false,
+  },
 ];
 
 const contactSchema = {

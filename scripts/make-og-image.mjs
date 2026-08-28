@@ -3,7 +3,9 @@ import sharp from 'sharp';
 // 1200x630 Open Graph card: trimmed wordmark centred on the brand navy.
 // Replaces the WordPress build's approach of using the raw logo file as
 // og:image on every page, which renders letterboxed in most share previews.
-const W = 1200, H = 630, NAVY = '#084876';
+const W = 1200,
+  H = 630,
+  NAVY = '#084876';
 
 const logo = await sharp('src/assets/images/brand/logo-anchor.png')
   .resize({ width: 760, fit: 'inside', withoutEnlargement: true })

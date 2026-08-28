@@ -52,7 +52,8 @@ export function validateContact(input: Partial<ContactSubmission>): Errors {
   if (!phone) errors.phone = 'Please enter a phone number we can reach you on.';
   else if (!PHONE.test(phone)) errors.phone = 'That phone number does not look right.';
 
-  if ((input.message ?? '').length > 5000) errors.message = 'Please keep your message under 5000 characters.';
+  if ((input.message ?? '').length > 5000)
+    errors.message = 'Please keep your message under 5000 characters.';
 
   return errors;
 }
@@ -63,7 +64,8 @@ export function validateCv(file: { name: string; size: number; type: string } | 
   const okExt = (CV_ACCEPT as readonly string[]).includes(ext);
   const okMime = !file.type || (CV_MIME as readonly string[]).includes(file.type);
   if (!okExt || !okMime) return { file: 'Please upload a PDF or Word document.' };
-  if (file.size > CV_MAX_BYTES) return { file: 'That file is over 5 MB. Please upload a smaller one.' };
+  if (file.size > CV_MAX_BYTES)
+    return { file: 'That file is over 5 MB. Please upload a smaller one.' };
   return {};
 }
 

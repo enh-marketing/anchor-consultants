@@ -19,21 +19,44 @@ import Dialog from './Dialog.astro';
 
     <div class="grid gap-4">
       <div>
-        <label for="cv-name" class="text-ink mb-1.5 block text-small font-medium">Full name</label>
-        <input id="cv-name" name="name" type="text" autocomplete="name" required aria-describedby="cv-name-err" />
+        <label for="cv-name" class="text-ink text-small mb-1.5 block font-medium">Full name</label>
+        <input
+          id="cv-name"
+          name="name"
+          type="text"
+          autocomplete="name"
+          required
+          aria-describedby="cv-name-err"
+        />
         <p class="err" id="cv-name-err"></p>
       </div>
 
       <div>
-        <label for="cv-email" class="text-ink mb-1.5 block text-small font-medium">Email address</label>
-        <input id="cv-email" name="email" type="email" autocomplete="email" required aria-describedby="cv-email-err" />
+        <label for="cv-email" class="text-ink text-small mb-1.5 block font-medium"
+          >Email address</label
+        >
+        <input
+          id="cv-email"
+          name="email"
+          type="email"
+          autocomplete="email"
+          required
+          aria-describedby="cv-email-err"
+        />
         <p class="err" id="cv-email-err"></p>
       </div>
 
       <div>
-        <label for="cv-file" class="text-ink mb-1.5 block text-small font-medium">Your CV</label>
-        <input id="cv-file" name="cv" type="file" accept=".pdf,.doc,.docx" required aria-describedby="cv-file-err cv-file-hint" />
-        <p id="cv-file-hint" class="text-body mt-1.5 text-small">PDF, DOC or DOCX. Maximum 5 MB.</p>
+        <label for="cv-file" class="text-ink text-small mb-1.5 block font-medium">Your CV</label>
+        <input
+          id="cv-file"
+          name="cv"
+          type="file"
+          accept=".pdf,.doc,.docx"
+          required
+          aria-describedby="cv-file-err cv-file-hint"
+        />
+        <p id="cv-file-hint" class="text-body text-small mt-1.5">PDF, DOC or DOCX. Maximum 5 MB.</p>
         <p class="err" id="cv-file-err"></p>
       </div>
 
