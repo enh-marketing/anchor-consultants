@@ -1,0 +1,201 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { Image } from 'astro:assets';
+import { getCollection, render } from 'astro:content';
+import PageLayout from '../../layouts/PageLayout.astro';
+import PageBanner from '../../components/shared/PageBanner.astro';
+import BlogSidebar from '../../components/blog/BlogSidebar.astro';
+import Icon from '../../components/ui/Icon.astro';
+import { breadcrumbSchema } from '../../lib/seo';
+import { SITE_URL } from '../../data/site-url.mjs';
+import banner from '../../assets/images/banners/generic-2.jpg';
+
+/**
+ * Post template.
+ *
+ * Measured from the original `/dummy-blog/` at 1440:
+ *   `.blog__details-left` 856 wide at x=72, 40px padding,
+ *     `0 0 70px rgba(0,0,0,0.08)` shadow
+ *   featured image 750x500, 30px below it
+ *   meta row 30px above / 25px below, 30px bottom padding,
+ *     1px #EDEDED rule underneath
+ *   body 16px/26px #777
+ *
+ * The original follows the body with a WordPress comment form. It is not
+ * carried over: a static build has nowhere to store comments, the site has
+ * none, and a form that silently discards input would be worse than no form.
+ * Flagged as Q14 in MIGRATION.md rather than decided unilaterally.
+ */
+export const getStaticPaths = (async () => {
+  const posts = await getCollection('posts', ({ data }) => !data.draft);
+  return posts.map((post) => ({ params: { slug: post.id }, props: { post } }));
+}) satisfies GetStaticPaths;
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+const { title, excerpt, coverImage, coverImageAlt, author, publishedAt, updatedAt, seo } =
+  post.data;
+
+const dateFmt = new Intl.DateTimeFormat('en-GB', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+
+const url = new URL(`/blog/${post.id}/`, SITE_URL).href;
+const articleSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: title,
+  datePublished: publishedAt.toISOString(),
+  ...(updatedAt ? { dateModified: updatedAt.toISOString() } : {}),
+  author: { '@type': 'Organization', name: author },
+  publisher: { '@id': `${SITE_URL}/#organization` },
+  mainEntityOfPage: url,
+  url,
+};
+---
+
+<PageLayout
+  title={title}
+  description={seo?.metaDescription ?? excerpt}
+  path={`/blog/${post.id}/`}
+  schemas={[
+    breadcrumbSchema([
+      { name: 'Blog', path: '/blog/' },
+      { name: title, path: `/blog/${post.id}/` },
+    ]),
+    articleSchema,
+  ]}
+>
+  <PageBanner title={title} crumb={title} image={banner} />
+
+  <section class="py-[120px]">
+    <!-- Bootstrap col-8 / col-4, as on the index. -->
+    <div class="container-bs">
+      <div class="-mx-3 grid gap-y-[30px] lg:grid-cols-[66.667%_33.333%]">
+        <div class="min-w-0 px-3">
+          <article class="post-body">
+            {
+              coverImage && (
+                <Image
+                  src={coverImage}
+                  alt={coverImageAlt ?? ''}
+                  widths={[375, 750, 1500]}
+                  sizes="(min-width: 1200px) 750px, 100vw"
+                  class="mb-[30px] h-auto w-full max-w-[750px]"
+                  loading="eager"
+                />
+              )
+            }
+
+            <p
+              class="text-body border-line mt-[30px] mb-[25px] flex flex-wrap items-center gap-x-[34px] gap-y-1 border-b pb-[30px] text-base leading-[26px]"
+            >
+              <span class="flex items-center gap-2">
+                <Icon name="user" size={16} class="shrink-0" />
+                {author}
+              </span>
+              <span class="flex items-center gap-2">
+                <Icon name="calendar" size={16} class="shrink-0" />
+                <time datetime={publishedAt.toISOString()}>{dateFmt.format(publishedAt)}</time>
+              </span>
+            </p>
+
+            <div class="prose-body">
+              <Content />
+            </div>
+
+            <p class="mt-[40px]">
+              <a
+                href="/blog/"
+                class="text-navy inline-flex items-center gap-2 text-base font-medium hover:underline"
+              >
+                <Icon name="chevron-right" size={14} class="rotate-180" />
+                Back to all posts
+              </a>
+            </p>
+          </article>
+        </div>
+
+        <div class="min-w-0 px-3">
+          <BlogSidebar />
+        </div>
+      </div>
+    </div>
+  </section>
+</PageLayout>
+
+<style>
+  .post-body {
+    padding: 40px;
+    background: #fff;
+    box-shadow: 0 0 70px rgb(0 0 0 / 0.08);
+  }
+  @media (max-width: 767px) {
+    .post-body {
+      padding: 30px 25px;
+    }
+  }
+
+  /* Body copy from markdown. The original renders 16px/26px #777. */
+  .prose-body {
+    font-size: 16px;
+    line-height: 26px;
+    color: #777;
+    overflow-wrap: anywhere;
+  }
+  .prose-body :global(p) {
+    margin-bottom: 26px;
+  }
+  .prose-body :global(p:last-child) {
+    margin-bottom: 0;
+  }
+  .prose-body :global(h2),
+  .prose-body :global(h3),
+  .prose-body :global(h4) {
+    color: #1c1e22;
+    font-weight: 700;
+    margin: 34px 0 14px;
+  }
+  .prose-body :global(h2) {
+    font-size: 26px;
+    line-height: 36px;
+  }
+  .prose-body :global(h3) {
+    font-size: 22px;
+    line-height: 32px;
+  }
+  .prose-body :global(h4) {
+    font-size: 18px;
+    line-height: 28px;
+  }
+  .prose-body :global(ul),
+  .prose-body :global(ol) {
+    margin: 0 0 26px 20px;
+  }
+  .prose-body :global(ul) {
+    list-style: disc;
+  }
+  .prose-body :global(ol) {
+    list-style: decimal;
+  }
+  .prose-body :global(li) {
+    margin-bottom: 8px;
+  }
+  .prose-body :global(a) {
+    color: #084876;
+    text-decoration: underline;
+  }
+  .prose-body :global(blockquote) {
+    border-left: 3px solid #084876;
+    padding-left: 20px;
+    margin: 0 0 26px;
+    font-style: italic;
+  }
+  .prose-body :global(img) {
+    max-width: 100%;
+    height: auto;
+  }
+</style>

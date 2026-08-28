@@ -1,0 +1,86 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+import PageBanner from '../components/shared/PageBanner.astro';
+import { site } from '../data/site';
+import { breadcrumbSchema } from '../lib/seo';
+import banner from '../assets/images/banners/generic-3.jpg';
+
+/**
+ * Privacy policy.
+ *
+ * Closes audit defect #7: the footer linked "Privacy Policy" to `#` on every
+ * page, and the only privacy content on WordPress sat unlinked at
+ * `/privacy-policy-2/`.
+ *
+ * That WordPress page is **not** carried over. It is the unedited default
+ * WordPress boilerplate: every section still opens "Suggested text:", it
+ * names the theme author's demo domain (finaxio.themeori.com) as the site
+ * owner, and it describes comments, Gravatar, login pages and media uploads,
+ * none of which exist here. Publishing it for a UAE financial-services firm
+ * would be inaccurate and a real compliance risk.
+ *
+ * Writing a replacement is not something to invent either: a privacy policy
+ * is a legal document that has to describe what this business actually does
+ * with personal data. So this page is an honest holding notice with a real
+ * route for privacy enquiries, and it stays `noindex` until the client
+ * supplies the approved text. See MIGRATION.md Q15.
+ */
+const sections = [
+  'Who we are, and how to contact us about privacy',
+  'What personal data we collect, and why',
+  'The lawful basis for processing, and how long data is kept',
+  'Who data is shared with, including lenders and service providers',
+  'Cookies and analytics',
+  'Your rights, and how to exercise them',
+  'How to make a complaint',
+];
+---
+
+<PageLayout
+  title="Privacy Policy"
+  description="How Anchor Consultants handles personal data. Our full privacy policy is being finalised; contact us in the meantime with any privacy enquiry."
+  path="/privacy-policy/"
+  noindex
+  schemas={[breadcrumbSchema([{ name: 'Privacy Policy', path: '/privacy-policy/' }])]}
+>
+  <PageBanner title="Privacy Policy" crumb="Privacy Policy" image={banner} />
+
+  <section class="py-[120px]">
+    <div class="mx-auto w-full max-w-[860px] px-3">
+      <div class="border-navy bg-mist border-l-4 p-6">
+        <h2 class="text-ink text-[22px] leading-[32px] font-bold">
+          This policy is being finalised
+        </h2>
+        <p class="text-body mt-3 text-base leading-[26px]">
+          We are preparing our full privacy policy. Until it is published, we are happy to answer
+          any question about how we handle your personal data. Contact us and we will respond
+          directly.
+        </p>
+      </div>
+
+      <h2 class="text-ink mt-[50px] text-[26px] leading-[36px] font-bold">
+        What the policy will cover
+      </h2>
+      <ul class="text-body mt-5 list-disc space-y-2 pl-5 text-base leading-[26px]">
+        {sections.map((item) => <li>{item}</li>)}
+      </ul>
+
+      <h2 class="text-ink mt-[50px] text-[26px] leading-[36px] font-bold">Privacy enquiries</h2>
+      <p class="text-body mt-4 text-base leading-[26px]">
+        Write to us at{' '}
+        <a href={site.contact.email.href} class="text-navy underline"
+          >{site.contact.email.address}</a
+        >{' '}
+        or call{' '}
+        <a href={site.contact.phone.href} class="text-navy underline"
+          >{site.contact.phone.display}</a
+        >. Our office is at {site.contact.address.single}.
+      </p>
+
+      <p class="text-body mt-[50px] text-base leading-[26px]">
+        <a href="/contact/" class="text-navy underline">Get in touch</a> with any question about your
+        data.
+      </p>
+    </div>
+  </section>
+</PageLayout>

@@ -34,7 +34,11 @@ export default defineConfig({
 
   integrations: [
     sitemap({
-      filter: (page) => !page.includes('/api/'),
+      // /privacy-policy/ is noindex while it is a holding page (see the
+      // page comment and MIGRATION.md Q15). Listing a noindex URL in the
+      // sitemap contradicts the robots tag, so it is excluded until the
+      // client supplies the approved text.
+      filter: (page) => !page.includes('/api/') && !page.includes('/privacy-policy/'),
     }),
   ],
 

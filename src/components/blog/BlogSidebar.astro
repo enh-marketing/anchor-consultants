@@ -1,0 +1,216 @@
+---
+import { Image } from 'astro:assets';
+import { getCollection } from 'astro:content';
+import Icon from '../ui/Icon.astro';
+
+/**
+ * Blog sidebar.
+ *
+ * Measured from the original: cards 416px wide, white, 40px padding,
+ * `0 0 70px rgba(0,0,0,0.08)` shadow, no radius, stacked on a 30px gap.
+ * Headings 24px/700/34px #1C1E22; list links 16px/400/26px #777.
+ *
+ * Audit defect #9: the original renders seven widgets, of which three are
+ * duplicates — Recent Posts twice (`block-3` and `csf_recent_post_widget-1`)
+ * and Archives twice (`block-5`, `block-7`). This is the deduplicated set.
+ *
+ * Two widgets are deliberately not carried over:
+ *   - "Recent Comments", which renders "No comments to show." There is no
+ *     comment system on a static build, so the widget could only ever be
+ *     empty. See MIGRATION.md Q14.
+ *   - The second search form.
+ *
+ * Of the two Recent Posts widgets the richer one is kept: thumbnail,
+ * title and date, rather than a bare list of links.
+ *
+ * Category and archive links point at `/blog/?category=` and `/blog/?month=`,
+ * which the index filters client-side. The original pointed at WordPress
+ * taxonomy and date-archive routes that a static build does not have; linking
+ * to them would have reintroduced the dead-link class of defect this
+ * rebuild has been closing.
+ */
+interface Props {
+  /** Marks which filter is active, when rendered on a filtered index. */
+  class?: string;
+}
+const { class: className = '' } = Astro.props;
+
+const posts = (await getCollection('posts', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime(),
+);
+
+const recent = posts.slice(0, 5);
+
+const dateFmt = new Intl.DateTimeFormat('en-GB', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+const monthFmt = new Intl.DateTimeFormat('en-GB', {
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+
+// Archives, newest month first.
+const months = new Map<string, { label: string; count: number }>();
+for (const post of posts) {
+  const d = post.data.publishedAt;
+  const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+  const entry = months.get(key);
+  if (entry) entry.count += 1;
+  else months.set(key, { label: monthFmt.format(d), count: 1 });
+}
+
+// Categories, alphabetical.
+const categories = new Map<string, { label: string; count: number }>();
+for (const post of posts) {
+  const label = post.data.category;
+  const key = label.toLowerCase().replace(/\s+/g, '-');
+  const entry = categories.get(key);
+  if (entry) entry.count += 1;
+  else categories.set(key, { label, count: 1 });
+}
+const sortedCategories = [...categories].sort((a, b) => a[1].label.localeCompare(b[1].label));
+---
+
+<aside class:list={['flex flex-col gap-[30px]', className]} aria-label="Blog sidebar">
+  <!-- Search. Submits to /blog/, which filters on load, so it works from a
+       post page too and degrades to a plain navigation without JS. -->
+  <section class="widget">
+    <h2 class="sr-only">Search the blog</h2>
+    <form action="/blog/" method="get" role="search" class="relative">
+      <label for="blog-search" class="sr-only">Search posts</label>
+      <input
+        id="blog-search"
+        type="search"
+        name="q"
+        placeholder="Search"
+        class="text-body border-line focus-visible:border-navy h-[60px] w-full border bg-white pr-[52px] pl-5 text-base outline-none"
+      />
+      <button
+        type="submit"
+        class="text-navy absolute top-0 right-0 inline-flex h-[60px] w-[52px] items-center justify-center"
+      >
+        <span class="sr-only">Search</span>
+        <Icon name="search" size={20} />
+      </button>
+    </form>
+  </section>
+
+  <!-- Recent posts -->
+  {
+    recent.length > 0 && (
+      <section class="widget">
+        <h2 class="widget-title">Recent Posts</h2>
+        <ul class="mt-[30px] flex flex-col gap-[22px]">
+          {recent.map((post) => (
+            <li class="flex items-start gap-[18px]">
+              {post.data.coverImage && (
+                <a href={`/blog/${post.id}/`} class="shrink-0" tabindex="-1" aria-hidden="true">
+                  <Image
+                    src={post.data.coverImage}
+                    alt=""
+                    aria-hidden="true"
+                    width={160}
+                    densities={[1, 2]}
+                    class="h-[70px] w-[80px] object-cover"
+                    loading="lazy"
+                  />
+                </a>
+              )}
+              <div class="min-w-0">
+                <h3 class="text-base leading-[26px] font-bold [overflow-wrap:anywhere]">
+                  <a href={`/blog/${post.id}/`} class="text-ink hover:text-navy transition-colors">
+                    {post.data.title}
+                  </a>
+                </h3>
+                <p class="text-body text-small mt-1 flex items-center gap-2 leading-[22px]">
+                  <Icon name="calendar" size={14} class="shrink-0" />
+                  <time datetime={post.data.publishedAt.toISOString()}>
+                    {dateFmt.format(post.data.publishedAt)}
+                  </time>
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
+  <!-- Archives -->
+  {
+    months.size > 0 && (
+      <section class="widget">
+        <h2 class="widget-title">Archives</h2>
+        <ul class="mt-[30px] flex flex-col gap-[15px]">
+          {[...months].map(([key, { label, count }]) => (
+            <li>
+              <a href={`/blog/?month=${key}`} class="widget-link">
+                <span>{label}</span>
+                <span class="text-body/70">({count})</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
+  <!-- Categories -->
+  {
+    sortedCategories.length > 0 && (
+      <section class="widget">
+        <h2 class="widget-title">Categories</h2>
+        <ul class="mt-[30px] flex flex-col gap-[15px]">
+          {sortedCategories.map(([key, { label, count }]) => (
+            <li>
+              <a href={`/blog/?category=${key}`} class="widget-link">
+                <Icon name="folder" size={16} class="shrink-0" />
+                <span>{label}</span>
+                <span class="text-body/70">({count})</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+</aside>
+
+<style>
+  /* Measured: white, 40px padding, 0 0 70px rgba(0,0,0,.08), square. */
+  .widget {
+    background: #fff;
+    padding: 40px;
+    box-shadow: 0 0 70px rgb(0 0 0 / 0.08);
+  }
+  .widget-title {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 34px;
+    color: #1c1e22;
+  }
+  .widget-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    line-height: 26px;
+    color: #777;
+    transition: color 0.2s;
+  }
+  .widget-link:hover {
+    color: #084876;
+  }
+
+  /* Measured on the original: widgets drop to 35px 25px below the
+     two-column breakpoint, while the post cards keep 40px until 768. */
+  @media (max-width: 991px) {
+    .widget {
+      padding: 35px 25px;
+    }
+  }
+</style>

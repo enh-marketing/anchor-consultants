@@ -1,0 +1,90 @@
+---
+import { Image } from 'astro:assets';
+import type { CollectionEntry } from 'astro:content';
+import Icon from '../ui/Icon.astro';
+
+/**
+ * Blog index item.
+ *
+ * Measured from the original at 1440:
+ *   item 856 wide; featured image 750x500 sitting above the content block
+ *   content block 40px padding, `0 0 70px rgba(0,0,0,0.08)` shadow
+ *   meta 16px/26px #777, author then date, 34px apart
+ *   title 26px/700/36px #1C1E22, 15px below the meta
+ *   excerpt 16px/26px #777, 10px below the title
+ *   items 40px apart
+ *
+ * The original links the author to a WordPress author archive. There is one
+ * author and no such route here, so the name is plain text rather than a
+ * link that would 404.
+ */
+interface Props {
+  post: CollectionEntry<'posts'>;
+}
+const { post } = Astro.props;
+const { title, excerpt, coverImage, author, publishedAt, category } = post.data;
+
+const href = `/blog/${post.id}/`;
+const dateFmt = new Intl.DateTimeFormat('en-GB', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+---
+
+<article
+  class="reveal"
+  data-post
+  data-category={category.toLowerCase().replace(/\s+/g, '-')}
+  data-month={`${publishedAt.getUTCFullYear()}-${String(publishedAt.getUTCMonth() + 1).padStart(2, '0')}`}
+  data-search={`${title} ${excerpt} ${category}`.toLowerCase()}
+>
+  {
+    coverImage && (
+      <a href={href} tabindex="-1" aria-hidden="true" class="block">
+        <Image
+          src={coverImage}
+          alt=""
+          aria-hidden="true"
+          widths={[375, 750, 1500]}
+          sizes="(min-width: 1200px) 750px, 100vw"
+          class="h-auto w-full max-w-[750px]"
+          loading="lazy"
+        />
+      </a>
+    )
+  }
+
+  <div class="card-body">
+    <p class="text-body flex flex-wrap items-center gap-x-[34px] gap-y-1 text-base leading-[26px]">
+      <span class="flex items-center gap-2">
+        <Icon name="user" size={16} class="shrink-0" />
+        {author}
+      </span>
+      <span class="flex items-center gap-2">
+        <Icon name="calendar" size={16} class="shrink-0" />
+        <time datetime={publishedAt.toISOString()}>{dateFmt.format(publishedAt)}</time>
+      </span>
+    </p>
+
+    <h2 class="mt-[15px] text-[26px] leading-[36px] font-bold [overflow-wrap:anywhere]">
+      <a href={href} class="text-ink hover:text-navy transition-colors">{title}</a>
+    </h2>
+
+    <p class="text-body mt-[10px] text-base leading-[26px] [overflow-wrap:anywhere]">{excerpt}</p>
+  </div>
+</article>
+
+<style>
+  .card-body {
+    padding: 40px;
+    box-shadow: 0 0 70px rgb(0 0 0 / 0.08);
+    background: #fff;
+  }
+  @media (max-width: 767px) {
+    .card-body {
+      padding: 30px 25px;
+    }
+  }
+</style>
