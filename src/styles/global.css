@@ -1,0 +1,212 @@
+@import 'tailwindcss';
+
+/* DM Sans is the only family the WordPress site actually applies.
+   Roboto and Roboto Slab are registered by Elementor there but never used
+   on a single element, so they are deliberately not loaded here. */
+@import '@fontsource-variable/dm-sans';
+@import '@fontsource-variable/dm-sans/wght-italic.css';
+
+/* ────────────────────────────────────────────────────────────────
+   Design tokens
+   Every value below was read from computed styles on the live
+   WordPress site, not inferred from its stylesheet.
+   ──────────────────────────────────────────────────────────────── */
+@theme {
+  /* Breakpoints match Bootstrap 5, which the Finaxio theme is built on.
+     Keeping them identical means responsive behaviour ports across
+     without translation. 992px is the primary switch: the mobile nav
+     activates there (15 rules in the source theme). */
+  --breakpoint-sm: 576px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 992px;
+  --breakpoint-xl: 1200px;
+  --breakpoint-2xl: 1400px;
+
+  /* Brand */
+  --color-navy: #084876; /* primary: topbar, footer, buttons */
+  --color-navy-600: #0a5488;
+  --color-navy-800: #063455;
+  --color-azure: #2a78c0; /* highlighted service tile */
+  --color-teal: #0e6c90;
+  --color-sky: #1595ce;
+
+  /* Service card icons sample amber/orange on the live site */
+  --color-ember: #e2762a;
+  --color-ember-soft: #f0a35c;
+
+  /* Ink and surfaces */
+  --color-ink: #1c1e22; /* headings */
+  --color-ink-strong: #333333;
+  --color-body: #777777; /* default body copy — 363 elements */
+  --color-mist: #f7f7f7; /* alternating section background */
+  --color-carbon: #1e1f21; /* copyright bar */
+  --color-line: #e6e6e6;
+  --color-line-strong: #d6d6d6;
+  --color-line-muted: #cccccc;
+  --color-danger: #ec1113;
+
+  /* Type */
+  --font-sans: 'DM Sans Variable', 'DM Sans', system-ui, -apple-system,
+    'Segoe UI', sans-serif;
+
+  /* Scale observed on the live site. Hero and section headings are fluid
+     so the theme's dozen ad-hoc patch breakpoints (440/430/396/390/385/359)
+     are unnecessary — see audit section F.4. */
+  --text-hero: clamp(2.25rem, 1.05rem + 5.35vw, 5rem); /* → 80px */
+  --text-hero--line-height: 1.06;
+  --text-section: clamp(1.875rem, 1.05rem + 3.6vw, 3.75rem); /* → 60px */
+  --text-section--line-height: 1.1;
+  --text-display: clamp(1.5rem, 1.2rem + 1.35vw, 1.875rem); /* → 30px */
+  --text-display--line-height: 1.2;
+  --text-card: 1.5rem; /* 24px */
+  --text-card--line-height: 1.3;
+  --text-lead: 1.125rem; /* 18px */
+  --text-lead--line-height: 1.6;
+  --text-base: 1rem; /* 16px */
+  --text-base--line-height: 1.625; /* 26px, measured */
+  --text-meta: 0.9375rem; /* 15px */
+  --text-small: 0.875rem; /* 14px */
+
+  /* Containers — Bootstrap 5 values, since the source grid is Bootstrap */
+  --container-bs-sm: 540px;
+  --container-bs-md: 720px;
+  --container-bs-lg: 960px;
+  --container-bs-xl: 1140px;
+  --container-bs-2xl: 1320px;
+
+  /* Motion. Durations taken from the live Swiper configs so the rebuild
+     feels identical: hero 300ms, testimonials 600ms, services 1500ms. */
+  --ease-out-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --animate-duration-hero: 300ms;
+  --animate-duration-testimonial: 600ms;
+  --animate-duration-services: 1500ms;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   Base
+   ──────────────────────────────────────────────────────────────── */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  body {
+    background-color: white;
+    color: var(--color-body);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Sticky footer — fixes audit defect #25, where short service pages
+       leave a white gap below the copyright bar. */
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: var(--color-ink);
+    font-weight: 700;
+    text-wrap: balance;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-navy);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* The source site never sets these; images without them cause layout
+     shift. Astro's <Image> supplies real dimensions. */
+  img,
+  svg,
+  video {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────
+   Utilities
+   ──────────────────────────────────────────────────────────────── */
+@layer utilities {
+  /* Bootstrap-equivalent container so section widths match the original */
+  .container-bs {
+    width: 100%;
+    margin-inline: auto;
+    padding-inline: 0.75rem;
+  }
+  @media (width >= 576px) {
+    .container-bs {
+      max-width: var(--container-bs-sm);
+    }
+  }
+  @media (width >= 768px) {
+    .container-bs {
+      max-width: var(--container-bs-md);
+    }
+  }
+  @media (width >= 992px) {
+    .container-bs {
+      max-width: var(--container-bs-lg);
+    }
+  }
+  @media (width >= 1200px) {
+    .container-bs {
+      max-width: var(--container-bs-xl);
+    }
+  }
+  @media (width >= 1400px) {
+    .container-bs {
+      max-width: var(--container-bs-2xl);
+    }
+  }
+
+  /* Visible only to screen readers, until focused (skip link) */
+  .sr-only-focusable:not(:focus):not(:focus-within) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────
+   Scroll-reveal base state
+
+   The WordPress build leaves animated content permanently invisible if
+   JavaScript fails or never fires (audit section G.2). Here the base
+   state is visible, and the hidden state is only applied once JS has
+   confirmed it can run — so content can never be lost.
+   ──────────────────────────────────────────────────────────────── */
+@layer utilities {
+  .js .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .js .reveal {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
