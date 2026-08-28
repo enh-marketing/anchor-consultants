@@ -6,12 +6,14 @@ import AboutSplit from '../components/home/AboutSplit.astro';
 import ServicesCarousel from '../components/home/ServicesCarousel.astro';
 import EmiCalculator from '../components/home/EmiCalculator.astro';
 import LeaderProfile from '../components/home/LeaderProfile.astro';
+import FaqAccordion from '../components/home/FaqAccordion.astro';
+import TestimonialCarousel from '../components/home/TestimonialCarousel.astro';
 
-// Homepage, built in three passes:
+// Homepage, complete:
 //   milestone 04 — hero, service highlight row, about split
 //   milestone 05 — services carousel, leader, appointment CTA
-//   milestone 06 — EMI calculator                                (this commit)
-//   milestone 07 — FAQ accordion, testimonials
+//   milestone 06 — EMI calculator
+//   milestone 07 — FAQ accordion, testimonials                 (this commit)
 ---
 
 <PageLayout
@@ -24,4 +26,6 @@ import LeaderProfile from '../components/home/LeaderProfile.astro';
   <ServicesCarousel />
   <EmiCalculator />
   <LeaderProfile />
+  <FaqAccordion />
+  <TestimonialCarousel />
 </PageLayout>

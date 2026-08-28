@@ -78,7 +78,13 @@ const slides = [
               <div class="lg:col-span-7">
                 <div class="max-w-[740px] py-16 lg:py-0">
                   <Eyebrow pill>{slide.eyebrow}</Eyebrow>
-                  <h1 class="text-hero text-ink mt-[22px] mb-5 font-bold">{slide.title}</h1>
+                  {/* Exactly one h1 per page: the rotating slides would otherwise emit
+                      three. The others carry identical styling as paragraphs. */}
+                  {i === 0 ? (
+                    <h1 class="text-hero text-ink mt-[22px] mb-5 font-bold">{slide.title}</h1>
+                  ) : (
+                    <p class="text-hero text-ink mt-[22px] mb-5 font-bold">{slide.title}</p>
+                  )}
                   <p class="text-lead text-body mb-[45px] max-w-[640px] leading-7">{slide.body}</p>
                   <Button href="/contact/">Book a Free Consultation</Button>
                 </div>

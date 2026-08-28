@@ -70,7 +70,10 @@ const tiles = [
           ]}
         />
 
-        <h3 class="text-display leading-[35px] font-bold text-white">{tile.title}</h3>
+        {/* h2, not h3: this row has no section heading above it, so h3 would
+            skip a level straight from the page h1. Styling is explicit, so the
+            tag change is invisible. */}
+        <h2 class="text-display leading-[35px] font-bold text-white">{tile.title}</h2>
         <p class="mt-5 text-base leading-[26px] text-[#F0EDED]">{tile.body}</p>
         <a
           href={tile.href}

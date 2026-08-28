@@ -1,0 +1,233 @@
+---
+import { getCollection } from 'astro:content';
+import SectionHeading from '../ui/SectionHeading.astro';
+
+// Measured from the original at 1440:
+//   section 400px, transparent, padding 30/30
+//   eyebrow dy 43 (16px/500 #084876), h2 dy 86 (60px/700, black, centred)
+//   track 1220 wide at x=110, slides 393 wide with a 20px gap
+//     (x = 110 / 523 / 937)
+//   quote 16px/400 #777 on a 26px line box, centred
+//   name 16px/700 #333, centred, 72px below the quote's top
+//   arrows 32x36, 1px #777, transparent, at x=60 and x=1348
+//   dots 13px circles, 4px apart; active #1595CE, inactive #CCC
+//   Swiper: loop, 3 per view, 3s autoplay, 600ms, 20px gap
+//
+// The homepage shows the first five; the testimonials page shows all seven.
+
+const all = (await getCollection('testimonials')).sort((a, b) => a.data.order - b.data.order);
+const items = all.slice(0, 5);
+// Three sets so the track can translate continuously, as Swiper's loop does.
+const track = [...items, ...items, ...items];
+---
+
+<section class="testimonials py-[30px]">
+  <div class="container-bs">
+    <SectionHeading
+      eyebrow="Testimonials"
+      title="User Feedback"
+      align="center"
+      titleClass="!text-black"
+      class="pt-[13px]"
+    />
+  </div>
+
+  <div class="relative mt-[50px]">
+    <div class="mx-auto w-full max-w-[1240px] overflow-hidden px-3 lg:px-0">
+      <ul class="tc-track flex list-none" role="list">
+        {
+          track.map((t, i) => (
+            <li class="tc-slide shrink-0 px-[10px]" data-slide={i}>
+              <figure class="pb-[8px] text-center">
+                <blockquote class="text-body text-base leading-[26px]">{t.data.quote}</blockquote>
+                <figcaption class="mt-5 text-base leading-6 font-bold text-[#333]">
+                  {t.data.name} &ndash; {t.data.location}
+                </figcaption>
+              </figure>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <button
+      type="button"
+      class="tc-prev hover:border-ink hover:text-ink absolute top-[6px] left-3 hidden h-[36px] w-[32px] items-center justify-center border border-[#777] text-[#777] transition-colors lg:left-[60px] lg:flex"
+      aria-label="Previous testimonials"
+    >
+      <svg width="14" height="12" viewBox="0 0 14 12" fill="none" aria-hidden="true">
+        <path
+          d="M13 6H1m0 0 5-5M1 6l5 5"
+          stroke="currentColor"
+          stroke-width="1.4"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+      </svg>
+    </button>
+    <button
+      type="button"
+      class="tc-next hover:border-ink hover:text-ink absolute top-[6px] right-3 hidden h-[36px] w-[32px] items-center justify-center border border-[#777] text-[#777] transition-colors lg:right-[60px] lg:flex"
+      aria-label="Next testimonials"
+    >
+      <svg width="14" height="12" viewBox="0 0 14 12" fill="none" aria-hidden="true">
+        <path
+          d="M1 6h12m0 0-5-5m5 5-5 5"
+          stroke="currentColor"
+          stroke-width="1.4"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+      </svg>
+    </button>
+
+    <div
+      class="mt-[19px] flex justify-center pb-[28px]"
+      role="tablist"
+      aria-label="Testimonial pages"
+    >
+      {
+        items.map((_, i) => (
+          <button
+            type="button"
+            class="tc-dot mx-1 h-[13px] w-[13px] rounded-full bg-[#ccc] transition-colors"
+            data-dot={i}
+            role="tab"
+            aria-label={`Show testimonial ${i + 1}`}
+            aria-selected={i === 0 ? 'true' : 'false'}
+          />
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .tc-slide {
+    width: 100%;
+  }
+  @media (min-width: 768px) {
+    .tc-slide {
+      width: 50%;
+    }
+  }
+  @media (min-width: 992px) {
+    /* 1220px track / 3 = 406.67, minus the 20px gutter gives the
+       original's 393px card. */
+    .tc-slide {
+      width: 33.3333%;
+    }
+  }
+  .tc-dot[aria-selected='true'] {
+    background: #1595ce;
+  }
+</style>
+
+<script>
+  import { gsap, prefersReducedMotion } from '../../lib/animations';
+
+  const root = document.querySelector<HTMLElement>('.testimonials');
+  if (root) {
+    const track = root.querySelector<HTMLElement>('.tc-track');
+    const slides = [...root.querySelectorAll<HTMLElement>('.tc-slide')];
+    const dots = [...root.querySelectorAll<HTMLButtonElement>('.tc-dot')];
+    const prev = root.querySelector<HTMLButtonElement>('.tc-prev');
+    const next = root.querySelector<HTMLButtonElement>('.tc-next');
+
+    if (track && slides.length) {
+      const REAL = slides.length / 3;
+      const AUTOPLAY = 3000;
+      const SPEED = 0.6; // 600ms, matching the original
+
+      let index = REAL;
+      let timer: number | undefined;
+      let tween: gsap.core.Tween | undefined;
+
+      const offsetFor = (i: number) => -(i * (slides[0]?.offsetWidth ?? 0));
+
+      const mark = () => {
+        const active = ((index % REAL) + REAL) % REAL;
+        dots.forEach((d, i) => d.setAttribute('aria-selected', String(i === active)));
+      };
+
+      /**
+       * Keep the index inside the middle set BEFORE moving. Doing this on
+       * tween completion instead would break whenever requestAnimationFrame
+       * is throttled and the tween never finishes.
+       */
+      const normalise = () => {
+        if (index >= REAL * 2 || index < REAL) {
+          index = REAL + (((index % REAL) + REAL) % REAL);
+          gsap.set(track, { x: offsetFor(index) });
+        }
+      };
+
+      const apply = (animate: boolean) => {
+        tween?.kill();
+        const x = offsetFor(index);
+        if (animate && !prefersReducedMotion()) {
+          tween = gsap.to(track, { x, duration: SPEED, ease: 'power2.inOut' });
+        } else {
+          gsap.set(track, { x });
+        }
+        mark();
+      };
+
+      const go = (delta: number) => {
+        normalise();
+        index += delta;
+        apply(true);
+      };
+
+      const start = () => {
+        stop();
+        if (!prefersReducedMotion()) timer = window.setInterval(() => go(1), AUTOPLAY);
+      };
+      const stop = () => {
+        if (timer) window.clearInterval(timer);
+        timer = undefined;
+      };
+      const settle = () => {
+        if (tween?.isActive()) tween.progress(1);
+      };
+
+      prev?.addEventListener('click', () => {
+        go(-1);
+        start();
+      });
+      next?.addEventListener('click', () => {
+        go(1);
+        start();
+      });
+      dots.forEach((dot, i) =>
+        dot.addEventListener('click', () => {
+          normalise();
+          index = REAL + i;
+          apply(true);
+          start();
+        }),
+      );
+
+      root.addEventListener('mouseenter', stop);
+      root.addEventListener('mouseleave', start);
+      root.addEventListener('focusin', stop);
+      root.addEventListener('focusout', start);
+      document.addEventListener('visibilitychange', () => {
+        settle();
+        document.hidden ? stop() : start();
+      });
+      new IntersectionObserver(
+        ([e]) => {
+          if (e && e.isIntersecting) start();
+          else {
+            settle();
+            stop();
+          }
+        },
+        { threshold: 0.15 },
+      ).observe(root);
+      window.addEventListener('resize', () => apply(false));
+
+      apply(false);
+      start();
+    }
+  }
+</script>

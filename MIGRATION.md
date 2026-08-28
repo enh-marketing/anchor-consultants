@@ -949,6 +949,58 @@ gap rather than an even split.
    instalment. The real figure is 1,189.4965 and the original's totals are
    correct. The audit note in section D.2 has been corrected.
 
+
+### Homepage part 3 — Milestone 07 COMPLETE · **HOMEPAGE FINISHED**
+- [x] FAQ accordion — 6 items, single-open, GSAP height tween
+- [x] Testimonial carousel — 5 items, 3 per view, 3s autoplay, 600ms, arrows + dots
+
+**Every measured metric is exact:**
+
+| Metric | WordPress | Astro |
+| --- | --- | --- |
+| FAQ section height | 872 | 872 |
+| FAQ eyebrow / h2 offsets | 43 / 71 | identical |
+| FAQ images (510x510 at x=70, 200x200 at x=440) | — | identical |
+| FAQ item 1 / 6 offsets, box 640x150 and x58 | 171 / 679 | identical |
+| Badge 50px circle offset | 782 | identical |
+| Testimonials section height | 400 | 400 |
+| Eyebrow / h2 offsets | 43 / 86 | identical |
+| Slide height, dots offset, dot size | 104 / 329 / 13 | identical |
+| Quote width, arrow box, arrow x | 393 / 32x36 / 60 | identical |
+
+Total page height is 6390 against the original's 6239. The 151px difference is
+exactly the two extra calculator rows requested in Q3.
+
+**Accessibility work beyond the original:**
+
+- **Defect #14 fully closed on the homepage.** The page now has exactly **one
+  h1 and zero skipped heading levels**. The original had six h1 elements (five
+  visible) and jumped h2 → h4 → h6. Two changes did it: only the first hero
+  slide's title is an `h1` (the rotating slides would otherwise emit three,
+  the others are styled paragraphs), and the tile row was promoted from h3 to
+  h2 since it has no section heading above it.
+- The accordion follows the ARIA disclosure pattern: `aria-expanded`,
+  `aria-controls`, `role="region"`, `aria-labelledby`, plus Arrow / Home / End
+  key navigation. The original had no ARIA at all (defect #16).
+
+**Findings:**
+
+- The eyebrow-to-heading gap is **not consistent** in the original: 22px on
+  About and services, 7px in the FAQ. `SectionHeading` now takes a `gap` prop
+  rather than assuming one value.
+- The testimonial track uses Swiper's `spaceBetween` model, where the slide
+  pitch is `(track + gap) / 3`. A padding-based gutter gives `track / 3`, so
+  the track needed to be 1240 rather than 1220 to land on the original's
+  413.33px pitch.
+- Nearly hit the Tailwind JIT trap again: `mt-[${gap}px]` built from a prop is
+  never seen by the scanner. Uses an inline style instead.
+- Hardened the accordion the same way as the carousels: in-flight tweens are
+  tracked and snapped to completion when the tab is hidden, so a throttled
+  animation cannot leave a panel visible while `aria-expanded` says closed.
+
+**Homepage output:** 76 KB of HTML, 1.5 MB total build including every image
+variant. The original homepage alone transferred 3.30 MB.
+
 ## Open Questions
 
 These need your input. None of them block starting at Milestone 0; I have noted the assumption I will proceed with if you would rather decide later.

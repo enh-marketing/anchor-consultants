@@ -1,0 +1,209 @@
+---
+import { Image } from 'astro:assets';
+import { getCollection } from 'astro:content';
+import SectionHeading from '../ui/SectionHeading.astro';
+import Icon from '../ui/Icon.astro';
+import faq1 from '../../assets/images/faq/faq-1.jpg';
+import faq2 from '../../assets/images/faq/faq-2.jpg';
+
+// Measured from the original at 1440:
+//   section 872px, #F7F7F7, padding 30/30
+//   images: 510x510 at x=70 (dy 151) and 200x200 at x=440 (dy 521)
+//   copy column at x=730, 640 wide; eyebrow dy 43, h2 dy 71
+//   items start dy 171: white, padding 16px 30px, 20px apart, no border
+//   question 16px/700 #1C1E22 on a 26px line box, indented 30px
+//   answer 580 wide, 14px below the question
+//   +/- glyph at the right, #084876
+//   badge 50px circle #1C1E22, then "If you have more questions Contact Us"
+//
+// The original marks each question as <h6> under an <h2> (audit defect #14).
+// Rendered as <h3> here so the heading levels run in order.
+
+const faqs = (await getCollection('faqs')).sort((a, b) => a.data.order - b.data.order);
+---
+
+<section class="bg-mist py-[30px]">
+  <div class="mx-auto w-full max-w-[1320px] px-3 lg:px-[10px]">
+    <div class="grid gap-10 lg:grid-cols-[660px_640px] lg:justify-between lg:gap-0">
+      <!-- Decorative image pair -->
+      <div class="reveal relative hidden lg:block">
+        <Image
+          src={faq1}
+          alt=""
+          aria-hidden="true"
+          class="mt-[121px] h-[510px] w-[510px] object-cover"
+          loading="lazy"
+          widths={[510, 1020]}
+          sizes="510px"
+        />
+        <Image
+          src={faq2}
+          alt=""
+          aria-hidden="true"
+          class="absolute top-[491px] left-[370px] h-[200px] w-[200px] object-cover"
+          loading="lazy"
+          widths={[200, 400]}
+          sizes="200px"
+        />
+      </div>
+
+      <!-- Questions -->
+      <div>
+        <SectionHeading eyebrow="FAQ's" title="Some Questions & A." gap={7} class="lg:pt-[13px]" />
+
+        <div class="mt-[30px]" data-faq>
+          {
+            faqs.map((faq, i) => (
+              <div class="faq-item mb-5 bg-white px-[30px] py-4 last:mb-0">
+                <h3>
+                  <button
+                    type="button"
+                    class="faq-trigger text-ink flex w-full items-start justify-between gap-4 text-left text-base leading-[26px] font-bold"
+                    aria-expanded={i === 0 ? 'true' : 'false'}
+                    aria-controls={`faq-panel-${i}`}
+                    id={`faq-trigger-${i}`}
+                  >
+                    <span>{faq.data.question}</span>
+                    <span class="text-navy mt-[5px] shrink-0" aria-hidden="true">
+                      <Icon name="plus" size={16} class="faq-plus" />
+                      <Icon name="minus" size={16} class="faq-minus hidden" />
+                    </span>
+                  </button>
+                </h3>
+                <div
+                  id={`faq-panel-${i}`}
+                  role="region"
+                  aria-labelledby={`faq-trigger-${i}`}
+                  class="faq-panel overflow-hidden"
+                  hidden={i !== 0}
+                >
+                  <p class="text-body max-w-[580px] pt-[14px] text-base leading-[26px]">
+                    {faq.data.answer}
+                  </p>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+
+        <!-- More questions -->
+        <div class="mt-[45px] flex items-center gap-5 pb-[10px]">
+          <span
+            class="bg-ink flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-full text-[20px] font-bold text-white"
+            aria-hidden="true">?</span
+          >
+          <p class="text-body text-base">
+            If you have more questions{' '}
+            <a href="/contact/" class="text-navy font-semibold hover:underline">Contact Us</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { gsap, prefersReducedMotion } from '../../lib/animations';
+
+  const root = document.querySelector<HTMLElement>('[data-faq]');
+  if (root) {
+    const items = [...root.querySelectorAll<HTMLElement>('.faq-item')];
+    // Tweens in flight, so an interrupted close can still be finalised.
+    // requestAnimationFrame is throttled in background tabs, which would
+    // otherwise leave a panel visible while aria-expanded says it is closed.
+    const active = new Map<HTMLElement, gsap.core.Tween>();
+
+    const setIcons = (item: Element, open: boolean) => {
+      item.querySelector('.faq-plus')?.classList.toggle('hidden', open);
+      item.querySelector('.faq-minus')?.classList.toggle('hidden', !open);
+    };
+
+    const close = (item: HTMLElement, animate: boolean) => {
+      const trigger = item.querySelector<HTMLButtonElement>('.faq-trigger')!;
+      const panel = item.querySelector<HTMLElement>('.faq-panel')!;
+      if (trigger.getAttribute('aria-expanded') !== 'true') return;
+      trigger.setAttribute('aria-expanded', 'false');
+      setIcons(item, false);
+      if (!animate || prefersReducedMotion()) {
+        panel.hidden = true;
+        gsap.set(panel, { clearProps: 'height' });
+        return;
+      }
+      active.get(panel)?.kill();
+      const tween = gsap.to(panel, {
+        height: 0,
+        duration: 0.3,
+        ease: 'power2.inOut',
+        onComplete: () => {
+          panel.hidden = true;
+          gsap.set(panel, { clearProps: 'height' });
+          active.delete(panel);
+        },
+      });
+      active.set(panel, tween);
+    };
+
+    const open = (item: HTMLElement, animate: boolean) => {
+      const trigger = item.querySelector<HTMLButtonElement>('.faq-trigger')!;
+      const panel = item.querySelector<HTMLElement>('.faq-panel')!;
+      trigger.setAttribute('aria-expanded', 'true');
+      setIcons(item, true);
+      panel.hidden = false;
+      if (!animate || prefersReducedMotion()) {
+        gsap.set(panel, { clearProps: 'height' });
+        return;
+      }
+      active.get(panel)?.kill();
+      const tween = gsap.fromTo(
+        panel,
+        { height: 0 },
+        {
+          height: 'auto',
+          duration: 0.3,
+          ease: 'power2.inOut',
+          onComplete: () => {
+            gsap.set(panel, { clearProps: 'height' });
+            active.delete(panel);
+          },
+        },
+      );
+      active.set(panel, tween);
+    };
+
+    items.forEach((item, i) => {
+      setIcons(item, i === 0);
+      const trigger = item.querySelector<HTMLButtonElement>('.faq-trigger')!;
+      trigger.addEventListener('click', () => {
+        const isOpen = trigger.getAttribute('aria-expanded') === 'true';
+        // Single-open, matching the original's Bootstrap accordion.
+        items.forEach((other) => other !== item && close(other, true));
+        if (isOpen) close(item, true);
+        else open(item, true);
+      });
+    });
+
+    // Snap any in-flight tween to completion when the tab is hidden, so a
+    // throttled animation cannot strand a panel half-open.
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) return;
+      active.forEach((tween) => tween.progress(1));
+    });
+
+    // Arrow / Home / End move between triggers, as the ARIA pattern expects.
+    const triggers = items.map((i) => i.querySelector<HTMLButtonElement>('.faq-trigger')!);
+    triggers.forEach((t, i) => {
+      t.addEventListener('keydown', (e) => {
+        const map: Record<string, number> = {
+          ArrowDown: (i + 1) % triggers.length,
+          ArrowUp: (i - 1 + triggers.length) % triggers.length,
+          Home: 0,
+          End: triggers.length - 1,
+        };
+        const next = map[e.key];
+        if (next === undefined) return;
+        e.preventDefault();
+        triggers[next]?.focus();
+      });
+    });
+  }
+</script>

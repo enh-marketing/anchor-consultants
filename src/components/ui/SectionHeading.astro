@@ -14,6 +14,12 @@ export interface Props {
   align?: 'left' | 'center';
   /** Render as h1 where the section is the page's primary heading. */
   as?: 'h1' | 'h2';
+  /**
+   * Space between the eyebrow and the title. 22px on the About and services
+   * sections, 7px in the FAQ — the original is not consistent, so this is a
+   * per-section value rather than a single token.
+   */
+  gap?: number;
   class?: string;
   titleClass?: string;
 }
@@ -24,6 +30,7 @@ const {
   onDark = false,
   align = 'left',
   as: Tag = 'h2',
+  gap = 22,
   class: className = '',
   titleClass = '',
 } = Astro.props;
@@ -32,12 +39,8 @@ const {
 <div class:list={[align === 'center' && 'text-center', className]}>
   {eyebrow && <Eyebrow onDark={onDark}>{eyebrow}</Eyebrow>}
   <Tag
-    class:list={[
-      'text-section font-bold',
-      onDark ? 'text-white' : 'text-ink',
-      eyebrow && 'mt-[22px]',
-      titleClass,
-    ]}
+    class:list={['text-section font-bold', onDark ? 'text-white' : 'text-ink', titleClass]}
+    style={eyebrow ? `margin-top:${gap}px` : undefined}
     set:html={title}
   />
 </div>
