@@ -1,7 +1,6 @@
 ---
 import { Image } from 'astro:assets';
 import SectionHeading from '../ui/SectionHeading.astro';
-import Icon from '../ui/Icon.astro';
 import bg from '../../assets/images/services/carousel-bg.jpg';
 import portrait from '../../assets/images/team/samaira-nichani.png';
 
@@ -78,14 +77,27 @@ import portrait from '../../assets/images/team/samaira-nichani.png';
       <p class="text-[30px] leading-[40px] font-bold text-white">
         You can request an appointment to discuss your financing options.
       </p>
-      <!-- TODO(milestone 10): opens the contact modal once it exists. -->
-      <a
-        href="/contact/"
-        class="text-small mt-[30px] inline-flex items-center gap-2 font-bold text-white underline-offset-4 transition-colors hover:underline"
-      >
-        Get An Appointment
-        <Icon name="chevron-right" size={13} />
-      </a>
+      <!-- The original puts two Popup Maker triggers side by side here,
+           as plain 14px/700 text with no icon: "Get An Appointment"
+           spanning 581-723 and "Apply For Job" 765-859, so a 42px gap
+           centred in the container. The original colours them #777 over a
+           dark photograph, which fails contrast (defect #27); white here. -->
+      <div class="mt-[30px] flex flex-wrap items-center justify-center gap-x-[42px] gap-y-3">
+        <button
+          type="button"
+          data-dialog-open="contact-dialog"
+          class="text-small font-bold text-white underline-offset-4 transition-colors hover:underline"
+        >
+          Get An Appointment
+        </button>
+        <button
+          type="button"
+          data-dialog-open="cv-dialog"
+          class="text-small font-bold text-white underline-offset-4 transition-colors hover:underline"
+        >
+          Apply For Job
+        </button>
+      </div>
     </div>
   </div>
 </section>

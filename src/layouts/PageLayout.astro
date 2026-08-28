@@ -5,6 +5,8 @@ import Header from '../components/layout/Header.astro';
 import Footer from '../components/layout/Footer.astro';
 import WhatsAppButton from '../components/layout/WhatsAppButton.astro';
 import ScrollToTop from '../components/layout/ScrollToTop.astro';
+import ContactModal from '../components/modals/ContactModal.astro';
+import CvUploadModal from '../components/modals/CvUploadModal.astro';
 import type { SeoInput } from '../lib/seo';
 
 interface Props extends SeoInput {
@@ -27,6 +29,8 @@ const pathname = Astro.url.pathname;
     <Footer />
     <WhatsAppButton />
     <ScrollToTop />
+    <ContactModal />
+    <CvUploadModal />
   </Fragment>
 </BaseLayout>
 

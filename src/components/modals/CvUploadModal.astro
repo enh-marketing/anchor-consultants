@@ -1,0 +1,203 @@
+---
+import Dialog from './Dialog.astro';
+
+// Replaces Popup Maker's pum-1984 ("apply-for-job").
+//
+// The original asks only for a file, with no way to reply to the applicant
+// and no restriction on type or size. This adds a name and email, and
+// enforces PDF/Word up to 5 MB on both the client and the server.
+---
+
+<Dialog id="cv-dialog" title="Upload Your CV" intro="PDF or Word document, up to 5 MB.">
+  <form class="cv-form" id="cv-form" method="post" action="/api/contact" novalidate>
+    <input type="hidden" name="kind" value="cv" />
+
+    <div class="sr-only-focusable absolute" aria-hidden="true">
+      <label for="cv-website">Leave this field empty</label>
+      <input id="cv-website" type="text" name="website" tabindex="-1" autocomplete="off" />
+    </div>
+
+    <div class="grid gap-4">
+      <div>
+        <label for="cv-name" class="text-ink mb-1.5 block text-small font-medium">Full name</label>
+        <input id="cv-name" name="name" type="text" autocomplete="name" required aria-describedby="cv-name-err" />
+        <p class="err" id="cv-name-err"></p>
+      </div>
+
+      <div>
+        <label for="cv-email" class="text-ink mb-1.5 block text-small font-medium">Email address</label>
+        <input id="cv-email" name="email" type="email" autocomplete="email" required aria-describedby="cv-email-err" />
+        <p class="err" id="cv-email-err"></p>
+      </div>
+
+      <div>
+        <label for="cv-file" class="text-ink mb-1.5 block text-small font-medium">Your CV</label>
+        <input id="cv-file" name="cv" type="file" accept=".pdf,.doc,.docx" required aria-describedby="cv-file-err cv-file-hint" />
+        <p id="cv-file-hint" class="text-body mt-1.5 text-small">PDF, DOC or DOCX. Maximum 5 MB.</p>
+        <p class="err" id="cv-file-err"></p>
+      </div>
+
+      <button type="submit" class="submit"><span class="label">Submit Now</span></button>
+      <p class="status" role="status" aria-live="polite"></p>
+    </div>
+  </form>
+</Dialog>
+
+<style>
+  .cv-form input[type='text'],
+  .cv-form input[type='email'] {
+    width: 100%;
+    height: 52px;
+    background: #fff;
+    border: 1px solid #ededed;
+    font-size: 14px;
+    color: #1c1e22;
+    padding: 1px 16px;
+  }
+  .cv-form input[type='file'] {
+    width: 100%;
+    font-size: 14px;
+    color: #777;
+  }
+  .cv-form input[type='file']::file-selector-button {
+    margin-right: 12px;
+    border: 1px solid #d6d6d6;
+    background: #f7f7f7;
+    color: #1c1e22;
+    padding: 10px 16px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .cv-form input:focus-visible {
+    outline: 2px solid #084876;
+    outline-offset: -1px;
+  }
+  .cv-form [aria-invalid='true'] {
+    border-color: #ec1113;
+  }
+  .err {
+    display: none;
+    margin-top: 6px;
+    font-size: 14px;
+    line-height: 20px;
+    color: #ec1113;
+  }
+  .err:not(:empty) {
+    display: block;
+  }
+  .submit {
+    display: inline-flex;
+    height: 52px;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    background: #084876;
+    font-size: 14px;
+    font-weight: 500;
+    color: #fff;
+    transition: background-color 0.2s;
+  }
+  .submit:hover {
+    background: #0a5488;
+  }
+  .submit[disabled] {
+    opacity: 0.7;
+    cursor: progress;
+  }
+  .status {
+    display: none;
+    font-size: 14px;
+    line-height: 22px;
+  }
+  .status:not(:empty) {
+    display: block;
+  }
+  .status[data-state='ok'] {
+    color: #1b6b50;
+  }
+  .status[data-state='error'] {
+    color: #ec1113;
+  }
+</style>
+
+<script>
+  import { validateContact, validateCv, hasErrors } from '../../lib/forms';
+
+  const form = document.querySelector<HTMLFormElement>('form.cv-form');
+  if (form) {
+    const get = (n: string) => form.querySelector<HTMLInputElement>(`[name="${n}"]`);
+    const box = (n: string) => form.querySelector<HTMLElement>(`#cv-${n}-err`);
+    const status = form.querySelector<HTMLElement>('.status')!;
+    const submit = form.querySelector<HTMLButtonElement>('.submit')!;
+
+    const collect = () => {
+      const f = get('cv')?.files?.[0] ?? null;
+      const contact = validateContact({
+        name: get('name')?.value ?? '',
+        email: get('email')?.value ?? '',
+        // A CV submission does not ask for a phone number.
+        phone: '+000000000',
+      });
+      delete contact.phone;
+      const file = validateCv(f ? { name: f.name, size: f.size, type: f.type } : null);
+      return { ...contact, ...file };
+    };
+
+    const paint = (errors: Record<string, string | undefined>) => {
+      (['name', 'email', 'file'] as const).forEach((n) => {
+        const el = n === 'file' ? get('cv') : get(n);
+        const b = box(n);
+        const msg = errors[n] ?? '';
+        if (b) b.textContent = msg;
+        el?.setAttribute('aria-invalid', msg ? 'true' : 'false');
+      });
+    };
+
+    get('cv')?.addEventListener('change', () => paint(collect()));
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errors = collect();
+      paint(errors);
+      status.textContent = '';
+      status.removeAttribute('data-state');
+
+      if (hasErrors(errors)) {
+        status.dataset['state'] = 'error';
+        status.textContent = 'Please check the highlighted fields.';
+        return;
+      }
+
+      submit.disabled = true;
+      const label = submit.querySelector('.label')!;
+      const original = label.textContent;
+      label.textContent = 'Sending…';
+
+      try {
+        const res = await fetch(form.action, { method: 'POST', body: new FormData(form) });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          if (data.errors) paint(data.errors);
+          status.dataset['state'] = 'error';
+          status.textContent = data.reason ?? 'Something went wrong. Please try again.';
+        } else if (data.delivered === false) {
+          status.dataset['state'] = 'error';
+          status.textContent =
+            'Email delivery is not configured on this environment yet, so your CV was not sent. Please email it to us directly.';
+        } else {
+          status.dataset['state'] = 'ok';
+          status.textContent = 'Thank you. We have received your CV.';
+          form.reset();
+          paint({});
+        }
+      } catch {
+        status.dataset['state'] = 'error';
+        status.textContent = 'We could not reach the server. Please try again.';
+      } finally {
+        submit.disabled = false;
+        label.textContent = original;
+      }
+    });
+  }
+</script>

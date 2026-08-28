@@ -551,7 +551,11 @@ Because every page reads through a thin data layer rather than importing files d
 
 ### H.4 Deployment
 
-Static output plus one server route. Adapter choice is deferred until you pick hosting; it is a one-line config change. Local development runs the endpoint in the dev server, so nothing is blocked in the meantime.
+Static output plus one server route. `@astrojs/node` in standalone mode is
+installed so the endpoint runs locally and on any Node host; swapping to
+`@astrojs/vercel` or `@astrojs/netlify` is the single `adapter:` line in
+`astro.config.mjs`. Note the build output moved to `dist/client` (static) and
+`dist/server` (the endpoint) once an adapter is present.
 
 ---
 
@@ -769,15 +773,15 @@ Two findings during the build:
 - [ ] 404
 
 ### Forms
-- [ ] Contact form with real labels
-- [ ] Correct input types
-- [ ] Client-side validation + `aria-live` errors
-- [ ] Honeypot
-- [ ] Contact modal
-- [ ] CV upload modal with type + size limits
-- [ ] `/api/contact` endpoint
-- [ ] reCAPTCHA v3 integration point
-- [ ] SMTP integration point
+- [x] Contact form with real labels
+- [x] Correct input types
+- [x] Client-side validation + `aria-live` errors
+- [x] Honeypot
+- [x] Contact modal
+- [x] CV upload modal with type + size limits
+- [x] `/api/contact` endpoint
+- [x] reCAPTCHA v3 integration point
+- [x] SMTP integration point
 - [ ] End-to-end test once keys arrive
 
 ### Animation
@@ -1090,6 +1094,77 @@ exists in the milestone plan. The WordPress site has content at
 
 Also fixed a copy error carried from the original: the Mortgage Solutions
 description reads "both S alaried and Self-Employed", with a stray space.
+
+### Contact, forms and modals — Milestone 10 COMPLETE
+- [x] `/contact/` page: banner, full-bleed map, details column, form panel
+- [x] `ContactForm` shared by the page and the modal
+- [x] `ContactModal` and `CvUploadModal` on native `<dialog>` + `showModal()`
+- [x] `/api/contact` endpoint, with reCAPTCHA v3 and SMTP slots wired but unset
+- [x] `@astrojs/node` adapter added — the endpoint cannot build without one
+- [x] All four Popup Maker triggers reproduced (header, appointment row x2, footer)
+
+**Contact page geometry at 1440 — every value matches:**
+
+| Metric | WordPress | Astro |
+| --- | --- | --- |
+| Map iframe | 1300x535 at x=70, y=482 | identical |
+| "Contact Info" eyebrow | x=60, y=1140 | identical |
+| "Find us here." | 60px/44px, x=60, y=1183, 663 wide | identical |
+| Info rows | x=68, 605 wide, y=1297 / 1354 / 1411 | identical |
+| Form panel | #F7F7F7, 40px pad, 607x622 at x=773, y=1137 | identical |
+| Form | 527x483 at x=813, y=1236 | identical |
+| Name / Email / Phone / Question / Submit | 60 / 60 / 60 / 220 / 60 tall | identical |
+
+**Responsive, measured against the original at each breakpoint:**
+
+| Width | Panel (WP) | Panel (Astro) | Heading (WP / Astro) |
+| --- | --- | --- | --- |
+| 375 | x=10, 355 | x=10, 355 | 32/28 · 32/28 |
+| 768 | x=25, 718 | x=25, 718 | 46/44 · 46/44 |
+| 992 | x=25, 942 | x=25, 942 | 46/44 · 46/44 |
+| 1440 | x=773, 607 | x=773, 607 | 60/44 · 60/44 |
+
+The original splits into two columns at 1200, not 992. Building it at 992
+overflowed the viewport by 278px; caught by measurement, now fixed. The
+original itself overflows horizontally at 375 (`scrollWidth` 380 against a
+375 client width); ours does not, at any width.
+
+**Fidelity corrections found by measuring rather than eyeballing:**
+- The map section pads 120px, not the 110px used elsewhere on the site.
+- This page's container carries no gutter at desktop, putting the left column
+  at x=60 rather than the usual x=70.
+- The appointment row's two triggers are plain 14px/700 text with no icon.
+  Ours carried a chevron, making each 21px too wide; removed. Their colour in
+  the original is #777 over a dark photograph, which is defect #27 — kept
+  white here.
+
+**Three genuine bugs found and fixed during verification:**
+1. Tailwind's preflight zeroes margins on every element, which removes the UA
+   `margin: auto` that centres a modal `<dialog>`. Every modal was rendering
+   pinned to the top-left corner.
+2. The "focus the first field" call selected `input`, which matched the hidden
+   `kind` input first. `focus()` on a hidden input is a silent no-op, so focus
+   stayed on the close button.
+3. The scroll lock was released from the dialog's `close` event. It now keys
+   off the `open` attribute via a `MutationObserver`, so Esc, the close
+   button, the backdrop and a programmatic `close()` all release it the same
+   way, and a double-open cannot strand the page locked.
+
+**Verified in-browser:** open via all four triggers; close via backdrop and
+close button; focus lands on the first field; scroll locks and releases;
+empty-submit validation on both forms; a bad email address; a valid submit
+round-tripping through `/api/contact`.
+
+Escape-to-close could not be exercised here: this browser pane never
+dispatches a dialog's `close` or `cancel` events, and a bare native
+`<dialog>` built in the console behaves identically, so it is a harness
+limitation rather than a defect in our code. It needs a real browser to
+confirm.
+
+**Nothing pretends to have been sent.** With no SMTP configured the endpoint
+returns `delivered: false`, logs the full submission to the server console,
+and the form tells the visitor plainly that the message was not sent and to
+call or email instead. Verified end to end.
 
 ## Open Questions
 

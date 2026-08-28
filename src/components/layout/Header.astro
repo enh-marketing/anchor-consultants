@@ -65,12 +65,13 @@ const isActive = (href: string) =>
       </nav>
 
       <div class="ml-auto flex items-center gap-3">
-        <a
-          href={site.cta.header.href}
+        <button
+          type="button"
+          data-dialog-open="contact-dialog"
           class="bg-navy hover:bg-navy-600 hidden h-[60px] items-center rounded-[3px] px-[35px] text-base font-medium text-white transition-colors lg:inline-flex"
         >
           {site.cta.header.label}
-        </a>
+        </button>
 
         <!-- Mobile toggle. The original uses MeanMenu, which renders a
              hamburger and pushes an inline accordion below the header. -->

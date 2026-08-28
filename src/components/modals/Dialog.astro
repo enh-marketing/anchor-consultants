@@ -1,0 +1,156 @@
+---
+import Icon from '../ui/Icon.astro';
+
+/**
+ * Modal base, replacing Popup Maker.
+ *
+ * Uses a native `<dialog>` with `showModal()`, which gives focus trapping,
+ * Esc to close, inertness of the rest of the page, and correct semantics
+ * without any of that being hand-rolled.
+ *
+ * Open it from anywhere with `data-dialog-open="<id>"` on a button or link.
+ */
+interface Props {
+  id: string;
+  title: string;
+  /** Short line under the title. */
+  intro?: string;
+}
+const { id, title, intro } = Astro.props;
+---
+
+<dialog id={id} class="app-dialog" aria-labelledby={`${id}-title`}>
+  <div class="dialog-panel">
+    <button type="button" class="dialog-close" data-dialog-close aria-label="Close dialog">
+      <Icon name="close" size={20} />
+    </button>
+
+    <h2 id={`${id}-title`} class="text-ink text-[24px] leading-[34px] font-bold">{title}</h2>
+    {intro && <p class="text-body mt-2 text-base leading-[26px]">{intro}</p>}
+
+    <div class="mt-6">
+      <slot />
+    </div>
+  </div>
+</dialog>
+
+<style>
+  .app-dialog {
+    /* Tailwind's preflight zeroes margins on every element, which removes
+       the UA `margin: auto` that centres a modal dialog. */
+    margin: auto;
+    width: min(560px, calc(100vw - 32px));
+    max-height: calc(100dvh - 64px);
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    overflow: visible;
+  }
+  .app-dialog::backdrop {
+    background: rgb(28 30 34 / 0.6);
+  }
+  .dialog-panel {
+    position: relative;
+    max-height: calc(100dvh - 64px);
+    overflow-y: auto;
+    border-radius: 6px;
+    background: #fff;
+    padding: 40px;
+    box-shadow: 0 20px 60px -20px rgb(0 0 0 / 0.4);
+  }
+  @media (max-width: 575px) {
+    .dialog-panel {
+      padding: 28px 20px;
+    }
+  }
+  .dialog-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: inline-flex;
+    height: 36px;
+    width: 36px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: #777;
+    transition:
+      background-color 0.2s,
+      color 0.2s;
+  }
+  .dialog-close:hover {
+    background: #f7f7f7;
+    color: #1c1e22;
+  }
+
+  /* No entrance animation under reduced motion. */
+  @media (prefers-reduced-motion: no-preference) {
+    .app-dialog[open] .dialog-panel {
+      animation: dialog-in 0.2s ease-out;
+    }
+    @keyframes dialog-in {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+    }
+  }
+</style>
+
+<script>
+  // One delegated listener handles every dialog on the page.
+  if (!(window as unknown as { __dialogsWired?: boolean }).__dialogsWired) {
+    (window as unknown as { __dialogsWired?: boolean }).__dialogsWired = true;
+
+    // `input:not([type="hidden"])` matters: focus() on a hidden input is a
+    // no-op, which would silently leave focus on the close button.
+    const FOCUSABLE =
+      'input:not([type="hidden"]):not([tabindex="-1"]), textarea, select, button:not([data-dialog-close])';
+
+    // A native <dialog> makes the page inert but does not stop it scrolling.
+    // The lock is driven off the `open` attribute rather than the `close`
+    // event, so every route out of a dialog — Esc, the close button, the
+    // backdrop, or a programmatic close() — releases it identically.
+    const syncScrollLock = () => {
+      const anyOpen = document.querySelector('dialog.app-dialog[open]') !== null;
+      document.body.style.overflow = anyOpen ? 'hidden' : '';
+    };
+
+    const watcher = new MutationObserver(syncScrollLock);
+    document.querySelectorAll('dialog.app-dialog').forEach((d) => {
+      watcher.observe(d, { attributes: true, attributeFilter: ['open'] });
+    });
+
+    const open = (dialog: HTMLDialogElement) => {
+      if (dialog.open) return;
+      dialog.showModal();
+      syncScrollLock();
+      dialog.querySelector<HTMLElement>(FOCUSABLE)?.focus();
+    };
+
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+
+      const opener = target.closest<HTMLElement>('[data-dialog-open]');
+      if (opener) {
+        const id = opener.dataset['dialogOpen'];
+        const dialog = id ? document.getElementById(id) : null;
+        if (dialog instanceof HTMLDialogElement) {
+          e.preventDefault();
+          open(dialog);
+        }
+        return;
+      }
+
+      const closer = target.closest<HTMLElement>('[data-dialog-close]');
+      if (closer) {
+        closer.closest('dialog')?.close();
+        return;
+      }
+
+      // Click on the backdrop, i.e. the dialog element itself.
+      if (target instanceof HTMLDialogElement && target.open) target.close();
+    });
+  }
+</script>

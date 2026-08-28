@@ -103,12 +103,13 @@ const year = new Date().getFullYear();
           </ul>
 
           <div class="mt-[30px] flex flex-wrap gap-3">
-            <a
-              href={site.cta.primary.href}
+            <button
+              type="button"
+              data-dialog-open="contact-dialog"
               class="text-meta text-navy inline-flex items-center rounded-[5px] bg-white px-6 py-3 leading-[15px] font-bold transition-colors hover:bg-white/90"
             >
               Free Consultation
-            </a>
+            </button>
             <a
               href={site.contact.phone.href}
               class="text-meta text-navy inline-flex items-center rounded-[5px] bg-white px-6 py-3 leading-[15px] font-bold transition-colors hover:bg-white/90"
