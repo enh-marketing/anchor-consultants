@@ -624,7 +624,7 @@ or can be loaded per-section.
 | 8 | **Inner pages** | About, Services, Testimonials |
 | 9 | **Service detail pages** | 4 new pages, fixing defect #1 |
 | 10 | **Contact + forms** | Contact page, both modals, validation, reCAPTCHA v3 hooks, `/api/contact` stub |
-| 11 | **Blog** | Index, post template, clean sidebar, 404 page |
+| 11 | **Blog** | Index, post template, clean sidebar, 404 page, **privacy policy page** |
 | 12 | **Animation pass** | GSAP reveals, ScrollTrigger, reduced-motion, performance tuning |
 | 13 | **SEO + accessibility** | Meta, canonicals, OG, JSON-LD, sitemap, robots, heading hierarchy, labels, ARIA, skip link, keyboard audit |
 | 14 | **Performance + QA** | Lighthouse, cross-browser, 5 viewports, final side-by-side comparison |
@@ -760,7 +760,7 @@ Two findings during the build:
 - [ ] Page banner resolved (see Q1)
 - [ ] About
 - [ ] Services
-- [ ] Service detail x4
+- [x] Service detail x4
 - [ ] Testimonials (7)
 - [ ] Contact
 - [ ] Blog index
@@ -1050,6 +1050,46 @@ Three corrections were needed beyond simply un-hiding the original markup:
 
 **Known interim state:** the service cards link to `/services/<slug>/`, which
 milestone 09 creates. Those four links 404 until then.
+
+
+### Service detail pages — Milestone 09 COMPLETE
+- [x] `/services/[slug]` template, four pages generated from the collection
+- [x] Defect #1 fully closed: **every internal link in the build now resolves**
+- [x] Defect #24 handled: `features` and `checklist` are optional, so Lease
+      Rental Discounting renders correctly with neither
+- [x] Q12 applied: a closing CTA, which the original lacks
+- [x] `Service` JSON-LD per page, plus breadcrumbs
+
+**Every measured metric is exact:**
+
+| Metric | WordPress | Astro |
+| --- | --- | --- |
+| Banner height | 226 | 226 |
+| Hero image | 1290x670 at x=75, y=482 | identical |
+| "Description:" heading | y=1202, x=82 | identical |
+| Body copy | y=1246 | identical |
+| Feature cards | 3, y=1438, x=82, 94 tall | identical |
+| Checklist | 7 items, first at y=1569 | identical |
+
+Page height is 2727 against the original's 2504. The 223px difference is the
+Q12 CTA.
+
+**Link integrity across the whole build:**
+
+| | |
+| --- | --- |
+| Routes generated | 8 |
+| Internal links checked | 12 |
+| Resolving | 9 |
+| Still 404 | 3 — `/contact/` (m10), `/blog/` (m11), `/privacy-policy/` |
+
+**New gap found:** `/privacy-policy/` is linked from the footer on every page
+(our fix for defect #7, where the original pointed at `#`) but no such page
+exists in the milestone plan. The WordPress site has content at
+`/privacy-policy-2/`. **Added to milestone 11.**
+
+Also fixed a copy error carried from the original: the Mortgage Solutions
+description reads "both S alaried and Self-Employed", with a stray space.
 
 ## Open Questions
 

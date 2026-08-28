@@ -41,6 +41,9 @@ const services = defineCollection({
        * until distinct images are supplied.
        */
       heroImage: image().optional(),
+      /** 1520x266 page banner. Falls back to a generic one where the client
+          has not supplied a service-specific image (audit Q13). */
+      bannerImage: image().optional(),
       /**
        * Three icon feature cards. Absent on Lease Rental Discounting,
        * hence optional (audit defect #24).
