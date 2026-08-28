@@ -128,31 +128,29 @@ const skills = [
 </PageLayout>
 
 <script>
-  import { gsap, ScrollTrigger, prefersReducedMotion } from '../../lib/animations';
+  // A width transition needs no tween engine. This used to run through GSAP
+  // + ScrollTrigger, which pulled 43 KB gzipped onto this page for one
+  // effect. `onEnterViewport` gives it the same observer-plus-sweep
+  // guarantee the scroll reveals use, so a deferred IntersectionObserver
+  // callback cannot leave the bars stuck at zero.
+  import { prefersReducedMotion, onEnterViewport } from '../../lib/reveal';
 
   const bars = [...document.querySelectorAll<HTMLElement>('.skill-bar')];
-  bars.forEach((bar) => {
-    const value = Number(bar.dataset['value'] ?? 0);
-    if (prefersReducedMotion()) {
-      bar.style.width = `${value}%`;
-      return;
-    }
-    gsap.to(bar, {
-      width: `${value}%`,
-      duration: 1.2,
-      ease: 'power2.out',
-      scrollTrigger: { trigger: bar, start: 'top 90%', once: true },
-    });
-  });
+  const fill = (bar: HTMLElement) => {
+    bar.style.width = `${Number(bar.dataset['value'] ?? 0)}%`;
+  };
 
-  // If the trigger never fires (throttled rAF), still show the real values.
-  window.setTimeout(() => {
-    bars.forEach((bar) => {
-      if (bar.getBoundingClientRect().top < window.innerHeight && bar.offsetWidth === 0) {
-        bar.style.width = `${bar.dataset['value'] ?? 0}%`;
-      }
-    });
-  }, 3000);
-
-  ScrollTrigger.refresh();
+  if (prefersReducedMotion()) bars.forEach(fill);
+  else onEnterViewport(bars, fill);
 </script>
+
+<style>
+  .skill-bar {
+    transition: width 1.2s var(--ease-out-soft);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .skill-bar {
+      transition: none;
+    }
+  }
+</style>

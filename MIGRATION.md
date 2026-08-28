@@ -450,16 +450,16 @@ Still to verify during implementation: 768px and 1024px intermediate states, and
 
 There is **no GSAP on the site today**. Animation is: `animate.css` classes, Swiper transitions, Waypoints-triggered counters and progress bars, and CSS smooth scroll.
 
-| Animation             | Current                                                | GSAP rebuild                                    |
-| --------------------- | ------------------------------------------------------ | ----------------------------------------------- |
-| Section reveals       | `animated fadeInLeft` (15 elements), `fadeInRight` (5) | ScrollTrigger fade + 30px offset, 0.6s, stagger |
-| Hero slide transition | Swiper fade, 300ms, 6s interval                        | GSAP crossfade timeline                         |
-| Services carousel     | Swiper slide, 1500ms, 4s interval                      | GSAP-driven translate                           |
-| Testimonial carousel  | Swiper slide, 600ms, 3s interval                       | Same component                                  |
-| Skill bars            | progressbar.js + Waypoints, to 63% / 60%               | ScrollTrigger width tween                       |
-| Scroll-to-top         | Class toggle                                           | Fade/scale in past threshold                    |
-| FAQ accordion         | Bootstrap collapse                                     | GSAP height auto tween                          |
-| Hover states          | CSS transitions on buttons, cards, links               | Keep as CSS, do not move to JS                  |
+| Animation             | Current                                                | GSAP rebuild                                              |
+| --------------------- | ------------------------------------------------------ | --------------------------------------------------------- |
+| Section reveals       | `animated fadeInLeft` (15 elements), `fadeInRight` (5) | **Built with IntersectionObserver + CSS, not GSAP** (m12) |
+| Hero slide transition | Swiper fade, 300ms, 6s interval                        | GSAP crossfade timeline                                   |
+| Services carousel     | Swiper slide, 1500ms, 4s interval                      | GSAP-driven translate                                     |
+| Testimonial carousel  | Swiper slide, 600ms, 3s interval                       | Same component                                            |
+| Skill bars            | progressbar.js + Waypoints, to 92% / 88%               | **CSS width transition on viewport entry** (m12)          |
+| Scroll-to-top         | Class toggle                                           | Fade/scale in past threshold                              |
+| FAQ accordion         | Bootstrap collapse                                     | GSAP height auto tween                                    |
+| Hover states          | CSS transitions on buttons, cards, links               | Keep as CSS, do not move to JS                            |
 
 ### G.2 Principles for the rebuild
 
@@ -797,14 +797,14 @@ Two findings during the build:
 
 ### Animation
 
-- [ ] GSAP reveal system
-- [ ] ScrollTrigger reveals
-- [ ] Skill bars
-- [ ] Accordion tween
-- [ ] Carousel motion
-- [ ] `prefers-reduced-motion` honoured throughout
-- [ ] Content never permanently hidden if JS fails
-- [ ] Autoplay pauses on hover/focus/off-screen
+- [x] Reveal system (IntersectionObserver + CSS, not GSAP — see milestone 12)
+- [x] Scroll reveals
+- [x] Skill bars
+- [x] Accordion tween
+- [x] Carousel motion
+- [x] `prefers-reduced-motion` honoured throughout
+- [x] Content never permanently hidden if JS fails
+- [x] Autoplay pauses on hover/focus/off-screen
 
 ### Defect fixes
 
@@ -1266,6 +1266,68 @@ keyboard mash, the other is WordPress's default "Hello world!". Nothing was
 invented to replace them — see Q8. They exercise the template usefully: one
 with a featured image and one without, which is exactly the pair the original
 renders.
+
+### Animation pass — Milestone 12 COMPLETE
+
+- [x] Reveals and skill bars moved off GSAP onto IntersectionObserver + CSS
+- [x] ScrollTrigger removed entirely — nothing needed scroll-linked tweening
+- [x] `prefers-reduced-motion` audited across every effect, plus a global guard
+- [x] Reveal logic covered by 13 unit tests
+
+**The 112 KB chunk was on every page.** `PageLayout` imported the GSAP module
+to run scroll reveals, so all fourteen routes downloaded GSAP + ScrollTrigger
+to fade a heading in. The reveal is a 30px rise and an opacity change, which a
+CSS transition does natively; only the _timing_ needed JavaScript, and that is
+an IntersectionObserver.
+
+|                 | Before                  | After                        |
+| --------------- | ----------------------- | ---------------------------- |
+| Homepage        | 117 KB raw / 46 KB gzip | 79 KB raw / **32 KB gzip**   |
+| `/services/`    | 117 KB raw / 46 KB gzip | 6.0 KB raw / **3.2 KB gzip** |
+| Other 12 routes | 117 KB raw / 46 KB gzip | 5.8 KB raw / **3.0 KB gzip** |
+
+Removing ScrollTrigger accounted for 16 KB gzip of the homepage saving on its
+own, once reveals and skill bars no longer needed it.
+
+GSAP stays where it earns its place — the hero crossfade, both carousels and
+the accordion — which is the homepage only.
+
+**A correction to my own reasoning.** I first justified the switch by saying
+IntersectionObserver fires regardless of the requestAnimationFrame throttling
+that made ScrollTrigger unreliable. That is wrong: IO callbacks are delivered
+during the browser's rendering steps, so a non-rendering tab defers them too.
+The real advantages are cost and self-healing — IO needs no polling ticker,
+and it re-evaluates when rendering resumes rather than latching a guard the
+way the hero timeline did. Because the premise was wrong, the safety net I
+had removed went back in, as a scroll/resize/load sweep that does the same
+viewport test by hand. Both paths converge on the same idempotent function.
+
+**Reduced motion.** Every effect already checked the media query individually;
+the JS paths do more than shorten a duration, since they also stop carousel
+autoplay. A global `@media (prefers-reduced-motion: reduce)` block now
+collapses all animation and transition durations as well, so an effect added
+later cannot silently escape the policy. Nothing on the site waits on
+`transitionend`, so that is safe.
+
+**Verification, and what could not be verified here.** The browser preview
+used throughout this rebuild does not run rendering frames: it never delivers
+IntersectionObserver callbacks, never advances a CSS transition, and cannot
+scroll (`scrollY` stays 0 however it is driven). Confirmed by control
+experiment — a bare observer created in the console on a plainly intersecting
+element also never fired.
+
+What was verified in the browser: the initial sweep reveals above-fold content
+and applies `data-reveal-delay` correctly; the CSS is right, proven by
+disabling the transition and watching opacity resolve to 1; scroll listeners
+bind and fire; below-fold content correctly stays hidden; the skill bars fill
+to 92% and 88% when swept into the trigger zone; the accordion still opens one
+panel at a time; no console or network errors on any page.
+
+What could not be verified there, and is covered by 13 unit tests in
+`src/lib/reveal.test.ts` instead: the observer path, the sweep fallback, the
+no-IntersectionObserver path, the reduced-motion branch, delay handling,
+listener unbinding, and idempotency. The visual transition itself still wants
+a real browser.
 
 ## Open Questions
 

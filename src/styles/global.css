@@ -101,6 +101,21 @@
     html {
       scroll-behavior: auto;
     }
+
+    /* Catch-all. Every effect on the site already checks the media query
+       individually, and the JS paths do more than shorten a duration — they
+       also stop carousel autoplay, which no CSS rule could. This exists so
+       that a transition added later cannot silently escape the policy.
+       Nothing on the site waits on `transitionend`, so collapsing durations
+       is safe. */
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
   body {
@@ -204,15 +219,28 @@
    confirmed it can run — so content can never be lost.
    ──────────────────────────────────────────────────────────────── */
 @layer utilities {
+  /* The base state is visible. Only once `js` is on <html> — set by
+     BaseLayout before first paint — does an element start hidden, so a
+     failed script can never leave content invisible. */
   .js .reveal {
     opacity: 0;
     transform: translateY(30px);
+    transition:
+      opacity 0.6s var(--ease-out-soft),
+      transform 0.6s var(--ease-out-soft);
+  }
+
+  .js .reveal.is-revealed {
+    opacity: 1;
+    transform: none;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .js .reveal {
+    .js .reveal,
+    .js .reveal.is-revealed {
       opacity: 1;
       transform: none;
+      transition: none;
     }
   }
 }
