@@ -302,7 +302,7 @@ n = tenure in months
 EMI = P * r * (1 + r)^n / ((1 + r)^n - 1)
 ```
 
-Verification: P=50,000, rate=15%, n=60 gives EMI = 1,189.35, total payment 71,361, total interest 21,361. The live site displays 1189 / 71,370 / 21,370, matching within its own rounding.
+Verification: P=50,000, rate=15%, n=60 gives EMI = **1,189.4965**, total payment 71,370, total interest 21,370 — exactly the figures the live site displays. **Corrected 28 Aug 2026:** this line previously read 1,189.35 / 71,361 / 21,361 and claimed the original derived its totals from a rounded instalment. That was my own arithmetic error, caught by the unit tests in milestone 06. The original's maths is correct; only its presentation (hidden rows, inconsistent separators) needed fixing.
 
 Outputs: **Loan EMI** (shown), **Total Interest Payable** (hidden), **Total Payment** (hidden).
 
