@@ -1,0 +1,49 @@
+---
+import Icon from '../ui/Icon.astro';
+
+// Circular button that fades in past a scroll threshold, matching the
+// original's `.scroll-up` behaviour. Sits below the WhatsApp button.
+//
+// Rendered hidden from the server and revealed by script, so it never
+// appears as dead furniture at the top of the page.
+---
+
+<button
+  type="button"
+  id="scroll-top"
+  class="invisible fixed right-3 bottom-5 z-40 inline-flex h-11 w-11 translate-y-2 items-center justify-center rounded-full bg-navy text-white opacity-0 shadow-lg transition-[opacity,transform,background-color] duration-200 hover:bg-navy-600 sm:right-[19px]"
+  aria-label="Scroll back to top"
+>
+  <Icon name="arrow-up" size={20} />
+</button>
+
+<script>
+  const btn = document.getElementById('scroll-top');
+
+  if (btn) {
+    const THRESHOLD = 400;
+    const show = (visible: boolean) => {
+      btn.classList.toggle('invisible', !visible);
+      btn.classList.toggle('opacity-0', !visible);
+      btn.classList.toggle('translate-y-2', !visible);
+    };
+
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        show(window.scrollY > THRESHOLD);
+        ticking = false;
+      });
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    btn.addEventListener('click', () => {
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+    });
+  }
+</script>

@@ -1,0 +1,42 @@
+---
+import Icon from '../ui/Icon.astro';
+import { site } from '../../data/site';
+
+// Measured from the WordPress original at 1440px:
+//   band 46px tall, background #084876
+//   items 14px / 400 / white, line-height 26px
+//   email at x=82, phone at x=313, tagline right-aligned ending x=1358
+//
+// The original wraps to two centred lines below ~576px. Reproduced here.
+---
+
+<div class="bg-navy text-white">
+  <div class="container-bs">
+    <div
+      class="flex min-h-[46px] flex-wrap items-center justify-center gap-x-8 gap-y-0 py-1 text-center sm:justify-between sm:text-left"
+    >
+      <ul class="flex flex-wrap items-center justify-center gap-x-8 gap-y-0">
+        <li>
+          <a
+            href={site.contact.email.href}
+            class="inline-flex items-center gap-2 text-small leading-[26px] text-white/95 transition-colors hover:text-white"
+          >
+            <Icon name="envelope" size={15} class="shrink-0 opacity-90" />
+            <span>{site.contact.email.address}</span>
+          </a>
+        </li>
+        <li>
+          <a
+            href={site.contact.phone.href}
+            class="inline-flex items-center gap-2 text-small leading-[26px] text-white/95 transition-colors hover:text-white"
+          >
+            <Icon name="phone" size={15} class="shrink-0 opacity-90" />
+            <span>{site.contact.phone.compact}</span>
+          </a>
+        </li>
+      </ul>
+
+      <p class="text-small leading-[26px] text-white/95">{site.tagline}</p>
+    </div>
+  </div>
+</div>

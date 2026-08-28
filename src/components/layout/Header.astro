@@ -1,0 +1,168 @@
+---
+import { Image } from 'astro:assets';
+import Icon from '../ui/Icon.astro';
+import { site } from '../../data/site';
+import logo from '../../assets/images/brand/logo-anchor.png';
+
+interface Props {
+  /** Pathname of the current page, used to mark the active nav item. */
+  pathname?: string;
+}
+const { pathname = '' } = Astro.props;
+
+const isActive = (href: string) =>
+  href === '/' ? pathname === '/' : pathname.startsWith(href.replace(/\/$/, ''));
+
+// Measured from the WordPress original at 1440px:
+//   header row 90px tall, white, no shadow, NOT sticky
+//   logo box 150x64 — but the source PNG carried heavy padding, so the
+//     wordmark itself rendered at ~117x28. The trimmed asset is sized to
+//     that, otherwise the logo would appear ~28% larger than the original.
+//   nav links 16px / 500 / #1C1E22, 44px gaps, 32px vertical padding
+//   CTA 171x60, #084876, white, 16px / 500, padding 0 35px, radius 3px
+//   mobile nav takes over below 992px (Bootstrap lg)
+---
+
+<header class="bg-white">
+  <div class="container-bs">
+    <!-- No flex gap: horizontal spacing is set explicitly below so the nav
+         lands on the original's x-positions. -->
+    <div class="flex min-h-[90px] items-center">
+      <!-- The original reserves a 150px slot for the logo, inside which the
+           padded PNG's wordmark rendered at ~117px, centred. Reproducing the
+           slot keeps the wordmark and the nav in their original positions. -->
+      <a
+        href="/"
+        class="flex w-[150px] shrink-0 justify-center"
+        aria-label={`${site.name} — home`}
+      >
+        <Image
+          src={logo}
+          alt={`${site.name} logo`}
+          width={234}
+          densities={[1, 2]}
+          class="h-auto w-[117px]"
+          loading="eager"
+        />
+      </a>
+
+      <!-- Desktop navigation.
+           At 1440 the original places the nav 148px after the logo slot, which
+           is left of centre rather than centred. Reproduced from xl up; below
+           that the offset tightens so the row cannot overflow the container. -->
+      <nav aria-label="Primary" class="hidden lg:block lg:ml-6 xl:ml-[148px]">
+        <ul class="flex items-center gap-6 xl:gap-[44px]">
+          {
+            site.nav.map((item) => (
+              <li>
+                <a
+                  href={item.href}
+                  aria-current={isActive(item.href) ? 'page' : undefined}
+                  class="text-ink hover:text-navy block py-8 text-base leading-[26px] font-medium transition-colors"
+                >
+                  {item.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+
+      <div class="ml-auto flex items-center gap-3">
+        <a
+          href={site.cta.header.href}
+          class="hidden h-[60px] items-center rounded-[3px] bg-navy px-[35px] text-base font-medium text-white transition-colors hover:bg-navy-600 lg:inline-flex"
+        >
+          {site.cta.header.label}
+        </a>
+
+        <!-- Mobile toggle. The original uses MeanMenu, which renders a
+             hamburger and pushes an inline accordion below the header. -->
+        <button
+          type="button"
+          id="nav-toggle"
+          class="inline-flex h-11 w-11 items-center justify-center rounded-[3px] text-ink transition-colors hover:bg-mist lg:hidden"
+          aria-expanded="false"
+          aria-controls="mobile-nav"
+        >
+          <span class="sr-only">Menu</span>
+          <Icon name="menu" size={26} class="block" data-icon="open" />
+          <Icon name="close" size={26} class="hidden" data-icon="close" />
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile navigation: pushes content down rather than overlaying,
+       matching MeanMenu's behaviour on the original. -->
+  <nav
+    id="mobile-nav"
+    aria-label="Primary (mobile)"
+    hidden
+    class="border-t border-line bg-white lg:hidden"
+  >
+    <div class="container-bs">
+      <ul class="divide-y divide-line py-1">
+        {
+          site.nav.map((item) => (
+            <li>
+              <a
+                href={item.href}
+                aria-current={isActive(item.href) ? 'page' : undefined}
+                class="text-ink hover:text-navy block py-3.5 text-base font-medium transition-colors"
+              >
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+        <li class="pt-4 pb-5">
+          <a
+            href={site.cta.header.href}
+            class="inline-flex h-[52px] items-center rounded-[3px] bg-navy px-8 text-base font-medium text-white"
+          >
+            {site.cta.header.label}
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+</header>
+
+<script>
+  const toggle = document.getElementById('nav-toggle');
+  const panel = document.getElementById('mobile-nav');
+
+  if (toggle && panel) {
+    const openIcon = toggle.querySelector<SVGElement>('[data-icon="open"]');
+    const closeIcon = toggle.querySelector<SVGElement>('[data-icon="close"]');
+
+    const setOpen = (open: boolean) => {
+      toggle.setAttribute('aria-expanded', String(open));
+      panel.hidden = !open;
+      openIcon?.classList.toggle('hidden', open);
+      openIcon?.classList.toggle('block', !open);
+      closeIcon?.classList.toggle('hidden', !open);
+      closeIcon?.classList.toggle('block', open);
+    };
+
+    toggle.addEventListener('click', () => {
+      setOpen(toggle.getAttribute('aria-expanded') !== 'true');
+    });
+
+    // Escape closes and returns focus to the toggle.
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') {
+        setOpen(false);
+        toggle.focus();
+      }
+    });
+
+    // Reset when crossing the lg breakpoint so the panel can't be left
+    // open and hidden behind the desktop layout.
+    const mq = window.matchMedia('(min-width: 992px)');
+    mq.addEventListener('change', (e) => {
+      if (e.matches) setOpen(false);
+    });
+  }
+</script>

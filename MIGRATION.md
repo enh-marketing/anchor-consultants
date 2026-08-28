@@ -105,6 +105,7 @@ These are real problems in the current build. Recommended handling is noted; all
 | 23 | Medium | **All four service detail pages use the identical hero photo** (`service-1.jpg`) and the identical three card icons (`services-4/5/6.png`). Only the labels and body copy differ. | Content gap, not a build problem. Template will support per-service imagery so it is a content edit later. See Q11. |
 | 24 | Medium | **Service detail pages are structurally inconsistent.** Three have three feature cards plus a checklist; Lease Rental Discounting has neither and is two sentences long. | Build one flexible template where cards and checklist are optional. |
 | 25 | Low | White gap renders below the copyright bar on short service pages; the footer does not fill the viewport. | Sticky footer via flex layout. |
+| 26 | Medium | **Copyright bar text is effectively unreadable.** The bar is `#1E1F21` with credit text `#0E6C90` and FAQ / Privacy links `#084876`, measuring **1.73:1** against the 4.5:1 WCAG AA minimum. | Fixed in milestone 02: same blue hue lifted to 6.5:1. |
 
 ### A.5 Dead markup in the DOM
 
@@ -648,16 +649,48 @@ So the banners were designed and uploaded, then lost their wiring. Two gaps
 remain: **no banner for Construction & Developer Finance, and none for Blog**
 (see Q13).
 
-### Global components
-- [ ] TopBar
-- [ ] Header + nav
-- [ ] Mobile nav (below 992px, push-down behaviour)
-- [ ] Footer
-- [ ] Footer disclaimer strip
-- [ ] Copyright bar
-- [ ] WhatsApp button (no text overlap on mobile)
-- [ ] Scroll-to-top
-- [ ] Skip-to-content link
+### Global components — Milestone 02 COMPLETE
+- [x] TopBar — 46px, #084876, 14px/400 items
+- [x] Header + nav — 90px row, not sticky, matching the original exactly
+- [x] Mobile nav (below 992px, push-down behaviour, `aria-expanded`, Esc to close)
+- [x] Footer — 3 bands, columns at 90 / 530 / 970
+- [x] Footer disclaimer strip — 71px
+- [x] Copyright bar — 66px, contrast fixed
+- [x] WhatsApp button (pulled in on narrow screens so it no longer overlaps copy)
+- [x] Scroll-to-top (hidden until 400px scrolled, honours reduced motion)
+- [x] Skip-to-content link
+- [x] Inline SVG icon set replacing Font Awesome
+
+**Measured against the original at 1440px. Deltas after tuning:**
+
+| Metric | WordPress | Astro | Delta |
+| --- | --- | --- | --- |
+| Container width | 1320 | 1320 | 0 |
+| Header row height | 90 | 90 | 0 |
+| Logo slot / wordmark | 72–222 / 89–205 | 72–222 / 89–206 | +1 |
+| Nav "Home" | 370–414 | 370–414 | 0 |
+| Nav "About Us" | 458–528 | 458–528 | 0 |
+| Nav "Services" | 572–636 | 572–636 | 0 |
+| CTA button | 1197–1368, 171×60 | 1197–1368, 171×60 | 0 |
+| Footer columns | 90 / 530 / 970 | 90 / 530 / 970 | 0 |
+| Footer band 1 / 2 / 3 | 407 / 71 / 66 | 406 / 71 / 66 | −1 / 0 / 0 |
+| Quick-links rhythm | 38px, items 21px | 38px, items 21px | 0 |
+| Footer buttons | 39px tall | 39px tall | 0 |
+
+Only remaining difference: "Testimonials" renders 94px against the original's
+98px, a variable-font versus static-font metric difference. This shifts Blog
+and Contact left by 5px. Not worth forcing.
+
+**Responsive:** no horizontal overflow at 390 / 768 / 992 / 1200 / 1920. The
+desktop nav and mobile toggle swap correctly at exactly 992px.
+
+Two findings during the build:
+- Reproducing the logo needed care. The source PNG carried heavy padding, so
+  the wordmark rendered at ~117px inside a 150px slot. Trimming the asset and
+  sizing it naively would have made the logo ~28% larger than the original.
+- The original renders the footer pitch as **one unstyled paragraph** with a
+  `<br><br>`, not a bold heading plus body. The screenshot reads as bold; the
+  computed styles say otherwise.
 
 ### Homepage
 - [ ] Hero carousel (3 slides, fade, 6s)
@@ -802,9 +835,6 @@ These need your input. None of them block starting at Milestone 0; I have noted 
 
 **Q12. Service page CTA.** The service detail pages end abruptly at the checklist with no call to action, which wastes the page's intent. *Assumption: add a consistent "Book a Free Consultation" CTA block at the end of the template, matching the existing button style.*
 
-**Q13. Missing banner images.** The export has purpose-made page banners for
-About, Services, Testimonials, Contact, Mortgage Solutions, Commercial Finances
-and Lease Rental Discounting, but **none for Construction & Developer Finance
-or for the Blog**. *Assumption: reuse one of the three generic 1520×266 banners
-(`generic-1/2/3.jpg`) for those two until you supply specific ones.*
+**Q13. Missing banner images.** **ANSWERED — use the generic 1520x266 banners**
+for Construction & Developer Finance and for the Blog.
 

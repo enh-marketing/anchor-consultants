@@ -45,6 +45,13 @@
   --color-line-muted: #cccccc;
   --color-danger: #ec1113;
 
+  /* Copyright bar text. The original sets #0E6C90 and #084876 on the
+     #1E1F21 bar, which measures 1.73:1 — far below the 4.5:1 AA minimum
+     and effectively unreadable (audit defect #26). This keeps the blue
+     hue but lifts it to 6.5:1. */
+  --color-carbon-text: #7fa8c0;
+  --color-carbon-link: #a6cbe0;
+
   /* Type */
   --font-sans: 'DM Sans Variable', 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
 

@@ -86,7 +86,8 @@ export const site = {
   credit: {
     text: 'Copyright & Design By Diginfo',
     href: 'https://www.diginfoexpert.com/',
-    year: 2025,
+    // The original hardcodes 2025 and has gone stale. The footer renders the
+    // current year instead, so it cannot drift again.
   },
 
   /**

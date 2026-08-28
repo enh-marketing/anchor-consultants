@@ -1,0 +1,21 @@
+---
+import Icon from '../ui/Icon.astro';
+import { site } from '../../data/site';
+
+// Position taken from the original plugin config:
+//   position: fixed; bottom: 85px; right: 19px  (desktop and mobile)
+//
+// The original overlaps body copy on narrow screens (noted in audit F.5).
+// Fixed here by pulling it in slightly at the smallest sizes, which does
+// not change the design.
+---
+
+<a
+  href={site.contact.whatsapp.href}
+  target="_blank"
+  rel="noopener noreferrer"
+  class="fixed right-3 bottom-[85px] z-50 inline-flex h-[52px] w-[52px] items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-transform duration-200 hover:scale-105 focus-visible:scale-105 sm:right-[19px]"
+  aria-label={`Chat with ${site.name} on WhatsApp`}
+>
+  <Icon name="whatsapp" size={30} />
+</a>

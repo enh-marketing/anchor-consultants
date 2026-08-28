@@ -1,0 +1,31 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import TopBar from '../components/layout/TopBar.astro';
+import Header from '../components/layout/Header.astro';
+import Footer from '../components/layout/Footer.astro';
+import WhatsAppButton from '../components/layout/WhatsAppButton.astro';
+import ScrollToTop from '../components/layout/ScrollToTop.astro';
+import type { SeoInput } from '../lib/seo';
+
+interface Props extends SeoInput {
+  schemas?: unknown[];
+}
+
+const props = Astro.props;
+const pathname = Astro.url.pathname;
+---
+
+<BaseLayout {...props}>
+  <Fragment slot="header">
+    <TopBar />
+    <Header pathname={pathname} />
+  </Fragment>
+
+  <slot />
+
+  <Fragment slot="footer">
+    <Footer />
+    <WhatsAppButton />
+    <ScrollToTop />
+  </Fragment>
+</BaseLayout>

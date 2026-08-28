@@ -1,6 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
-import BaseLayout from '../layouts/BaseLayout.astro';
+import PageLayout from '../layouts/PageLayout.astro';
 import { site } from '../data/site';
 
 // Proves the content collections parse and validate against their schemas.
@@ -36,7 +36,7 @@ const scale = [
 ];
 ---
 
-<BaseLayout
+<PageLayout
   description="Scaffold verification page for the Anchor Consultants Astro rebuild. Confirms design tokens, typography and the build pipeline resolve correctly."
   path="/"
   noindex
@@ -138,4 +138,4 @@ const scale = [
       </div>
     </section>
   </div>
-</BaseLayout>
+</PageLayout>
