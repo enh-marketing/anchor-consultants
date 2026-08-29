@@ -150,7 +150,7 @@ const sortedCategories = [...categories].sort((a, b) => a[1].label.localeCompare
             <li>
               <a href={`/blog/?month=${key}`} class="widget-link">
                 <span>{label}</span>
-                <span class="text-body/70">({count})</span>
+                <span class="text-body">({count})</span>
               </a>
             </li>
           ))}
@@ -170,7 +170,7 @@ const sortedCategories = [...categories].sort((a, b) => a[1].label.localeCompare
               <a href={`/blog/?category=${key}`} class="widget-link">
                 <Icon name="folder" size={16} class="shrink-0" />
                 <span>{label}</span>
-                <span class="text-body/70">({count})</span>
+                <span class="text-body">({count})</span>
               </a>
             </li>
           ))}

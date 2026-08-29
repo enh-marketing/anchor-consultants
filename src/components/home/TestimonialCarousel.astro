@@ -88,7 +88,7 @@ const track = [...items, ...items, ...items];
         items.map((_, i) => (
           <button
             type="button"
-            class="tc-dot mx-1 h-[13px] w-[13px] rounded-full bg-[#ccc] transition-colors"
+            class="tc-dot relative mx-[5.5px] h-[13px] w-[13px] rounded-full bg-[#ccc] transition-colors"
             data-dot={i}
             role="tab"
             aria-label={`Show testimonial ${i + 1}`}
@@ -115,6 +115,13 @@ const track = [...items, ...items, ...items];
     .tc-slide {
       width: 33.3333%;
     }
+  }
+  /* WCAG 2.5.8, as on the hero: 13px dot, 24px target. The margin went
+     4px -> 5.5px so the 24px targets touch rather than overlap. */
+  .tc-dot::after {
+    content: '';
+    position: absolute;
+    inset: -5.5px;
   }
   .tc-dot[aria-selected='true'] {
     background: #1595ce;

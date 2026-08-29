@@ -54,6 +54,7 @@ const slides = [
     aria-hidden="true"
     class="absolute inset-0 h-full w-full object-cover"
     loading="eager"
+    fetchpriority="high"
     widths={[768, 1280, 1920]}
     sizes="100vw"
   />
@@ -71,6 +72,7 @@ const slides = [
           aria-roledescription="slide"
           aria-label={`${i + 1} of ${slides.length}`}
           aria-hidden={i === 0 ? undefined : 'true'}
+          inert={i !== 0}
           style={i === 0 ? undefined : 'opacity:0;pointer-events:none;'}
         >
           <div class="container-bs h-full">
@@ -90,9 +92,9 @@ const slides = [
                 </div>
               </div>
 
-              <!-- The figure sits flush with the bottom of the section on the
-                   original (797px tall ending exactly on the 907px edge), so
-                   it must bottom-align rather than centre with the copy. -->
+              {/* The figure sits flush with the bottom of the section on the
+                  original (797px tall ending exactly on the 907px edge), so
+                  it must bottom-align rather than centre with the copy. */}
               <div class="hidden h-full items-end justify-end lg:col-span-5 lg:flex">
                 <Image
                   src={slide.image}
@@ -112,12 +114,12 @@ const slides = [
 
   <!-- Controls. The original has none on desktop; these are keyboard- and
        screen-reader-reachable without changing the visual design. -->
-  <div class="absolute inset-x-0 bottom-6 z-10 flex justify-center gap-2 lg:bottom-8">
+  <div class="absolute inset-x-0 bottom-6 z-10 flex justify-center gap-4 lg:bottom-8">
     {
       slides.map((_, i) => (
         <button
           type="button"
-          class="hero-dot h-2 w-2 rounded-full bg-navy/25 transition-[background-color,width] data-[active]:w-6 data-[active]:bg-navy"
+          class="hero-dot bg-navy/25 data-[active]:bg-navy relative h-2 w-2 rounded-full transition-[background-color,width] data-[active]:w-6"
           data-dot={i}
           aria-label={`Show slide ${i + 1}`}
         />
@@ -127,6 +129,19 @@ const slides = [
 </section>
 
 <style>
+  /* WCAG 2.5.8: the visible dot stays 8px, but the tappable area is 24px.
+     The row gap went 8px -> 16px so neighbouring 24px targets touch rather
+     than overlap, which the spacing exception requires. */
+  .hero-dot::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 24px;
+    height: 24px;
+    transform: translate(-50%, -50%);
+  }
+
   /* 907px is the original's hero height at 1440. Below lg the section
      grows with its content, as the original does. */
   @media (min-width: 992px) {
@@ -155,7 +170,9 @@ const slides = [
     let tl: gsap.core.Timeline | undefined;
 
     const setDots = (i: number) =>
-      dots.forEach((d, n) => (n === i ? d.setAttribute('data-active', '') : d.removeAttribute('data-active')));
+      dots.forEach((d, n) =>
+        n === i ? d.setAttribute('data-active', '') : d.removeAttribute('data-active'),
+      );
 
     const show = (next: number) => {
       if (animating || next === current) return;
@@ -165,10 +182,12 @@ const slides = [
 
       animating = true;
       to.removeAttribute('aria-hidden');
+      to.removeAttribute('inert');
       to.style.pointerEvents = '';
 
       const finish = () => {
         from.setAttribute('aria-hidden', 'true');
+        from.setAttribute('inert', '');
         from.style.pointerEvents = 'none';
         current = next;
         setDots(next);
@@ -201,7 +220,8 @@ const slides = [
     const advance = () => show((current + 1) % slides.length);
     const start = () => {
       stop();
-      if (!prefersReducedMotion() && slides.length > 1) timer = window.setInterval(advance, AUTOPLAY);
+      if (!prefersReducedMotion() && slides.length > 1)
+        timer = window.setInterval(advance, AUTOPLAY);
     };
     const stop = () => {
       if (timer) window.clearInterval(timer);

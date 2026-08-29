@@ -25,3 +25,6 @@ pnpm-debug.log*
 
 # Raw WordPress media drop zone (not shipped)
 _incoming/
+
+# Chrome for Testing, installed locally for Lighthouse runs. Never committed.
+chrome/

@@ -85,7 +85,11 @@ const tiles = [
           href={tile.href}
           class="mt-7 inline-flex items-center gap-2 text-base font-medium text-white/95 transition-colors hover:text-white"
         >
-          Read More
+          {/* Three tiles each linked "Read More", which is meaningless out of
+              context to a screen reader listing links, and to a crawler. The
+              visible text is unchanged; the destination is named for anyone
+              who cannot see which tile it sits in. */}
+          Read More<span class="sr-only"> about {tile.title}</span>
           <Icon name="chevron-right" size={14} />
         </a>
       </article>

@@ -757,15 +757,15 @@ Two findings during the build:
 
 ### Homepage
 
-- [ ] Hero carousel (3 slides, fade, 6s)
-- [ ] Service highlight row
-- [ ] About split
-- [ ] Services carousel
-- [ ] EMI calculator
-- [ ] Leader profile
-- [ ] Appointment CTA
-- [ ] FAQ accordion (6 items)
-- [ ] Testimonial carousel
+- [x] Hero carousel (3 slides, fade, 6s)
+- [x] Service highlight row
+- [x] About split
+- [x] Services carousel
+- [x] EMI calculator
+- [x] Leader profile
+- [x] Appointment CTA
+- [x] FAQ accordion (6 items)
+- [x] Testimonial carousel
 - [ ] Visual comparison signed off
 
 ### Inner pages
@@ -830,7 +830,7 @@ Two findings during the build:
 - [x] #20 Demo contacts removed
 - [x] #21 Robots policy environment-driven
 - [x] #22 Real meta descriptions on all pages
-- [ ] No dead/hidden markup carried over
+- [x] No dead/hidden markup carried over
 
 ### SEO
 
@@ -856,20 +856,20 @@ Two findings during the build:
 
 ### Responsive
 
-- [ ] 375 / 390px mobile
-- [ ] 768px tablet
-- [ ] 1024px laptop
-- [ ] 1440px desktop
-- [ ] 1920px large desktop
-- [ ] No horizontal scroll at any width
+- [x] 375 / 390px mobile
+- [x] 768px tablet
+- [x] 1024px laptop
+- [x] 1440px desktop
+- [x] 1920px large desktop
+- [x] No horizontal scroll at any width (61 page/viewport combinations, zero overflow)
 
 ### Performance
 
-- [ ] Homepage under 500 KB
-- [ ] Lighthouse 90+ on all four categories
-- [ ] LCP image preloaded
-- [ ] Zero unused JS shipped
-- [ ] Fonts subset with `font-display: swap`
+- [x] Homepage under 500 KB (192 KB first load, heaviest page 194 KB)
+- [x] Lighthouse 90+ on all four categories
+- [x] LCP image prioritised (`fetchpriority="high"`)
+- [~] Zero unused JS shipped — 35 KB of GSAP is unused on the homepage; see m14
+- [x] Fonts subset with `font-display: swap`
 
 ### Final
 
@@ -1388,6 +1388,92 @@ landmarks, headings, labels, `aria-roledescription="carousel"`, slide groups,
 a tablist for the testimonial pagination, live regions on the forms — but none
 of that is a substitute for listening to it. This needs a human with VoiceOver
 or NVDA and is the one checklist item left open.
+
+### Performance and QA — Milestone 14 COMPLETE
+
+- [x] Lighthouse run for real, against a production build on a compressing server
+- [x] Five viewports swept across every route
+- [x] Four genuine bugs found and fixed
+- [x] Checklist reconciled — rows for milestones 04–07 had never been ticked
+
+**Lighthouse.** No Chrome on the machine, so Chrome for Testing was installed
+locally (gitignored, `chrome/`) and Lighthouse 13 run headless.
+
+| Route                           | Perf | A11y | Best practices | SEO  | LCP   | CLS |
+| ------------------------------- | ---- | ---- | -------------- | ---- | ----- | --- |
+| `/`                             | 93   | 100  | 100            | 100  | 3.0 s | 0   |
+| `/about/`                       | 99   | 100  | 100            | 100  | 1.8 s | 0   |
+| `/services/`                    | 99   | 100  | 100            | 100  | 1.7 s | 0   |
+| `/services/mortgage-solutions/` | 99   | 100  | 100            | 100  | 2.0 s | 0   |
+| `/testimonials/`                | 99   | 100  | 100            | 100  | 1.7 s | 0   |
+| `/contact/`                     | 100  | 100  | 100            | 100  | 1.5 s | 0   |
+| `/blog/`                        | 99   | 100  | 100            | 100  | 1.7 s | 0   |
+| `/blog/dummy-blog/`             | 99   | 100  | 100            | 100  | 1.7 s | 0   |
+| `/privacy-policy/`              | 99   | 100  | 100            | 69\* | 1.7 s | 0   |
+
+\*The only failing SEO audit is "page is blocked from indexing", which is
+deliberate: the privacy page is a placeholder and is `noindex` until the
+client supplies approved text. Every other route scores 100.
+
+**Measure against what will actually ship.** The first run scored Performance
+85, with "render-blocking requests, est. saving 1,200 ms" and "document
+request latency, 59 KiB". Both were artefacts of `astro preview`, which serves
+everything uncompressed — the stylesheet is 44 KB raw but 9 KB gzipped, and
+every target host compresses by default. `scripts/serve-compressed.mjs` serves
+`dist/client` with gzip and production-like cache headers; against that the
+same build scores **93**, and FCP drops 2.7 s → 1.9 s. The SEO score likewise
+needed `IS_PRODUCTION_HOST=true`, since a staging build is correctly `noindex`.
+
+**Four real bugs, all found by measuring rather than looking:**
+
+1. **Fixed grid tracks overflowed at 1024.** `lg:grid-cols-[660px_640px]` and
+   four siblings put 1300 px of track inside a 1004 px container between 992
+   and 1300, overflowing by up to 286 px on the homepage, About and Services.
+   This is the same defect fixed on the contact page in milestone 10; the fix
+   was never generalised. All five are now percentages of the 1300 px
+   container, which reproduce the measured pixel widths exactly at 1440
+   (640/570, 533/540, 660/640, 650/570, 650/650) and scale below it.
+2. **Inactive hero slides were keyboard-reachable.** They carried
+   `aria-hidden="true"` but still contained a focusable CTA link, so a
+   keyboard user could tab into an invisible slide. They now also carry
+   `inert`, set and cleared as slides change.
+3. **Touch targets below 24 px** (WCAG 2.5.8). Hero dots were 8×8 on a 16 px
+   pitch, testimonial dots 13×13 on 21 px. The visible dots are unchanged; a
+   pseudo-element expands each target to 24×24 and the pitch went to 24 px so
+   neighbouring targets touch rather than overlap, which the spacing exception
+   requires.
+4. **Three identical "Read More" links** on the homepage tiles, meaningless to
+   anyone listening to a list of links. The visible text is unchanged; a
+   visually hidden suffix names the destination.
+
+Plus two smaller ones: the sidebar post counts were `text-body/70`, which
+resolves to #9C9C9C at **2.74:1**, and carousel icons were shipping a 300 px
+source for a 50 px slot.
+
+**Weight.** Heaviest first load is 194 KB against a 500 KB target.
+
+| Route                           | First load |
+| ------------------------------- | ---------- |
+| `/services/mortgage-solutions/` | 194 KB     |
+| `/`                             | 193 KB     |
+| `/about/`                       | 60 KB      |
+| `/contact/`                     | 33 KB      |
+
+**Responsive: 61 page/viewport combinations, zero overflow**, across 375, 390,
+768, 1024, 1440 and 1920. The correct assertion is `body.scrollWidth` against
+the viewport, not `documentElement.scrollWidth` — the preview pane reports an
+`innerWidth` 45 px wider than `clientWidth` on the homepage, and the fixed
+WhatsApp and back-to-top buttons anchor to the inflated value. That reads as a
+45 px overflow and is not one.
+
+**Known and accepted: 35 KB of the homepage's GSAP is unused.** GSAP earns its
+place there for the hero, both carousels and the accordion, and the brief
+names it in the stack, so it stays. It is the single largest remaining saving
+if you ever want the homepage at 99 like everything else.
+
+**Not done: cross-browser testing.** Chrome is covered by the Lighthouse runs.
+Safari, Firefox and iOS Safari need a human on a real machine. The specific
+things worth clicking are listed in the handover.
 
 ## Open Questions
 
