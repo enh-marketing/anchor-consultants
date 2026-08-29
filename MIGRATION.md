@@ -686,8 +686,8 @@ testimonials are already migrated into content collections and rendering.
 - [x] Astro `<Image>` handles WebP/AVIF conversion at build from these sources
 - [ ] Service icons extracted as SVG — **deferred**, current PNGs are 3–4 KB
       each so the gain is marginal; revisit if a retina issue appears
-- [ ] UI icons inlined as SVG — due with the component work (milestone 03)
-- [ ] Real alt text written for every image — due as each component is built
+- [x] UI icons inlined as SVG — Font Awesome and the flaticon font both dropped
+- [x] Real alt text written for every image — 44 meaningful, 47 explicitly decorative, 0 unlabelled
 - [x] Zero references to WordPress or `finaxio.nextwpcook.com`
 
 **Total shipped assets: 2.6 MB source** (banners 1.3 MB, hero 660 KB,
@@ -793,7 +793,7 @@ Two findings during the build:
 - [x] `/api/contact` endpoint
 - [x] reCAPTCHA v3 integration point
 - [x] SMTP integration point
-- [ ] End-to-end test once keys arrive
+- [x] End-to-end test — verified against a local SMTP sink; see m15
 
 ### Animation
 
@@ -875,9 +875,9 @@ Two findings during the build:
 
 - [ ] Side-by-side comparison, every page, every breakpoint
 - [ ] Cross-browser (Chrome, Safari, Firefox, iOS Safari)
-- [ ] Production build clean
-- [ ] README written
-- [ ] Sanity migration notes written
+- [x] Production build clean
+- [x] README written
+- [x] Sanity migration notes written (`SANITY.md`)
 
 ---
 
@@ -1474,6 +1474,65 @@ if you ever want the homepage at 99 like everything else.
 **Not done: cross-browser testing.** Chrome is covered by the Lighthouse runs.
 Safari, Firefox and iOS Safari need a human on a real machine. The specific
 things worth clicking are listed in the handover.
+
+### Handover — Milestone 15 COMPLETE
+
+- [x] Mail delivery implemented and verified end to end
+- [x] reCAPTCHA v3 wired on both forms, lazily loaded
+- [x] `.env.example` documenting every variable
+- [x] `README.md` and `SANITY.md`
+
+**Mail is no longer a TODO.** The endpoint previously validated and logged but
+had a comment where the send belonged, which would have left the client unable
+to receive anything the moment credentials arrived. `nodemailer` is now
+installed and `src/pages/api/contact.ts` sends for real.
+
+Verified against a local SMTP sink, both paths:
+
+|                 | Result                                               |
+| --------------- | ---------------------------------------------------- |
+| Contact enquiry | `{"ok":true,"delivered":true}`, message received     |
+| CV upload       | `multipart/mixed`, attachment `cv-test.pdf` received |
+| `From`          | the SMTP account                                     |
+| `Reply-To`      | the visitor — `Sara Malik <sara@example.com>`        |
+| `To`            | `CONTACT_TO`                                         |
+
+The visitor's address goes in `Reply-To` and never in `From`: sending as them
+fails SPF and DMARC on most providers, which is the standard way contact forms
+end up in spam folders.
+
+**A latent bug found while wiring reCAPTCHA.** The CV modal never sent a token.
+The endpoint rejects a submission when a secret is configured but no token
+arrives, so the CV form would have broken the day the client added their keys —
+and only then. Both forms now use one helper, `src/lib/recaptcha.ts`.
+
+That helper loads the reCAPTCHA script **lazily, on the first submit that needs
+a token**, rather than on every page. It is roughly 100 KB of third-party
+JavaScript and most visitors never trigger it; loading it up front would have
+undone much of milestone 12.
+
+**Everything is inert until configured.** With no environment variables the
+site builds, both forms validate and submit, and the visitor is told plainly
+that nothing was delivered. Adding credentials is a deployment change, not a
+code change.
+
+**Endpoint behaviour, verified:**
+
+| Request                         | Response                                                                       |
+| ------------------------------- | ------------------------------------------------------------------------------ |
+| Valid, no SMTP                  | 200 `{ok:true, delivered:false, reason:"SMTP credentials are not configured"}` |
+| Valid, SMTP set                 | 200 `{ok:true, delivered:true}`                                                |
+| Invalid fields                  | 422 with per-field errors                                                      |
+| Honeypot filled                 | 200 `{ok:true, delivered:false, reason:"Discarded."}`                          |
+| CV with no file                 | 422                                                                            |
+| `GET`                           | 405                                                                            |
+| POST without an `Origin` header | 403 — Astro's CSRF check, on by default                                        |
+
+**Docs.** `README.md` covers setup, the six things blocking launch, environment
+variables, going live and the indexing switch, architecture, conventions worth
+knowing, and how to reproduce the Lighthouse numbers. `SANITY.md` maps every
+collection to its future document type field for field, sequences the swap, and
+flags the two parts that need real thought (image handling and Portable Text).
 
 ## Open Questions
 

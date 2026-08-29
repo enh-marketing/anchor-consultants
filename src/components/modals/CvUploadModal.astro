@@ -146,6 +146,7 @@ import Dialog from './Dialog.astro';
 
 <script>
   import { validateContact, validateCv, hasErrors } from '../../lib/forms';
+  import { recaptchaToken } from '../../lib/recaptcha';
 
   const form = document.querySelector<HTMLFormElement>('form.cv-form');
   if (form) {
@@ -198,7 +199,10 @@ import Dialog from './Dialog.astro';
       label.textContent = 'Sending…';
 
       try {
-        const res = await fetch(form.action, { method: 'POST', body: new FormData(form) });
+        const body = new FormData(form);
+        const token = await recaptchaToken('cv_upload');
+        if (token) body.set('token', token);
+        const res = await fetch(form.action, { method: 'POST', body });
         const data = await res.json();
         if (!res.ok || !data.ok) {
           if (data.errors) paint(data.errors);

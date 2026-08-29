@@ -270,8 +270,7 @@ const compact = variant === 'modal';
 
 <script>
   import { validateContact, hasErrors, type FieldName } from '../../lib/forms';
-
-  const RECAPTCHA_SITE_KEY = ''; // TODO(client): reCAPTCHA v3 site key
+  import { recaptchaToken } from '../../lib/recaptcha';
 
   document.querySelectorAll<HTMLFormElement>('form.contact-form').forEach((form) => {
     const field = (n: string) =>
@@ -309,21 +308,6 @@ const compact = variant === 'modal';
       });
     });
 
-    const token = async (): Promise<string | undefined> => {
-      const g = (
-        window as unknown as {
-          grecaptcha?: {
-            ready: (cb: () => void) => void;
-            execute: (k: string, o: { action: string }) => Promise<string>;
-          };
-        }
-      ).grecaptcha;
-      if (!RECAPTCHA_SITE_KEY || !g) return undefined;
-      return new Promise((resolve) => {
-        g.ready(async () => resolve(await g.execute(RECAPTCHA_SITE_KEY, { action: 'contact' })));
-      });
-    };
-
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const errors = validateContact(values());
@@ -345,7 +329,7 @@ const compact = variant === 'modal';
 
       try {
         const body = new FormData(form);
-        const t = await token();
+        const t = await recaptchaToken('contact');
         if (t) body.set('token', t);
         const res = await fetch(form.action, { method: 'POST', body });
         const data = await res.json();

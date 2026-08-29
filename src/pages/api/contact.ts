@@ -1,16 +1,23 @@
 import type { APIRoute } from 'astro';
+import nodemailer from 'nodemailer';
 import { validateContact, validateCv, hasErrors, CV_MAX_BYTES } from '../../lib/forms';
+import { site } from '../../data/site';
 
 /**
  * The only server route in the build. Everything else prerenders.
  *
- * Two things are still missing and both are the client's to supply:
- *   RECAPTCHA_SECRET_KEY  — verifies the v3 token with Google
- *   SMTP_*                — delivers the mail
+ * Delivery and verification are both fully implemented and both are inert
+ * until the matching environment variables exist, so adding credentials is a
+ * deployment change rather than a code change. See `.env.example`.
  *
- * Until they exist the endpoint validates, logs, and returns success so the
- * front end can be exercised end to end. It never silently pretends to have
- * sent something: the response carries `delivered: false` and the reason.
+ *   SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASSWORD  — delivers the mail
+ *   CONTACT_TO                                          — where it goes
+ *   RECAPTCHA_SECRET_KEY                                — verifies the v3 token
+ *
+ * With nothing configured the endpoint still validates and logs, so the front
+ * end can be exercised end to end. It never silently pretends to have sent
+ * something: the response carries `delivered: false` and the reason, and the
+ * forms say so in plain words.
  */
 export const prerender = false;
 
@@ -120,15 +127,62 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 
-  // TODO(client): send with the supplied SMTP credentials. This is the only
-  // place mail delivery belongs; nothing else in the codebase needs to change.
-  //
-  //   const transport = nodemailer.createTransport({ host: env('SMTP_HOST'), ... });
-  //   await transport.sendMail({ to: env('CONTACT_TO'), subject, text, attachments });
-  //
-  // `nodemailer` is intentionally not installed yet, so the build has no
-  // unused dependency while the keys are outstanding.
-  return json({ ok: true, delivered: false, reason: 'Mail transport not implemented yet.' });
+  const port = Number(env('SMTP_PORT') ?? 587);
+  const transport = nodemailer.createTransport({
+    host: env('SMTP_HOST'),
+    port,
+    // 465 is implicit TLS; 587 upgrades with STARTTLS.
+    secure: port === 465,
+    auth: { user: env('SMTP_USER'), pass: env('SMTP_PASSWORD') },
+  });
+
+  const to = env('CONTACT_TO') ?? site.contact.email.address;
+  const from = env('SMTP_FROM') ?? env('SMTP_USER')!;
+  const isCv = kind === 'cv';
+
+  const lines = [
+    `Name:  ${payload.name}`,
+    `Email: ${payload.email}`,
+    ...(payload.phone ? [`Phone: ${payload.phone}`] : []),
+    '',
+    isCv ? 'A CV was attached to this submission.' : payload.message || '(no message)',
+  ];
+
+  try {
+    await transport.sendMail({
+      to,
+      from,
+      // The visitor's address goes in Reply-To, never in From: sending as
+      // them would fail SPF and DMARC on most providers.
+      replyTo: `${payload.name} <${payload.email}>`,
+      subject: isCv ? `CV submission — ${payload.name}` : `Website enquiry — ${payload.name}`,
+      text: lines.join('\n'),
+      ...(cv
+        ? {
+            attachments: [
+              {
+                filename: cv.name,
+                content: Buffer.from(await cv.arrayBuffer()),
+                contentType: cv.type || 'application/octet-stream',
+              },
+            ],
+          }
+        : {}),
+    });
+  } catch (error) {
+    // Never report success for a send that failed.
+    console.error('[contact] SMTP send failed', error);
+    return json(
+      {
+        ok: false,
+        delivered: false,
+        reason: 'We could not send your message just now. Please call or email us directly.',
+      },
+      502,
+    );
+  }
+
+  return json({ ok: true, delivered: true });
 };
 
 /** Anything other than POST. */
