@@ -1390,11 +1390,10 @@ verified, 35 tests passing, `astro check` 0 errors and 0 warnings,
 should point at their new homes need listing — that is a content task, and the
 audit's URL inventory is the place to start.
 
-### Draft preview — Milestone 24 MOSTLY COMPLETE
+### Draft preview — Milestone 24 COMPLETE
 
-Preview is built and tested. The deploy webhook is documented but cannot be
-wired until the Vercel project exists, so this milestone is deliberately not
-marked done.
+Preview is built and tested, and the deploy webhook is now wired — see the entry
+above. Both halves are done.
 
 **Preview renders through `SectionRenderer`**, the same component every real page
 uses, so what an editor sees is what publishing will produce. That is the payoff
@@ -1757,6 +1756,46 @@ Caught by trying to use it rather than by reading the docs.
 
 **Still outstanding:** SMTP, reCAPTCHA, and the Sanity deploy webhook, which needs
 a Vercel deploy hook URL that only the dashboard produces.
+
+### Deploy webhook wired — publishing now rebuilds the site
+
+The last piece of milestone 24. Publishing in the Studio triggers a production
+deployment with no developer involved.
+
+**The webhook was pointing at the wrong URL.** It had been created with
+`https://anchor-consultants.vercel.app/` — the site's own homepage rather than a
+Vercel deploy hook. A `POST` there does nothing, so it would never have built
+anything, and there would have been no error to notice: the webhook would report
+success against a page that happily returns 200.
+
+Fixed by creating a deploy hook (`sanity-publish`, branch `main`) through the
+Vercel API and repointing the Sanity webhook at it. Neither the deploy hook URL
+nor either API token was printed at any point.
+
+_A detail for anyone repeating this:_ Sanity's management API takes `PATCH` at
+`/v2021-10-04/hooks/projects/{projectId}/{hookId}`. `PUT` on the same path
+returns an HTML 404, which reads like a wrong path rather than a wrong method.
+
+**Verified end to end**, not assumed. A real change was published to
+`siteSettings.tagline` and reverted:
+
+| Check                       | Result                                   |
+| --------------------------- | ---------------------------------------- |
+| Deployments triggered       | 2 — one per publish                      |
+| Time to Ready               | 15 and 18 seconds                        |
+| Sanity delivery log         | `success`, result code 201               |
+| Site after the auto-deploys | All pages 200, tagline back to its value |
+
+**The configuration that matters**, both of which default to something harmful:
+
+- **Dataset is `production`,** not `*`. `*` includes the private `submissions`
+  dataset, so every contact form enquiry would have rebuilt the entire site.
+- **Drafts is off.** Every keystroke in the Studio saves a draft, so leaving it on
+  triggers a build per keystroke.
+
+The filter excludes `sanity.imageAsset` and `sanity.fileAsset`, because uploading
+an image creates a document in `production` — without it, dragging in twelve
+photos fires twelve builds.
 
 ## Open Questions
 
