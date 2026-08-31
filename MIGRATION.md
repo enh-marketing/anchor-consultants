@@ -1708,6 +1708,56 @@ absent from `production` — then deleting it.
 The write token now only needs access to `submissions`, and should not be given
 access to `production`.
 
+### Deployed to Vercel, and the credentials provisioned
+
+Live at `https://anchor-consultants.vercel.app`, GitHub repo connected so a push
+to `main` deploys. `SITE_INDEXABLE=false` is set, so the temporary address emits
+`noindex, nofollow` and cannot be indexed before the real domain is connected.
+
+**Provisioned without any secret being printed.** Two Sanity API tokens were
+created through the authenticated CLI and piped straight into Vercel, and the two
+random values were generated with `openssl` and piped the same way. No credential
+appeared in output at any point.
+
+| Variable                   | Value                                  | Sensitive |
+| -------------------------- | -------------------------------------- | --------- |
+| `SANITY_WRITE_TOKEN`       | Sanity token, Editor role              | Yes       |
+| `SANITY_PREVIEW_TOKEN`     | Sanity token, Viewer role              | Yes       |
+| `SUBMISSION_SALT`          | `openssl rand -hex 32`                 | Yes       |
+| `PREVIEW_SECRET`           | `openssl rand -hex 24`                 | No        |
+| `PUBLIC_SANITY_PROJECT_ID` | `ld89i91d`                             | No        |
+| `PUBLIC_SANITY_DATASET`    | `production`                           | No        |
+| `SITE_INDEXABLE`           | `false`, until the domain is connected | No        |
+
+**Least privilege where the CLI allows it.** The preview token is Viewer — it only
+has to read drafts. The write token is Editor because it has to create submission
+documents. It is _not_ scoped to the `submissions` dataset: `sanity tokens add`
+takes a project-wide role, and dataset-scoped custom roles are a paid Sanity
+feature. Noted rather than glossed over — the token is server-only and verified
+absent from the client bundle, but it can write to `production` too.
+
+**Sensitivity had to be corrected.** `vercel env add` marks everything Sensitive
+by default, which is write-only. Correct for the tokens and the salt, and wrong
+for `PREVIEW_SECRET`: an editor needs to know it to follow the first preview link,
+and nobody could have read it back — including the person who set it. Re-added
+with `--no-sensitive`, along with the three values that are not secrets at all.
+Caught by trying to use it rather than by reading the docs.
+
+**Both features verified against the live deployment.**
+
+| Check                                  | Result                        |
+| -------------------------------------- | ----------------------------- |
+| Enquiry written to the private dataset | Yes, 4 fields and source page |
+| That submission readable with no token | No                            |
+| Preview with the wrong secret          | 401                           |
+| Preview with the correct secret        | 302, then the draft renders   |
+| Draft heading visible in preview       | Yes                           |
+| Published page unaffected by the draft | Yes                           |
+| Preview page indexable                 | No                            |
+
+**Still outstanding:** SMTP, reCAPTCHA, and the Sanity deploy webhook, which needs
+a Vercel deploy hook URL that only the dashboard produces.
+
 ## Open Questions
 
 These need your input. None of them block starting at Milestone 0; I have noted the assumption I will proceed with if you would rather decide later.
