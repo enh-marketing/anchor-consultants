@@ -1,11 +1,12 @@
 ---
-import { Image } from 'astro:assets';
+import CmsImage from '../ui/CmsImage.astro';
 import Eyebrow from '../ui/Eyebrow.astro';
 import Button from '../ui/Button.astro';
 import backdrop from '../../assets/images/hero/backdrop.jpg';
 import slide1 from '../../assets/images/hero/slide-1.png';
 import slide2 from '../../assets/images/hero/slide-2.png';
 import slide3 from '../../assets/images/hero/slide-3.png';
+import { altProp, resolveLink, type HeroCarouselBlock } from '../../lib/sections';
 
 // Measured from the original at 1440 (client width 1425):
 //   section 907px tall
@@ -17,7 +18,7 @@ import slide3 from '../../assets/images/hero/slide-3.png';
 //   backdrop banner-bg.jpg, cover, centred
 //   Swiper: fade, 6s autoplay, loop, 300ms
 
-const slides = [
+const defaultSlides = [
   {
     eyebrow: 'UAE Mortgage & Real-Estate Finance Specialists',
     title: 'Unlocking Your Financing Potential',
@@ -40,6 +41,30 @@ const slides = [
     alt: 'Adviser supporting UAE development project funding',
   },
 ];
+
+interface Props {
+  block?: HeroCarouselBlock;
+}
+const { block } = Astro.props;
+
+// A slide is only usable with a title and an image, so partly-filled rows are
+// dropped rather than rendered as an empty frame in the carousel.
+const cmsSlides = (block?.slides ?? []).flatMap((slide) =>
+  slide.title && slide.image
+    ? [
+        {
+          eyebrow: slide.eyebrow ?? '',
+          title: slide.title,
+          body: slide.body ?? '',
+          image: slide.image,
+          alt: slide.alt,
+        },
+      ]
+    : [],
+);
+const slides = cmsSlides.length ? cmsSlides : defaultSlides;
+const cta = resolveLink(block?.cta, { label: 'Book a Free Consultation', href: '/contact/' });
+const backdropImage = block?.backdrop ?? backdrop;
 ---
 
 <section
@@ -48,8 +73,8 @@ const slides = [
   aria-label="Anchor Consultants highlights"
 >
   <!-- Backdrop -->
-  <Image
-    src={backdrop}
+  <CmsImage
+    src={backdropImage}
     alt=""
     aria-hidden="true"
     class="absolute inset-0 h-full w-full object-cover"
@@ -88,7 +113,7 @@ const slides = [
                     <p class="text-hero text-ink mt-[22px] mb-5 font-bold">{slide.title}</p>
                   )}
                   <p class="text-lead text-body mb-[45px] max-w-[640px] leading-7">{slide.body}</p>
-                  <Button href="/contact/">Book a Free Consultation</Button>
+                  <Button href={cta.href}>{cta.label}</Button>
                 </div>
               </div>
 
@@ -96,9 +121,9 @@ const slides = [
                   original (797px tall ending exactly on the 907px edge), so
                   it must bottom-align rather than centre with the copy. */}
               <div class="hidden h-full items-end justify-end lg:col-span-5 lg:flex">
-                <Image
+                <CmsImage
                   src={slide.image}
-                  alt={slide.alt}
+                  {...altProp(slide.alt)}
                   class="block h-auto w-[492px] max-w-full"
                   loading={i === 0 ? 'eager' : 'lazy'}
                   widths={[492, 984]}

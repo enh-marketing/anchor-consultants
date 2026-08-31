@@ -605,6 +605,110 @@ full re-run to fix one document would litter the media library.
 Studio needs a rebuild to appear. Closing that loop means a Sanity webhook
 pointed at the host's deploy hook, which needs the host to be chosen first.
 
+### Page builder and the home page — Milestone 16 COMPLETE
+
+The home page is now built from an ordered list of sections in a Sanity `page`
+document. Add, remove, reorder, duplicate and hide sections, all without a code
+change. The design did not move.
+
+**The architectural decision.** The spec asks for a flexible page builder and
+also for the design to stay exactly as established. Those pull against each
+other unless the blocks are the components that already passed visual
+verification, so that is what they are: eight typed block schemas, each mapping
+to one existing section component through
+`src/components/sections/SectionRenderer.astro`. The CMS changed where content
+comes from. It did not change a single line of markup.
+
+| Approach                             | Rejected because                                  |
+| ------------------------------------ | ------------------------------------------------- |
+| A schema per page                    | Cannot add, reorder or hide sections; fails §3    |
+| Free-form blocks with style controls | Editors could break the measured design; fails §4 |
+| **Typed blocks, one per section**    | **Chosen**                                        |
+
+**What an editor can change:** every heading, eyebrow, paragraph, image, tile,
+button label, button destination, accessible section label, and the dialog each
+leader-profile button opens. Sections can be reordered by drag, hidden with a
+toggle, or removed.
+
+**What an editor cannot change:** anything presentational. There is no colour,
+font-size, margin or spacing field in `studio/schemaTypes/blocks/`. Where a
+section genuinely varies it varies by a named variant — the highlight row's
+overlay is `Dark` or `Teal`, nothing else — and the component turns that into
+its own classes. Both overlay values were contrast-checked when the section was
+built; a free colour picker would have quietly undone that.
+
+**Verified in three stages, so any difference had one cause.**
+
+1. _Props refactor, no CMS._ Five components took optional props with their
+   shipped values as defaults. Output: **byte-for-byte identical**, 95,630 bytes.
+2. _Images through `CmsImage`._ Three more components converted. Output:
+   non-image markup identical, and all **26 images identical** on every
+   attribute. The one change is that four `<img>` no longer carry
+   HeroCarousel's scope attribute, because `CmsImage` is a separate component.
+   Confirmed inert: that component's scoped CSS targets only `.hero-dot`,
+   `.hero-track` and `.hero-slide`.
+3. _Rendered from Sanity._ Visible text identical to the pre-milestone
+   baseline, 26 images, heading structure unchanged at h1×1 / h2×13 / h3×16, and
+   the same two JSON-LD blocks.
+
+Measured at 1440 against the original, before and after:
+
+| Element             | Original | Now       |
+| ------------------- | -------- | --------- |
+| Hero section        | 907px    | 907px     |
+| Highlight tile      | 381px    | 381×475px |
+| About split section | 790px    | 790px     |
+| Services carousel   | 620px    | 620px     |
+| Leader card         | 1140×488 | 1140×488  |
+| Document height     | 6390px   | 6390px    |
+| Horizontal overflow | none     | none      |
+
+**The one genuine conversion.** The About section's copy was a single paragraph
+whose three parts were separated by double `<br>`s. That is markup, not
+structure, so as Portable Text it becomes three real paragraphs instead. The
+shipped markup is kept as the fallback and a `.about-body` rule gives the CMS
+path a 26px gap between paragraphs, which is exactly the empty line box the
+double `<br>` used to create. Verified: 3 paragraphs, computed margins
+`0 / 26px / 26px`, 4 bold runs at `#333`, section still 790px.
+
+**A bug the acceptance test found.** Hiding the FAQ accordion from the CMS left
+the `FAQPage` structured data in place, describing questions a visitor could no
+longer see. Structured data must describe what is actually on the page, so
+`index.astro` now emits it only when a visible `faqAccordion` section exists.
+This is the same class of defect as the WordPress build's auto-generated
+descriptions (defect #22): plausible-looking metadata that does not match the
+page.
+
+**Acceptance test, run end to end.** With no code change, a CMS edit hid the
+calculator and swapped the FAQ and testimonial sections. Result: 8 sections
+became 7, "Calculate Your Financing Path" was absent from the HTML, and
+testimonials rendered before the FAQ. Reverting the document restored the
+verified output exactly.
+
+**Performance.** Eight content images moved to Sanity's CDN, one of which is
+above the fold and eager. Byte weight is unchanged: the local pipeline produced
+a 62.8 KB WebP for the hero artwork and Sanity serves 62.8 KB for the same
+image. The real cost was a new origin in the critical path, so `BaseLayout` now
+emits `<link rel="preconnect" href="https://cdn.sanity.io">` when Sanity is the
+source. The three photographic backdrops were deliberately left empty in the
+imported document: the fields exist so they can be changed, and an empty field
+keeps the build-optimised local asset, so the largest above-the-fold image did
+not move to a third-party CDN for an edit nobody asked for.
+
+**Fallback intact.** There is no markdown fallback for pages, because a page's
+fallback is the fixed route that already exists. With `.env` removed the home
+page renders its shipped sections and the build is byte-identical to
+pre-milestone. That is why every field in `src/lib/sections.ts` is optional.
+
+**Checks:** 12 routes, 10 sitemap URLs, 26/26 images loading, 25 tests passing,
+`astro check` 0 errors across 95 files, `sanity schema validate` 0 errors,
+Prettier clean.
+
+**Not in this milestone.** The other six pages are still fixed routes; that is
+M17, which also adds the `[...slug]` route so a new page needs no code. Section
+spacing variants, the stats/CTA/rich-text blocks and the editable 404 come with
+it.
+
 ## Open Questions
 
 These need your input. None of them block starting at Milestone 0; I have noted the assumption I will proceed with if you would rather decide later.

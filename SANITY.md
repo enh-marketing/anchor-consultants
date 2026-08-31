@@ -219,6 +219,36 @@ Order of work:
    imported in the most places, so it is the most disruptive and the least
    urgent.
 
+### Editing a page
+
+Pages live under **Pages** in the Studio. A page is a title, a slug and an
+ordered list of sections.
+
+- **Reorder** by dragging a section in the list.
+- **Hide** a section with its "Hide this section" toggle. The content stays; it
+  just stops rendering. Nothing is lost and nothing needs undoing.
+- **Add** a section with the add button, then pick a type.
+- **Remove** a section to delete it and its content.
+
+The slug is the URL, and `/` is the home page. Changing a slug changes the
+address, and links to the old one break until a redirect exists (redirects are
+M23).
+
+Some sections pull their own content from elsewhere on purpose, so it is entered
+once: the services carousel reads the `service` documents, the FAQ accordion
+reads the `faq` documents, the testimonial carousel reads the `testimonial`
+documents, and the leader profile reads the first `teamMember` by order. Those
+sections let you edit the heading and the surrounding copy, not the items.
+
+Three fields deliberately have no editable default in the imported home page:
+the hero backdrop, the services carousel background and the leader profile
+background. Leave them empty and the build-optimised local image is used, which
+is faster. Fill one and it comes from Sanity instead.
+
+Sections cannot change colours, fonts, sizes or spacing. That is not an
+oversight: the layout was measured against the original site, and the CMS is
+scoped to content so an edit cannot break it.
+
 ### Two things that need real thought
 
 **Images — decided.** Content imagery now lives in Sanity and is served from

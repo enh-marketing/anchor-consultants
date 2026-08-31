@@ -1,0 +1,95 @@
+---
+import HeroCarousel from '../home/HeroCarousel.astro';
+import ServiceHighlightRow from '../home/ServiceHighlightRow.astro';
+import AboutSplit from '../home/AboutSplit.astro';
+import ServicesCarousel from '../home/ServicesCarousel.astro';
+import EmiCalculator from '../home/EmiCalculator.astro';
+import LeaderProfile from '../home/LeaderProfile.astro';
+import FaqAccordion from '../home/FaqAccordion.astro';
+import TestimonialCarousel from '../home/TestimonialCarousel.astro';
+import type {
+  AboutSplitBlock,
+  EmiCalculatorBlock,
+  FaqAccordionBlock,
+  HeroCarouselBlock,
+  LeaderProfileBlock,
+  SectionBlock,
+  ServiceHighlightRowBlock,
+  ServicesCarouselBlock,
+  TestimonialCarouselBlock,
+} from '../../lib/sections';
+
+/**
+ * Renders a page's sections, in order.
+ *
+ * This is the whole page builder on the front end: one place that turns a
+ * `_type` into a component. Adding a section type means adding a block schema
+ * in the Studio and one branch here, and nothing else changes.
+ *
+ * Three deliberate behaviours:
+ *
+ * **`hidden` is honoured here, not in the components.** A section cannot forget
+ * to check it, and a hidden section costs nothing to render because it is never
+ * reached.
+ *
+ * **An unknown `_type` renders nothing and warns at build.** A block added in
+ * the Studio before the front end supports it must not take the site down, and
+ * it must not print an object onto the page either. `PortableText.astro` makes
+ * the same trade for the same reason. The warning is what stops it being
+ * silent.
+ *
+ * **The chain is explicit rather than a lookup table.** Each branch narrows the
+ * union to the block its component expects, so a schema field that a component
+ * does not accept is a type error rather than something discovered in the
+ * browser.
+ */
+
+interface Props {
+  sections: Array<Record<string, unknown>>;
+}
+const { sections } = Astro.props;
+
+const KNOWN = new Set([
+  'heroCarousel',
+  'serviceHighlightRow',
+  'aboutSplit',
+  'servicesCarousel',
+  'emiCalculator',
+  'leaderProfile',
+  'faqAccordion',
+  'testimonialCarousel',
+]);
+
+const unknownTypes = [
+  ...new Set(sections.map((s) => String(s['_type'] ?? '')).filter((t) => t && !KNOWN.has(t))),
+];
+if (unknownTypes.length) {
+  console.warn(
+    `[sections] No renderer for ${unknownTypes.join(', ')} — skipped. ` +
+      `Add a branch in src/components/sections/SectionRenderer.astro.`,
+  );
+}
+
+const blocks = sections.filter(
+  (s) => KNOWN.has(String(s['_type'] ?? '')) && s['hidden'] !== true,
+) as unknown as SectionBlock[];
+---
+
+{
+  blocks.map((block) => {
+    if (block._type === 'heroCarousel') return <HeroCarousel block={block as HeroCarouselBlock} />;
+    if (block._type === 'serviceHighlightRow')
+      return <ServiceHighlightRow block={block as ServiceHighlightRowBlock} />;
+    if (block._type === 'aboutSplit') return <AboutSplit block={block as AboutSplitBlock} />;
+    if (block._type === 'servicesCarousel')
+      return <ServicesCarousel block={block as ServicesCarouselBlock} />;
+    if (block._type === 'emiCalculator')
+      return <EmiCalculator block={block as EmiCalculatorBlock} />;
+    if (block._type === 'leaderProfile')
+      return <LeaderProfile block={block as LeaderProfileBlock} />;
+    if (block._type === 'faqAccordion') return <FaqAccordion block={block as FaqAccordionBlock} />;
+    if (block._type === 'testimonialCarousel')
+      return <TestimonialCarousel block={block as TestimonialCarouselBlock} />;
+    return null;
+  })
+}

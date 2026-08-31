@@ -2,6 +2,7 @@
 import { Image } from 'astro:assets';
 import { getCollection } from 'astro:content';
 import SectionHeading from '../ui/SectionHeading.astro';
+import { resolveLink, type FaqAccordionBlock } from '../../lib/sections';
 import Icon from '../ui/Icon.astro';
 import faq1 from '../../assets/images/faq/faq-1.jpg';
 import faq2 from '../../assets/images/faq/faq-2.jpg';
@@ -20,6 +21,16 @@ import faq2 from '../../assets/images/faq/faq-2.jpg';
 // Rendered as <h3> here so the heading levels run in order.
 
 const faqs = (await getCollection('faqs')).sort((a, b) => a.data.order - b.data.order);
+
+interface Props {
+  block?: FaqAccordionBlock;
+}
+const { block } = Astro.props;
+
+const eyebrow = block?.eyebrow ?? "FAQ's";
+const title = block?.title ?? 'Some Questions & A.';
+const footerText = block?.footerText ?? 'If you have more questions';
+const footerLink = resolveLink(block?.footerLink, { label: 'Contact Us', href: '/contact/' });
 ---
 
 <section class="bg-mist py-[30px]">
@@ -53,7 +64,7 @@ const faqs = (await getCollection('faqs')).sort((a, b) => a.data.order - b.data.
 
       <!-- Questions -->
       <div>
-        <SectionHeading eyebrow="FAQ's" title="Some Questions & A." gap={7} class="lg:pt-[13px]" />
+        <SectionHeading eyebrow={eyebrow} title={title} gap={7} class="lg:pt-[13px]" />
 
         <div class="mt-[30px]" data-faq>
           {
@@ -97,8 +108,10 @@ const faqs = (await getCollection('faqs')).sort((a, b) => a.data.order - b.data.
             aria-hidden="true">?</span
           >
           <p class="text-body text-base">
-            If you have more questions{' '}
-            <a href="/contact/" class="text-navy font-semibold hover:underline">Contact Us</a>
+            {footerText}{' '}
+            <a href={footerLink.href} class="text-navy font-semibold hover:underline"
+              >{footerLink.label}</a
+            >
           </p>
         </div>
       </div>

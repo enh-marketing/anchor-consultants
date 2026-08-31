@@ -1,6 +1,7 @@
 ---
 import { Image } from 'astro:assets';
 import SectionHeading from '../ui/SectionHeading.astro';
+import type { EmiCalculatorBlock } from '../../lib/sections';
 import { EMI_LIMITS } from '../../lib/emi';
 import planImage from '../../assets/images/about/plan.jpg';
 import { getSite } from '../../data/get-site';
@@ -30,6 +31,15 @@ const A = EMI_LIMITS.amount;
 const R = EMI_LIMITS.rate;
 const Y = EMI_LIMITS.years;
 const M = EMI_LIMITS.months;
+
+interface Props {
+  block?: EmiCalculatorBlock;
+}
+const { block } = Astro.props;
+
+// Defaults are the values this section shipped with, so an absent or
+// half-filled CMS document renders exactly what it rendered before.
+const title = block?.title ?? 'Calculate Your Financing Path';
 ---
 
 {/* Spacer band above the calculator, part of the original's rhythm. */}
@@ -42,7 +52,7 @@ const M = EMI_LIMITS.months;
   <div class="mx-auto w-full max-w-[1320px] px-3 lg:px-[10px]">
     <div class="grid items-start gap-10 lg:grid-cols-[49.231%_43.846%] lg:justify-between lg:gap-0">
       <div>
-        <SectionHeading title="Calculate Your Financing Path" />
+        <SectionHeading title={title} />
 
         <form
           class="emi mt-5"

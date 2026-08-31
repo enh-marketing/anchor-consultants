@@ -2,6 +2,7 @@
 import { Image } from 'astro:assets';
 import { getCollection, render } from 'astro:content';
 import SectionHeading from '../ui/SectionHeading.astro';
+import type { LeaderProfileBlock } from '../../lib/sections';
 import CmsImage from '../ui/CmsImage.astro';
 import PortableText from '../shared/PortableText.astro';
 import bg from '../../assets/images/services/carousel-bg.jpg';
@@ -41,6 +42,29 @@ const photoAlt =
 // Markdown fallback renders the file body; Sanity sends Portable Text.
 const leaderBio = leader && Array.isArray(leader.data.bio) ? leader.data.bio : null;
 const BioContent = leader && !leaderBio ? (await render(leader)).Content : null;
+
+interface Props {
+  block?: LeaderProfileBlock;
+}
+const { block } = Astro.props;
+
+const title = block?.title ?? 'Our Leader';
+const ctaHeading =
+  block?.ctaHeading ?? 'You can request an appointment to discuss your financing options.';
+
+// Both actions open a dialog rather than navigating, so the configurable part
+// is the label and which dialog it opens. The dialog ids are a fixed list in
+// the schema: a free-text field here would let an editor point a button at a
+// dialog that does not exist.
+const actions = (block?.actions ?? []).flatMap((a) =>
+  a.label && a.dialog ? [{ label: a.label, dialog: a.dialog }] : [],
+);
+const resolvedActions = actions.length
+  ? actions
+  : [
+      { label: 'Get An Appointment', dialog: 'contact-dialog' },
+      { label: 'Apply For Job', dialog: 'cv-dialog' },
+    ];
 ---
 
 <section class="relative isolate overflow-hidden pt-[30px]">
@@ -56,7 +80,7 @@ const BioContent = leader && !leaderBio ? (await render(leader)).Content : null;
   <div aria-hidden="true" class="absolute inset-0 -z-10 bg-[#436B88] opacity-90"></div>
 
   <div class="container-bs">
-    <SectionHeading title="Our Leader" onDark align="center" />
+    <SectionHeading title={title} onDark align="center" />
 
     <!-- Leader card -->
     <!-- The card is 1140px wide on the original, inset 78px inside the 1296px
@@ -91,7 +115,7 @@ const BioContent = leader && !leaderBio ? (await render(leader)).Content : null;
     <!-- Appointment CTA -->
     <div class="pt-[30px] pb-[20px] text-center">
       <p class="text-[30px] leading-[40px] font-bold text-white">
-        You can request an appointment to discuss your financing options.
+        {ctaHeading}
       </p>
       <!-- The original puts two Popup Maker triggers side by side here,
            as plain 14px/700 text with no icon: "Get An Appointment"
@@ -99,20 +123,17 @@ const BioContent = leader && !leaderBio ? (await render(leader)).Content : null;
            centred in the container. The original colours them #777 over a
            dark photograph, which fails contrast (defect #27); white here. -->
       <div class="mt-[30px] flex flex-wrap items-center justify-center gap-x-[42px] gap-y-3">
-        <button
-          type="button"
-          data-dialog-open="contact-dialog"
-          class="text-small font-bold text-white underline-offset-4 transition-colors hover:underline"
-        >
-          Get An Appointment
-        </button>
-        <button
-          type="button"
-          data-dialog-open="cv-dialog"
-          class="text-small font-bold text-white underline-offset-4 transition-colors hover:underline"
-        >
-          Apply For Job
-        </button>
+        {
+          resolvedActions.map((action) => (
+            <button
+              type="button"
+              data-dialog-open={action.dialog}
+              class="text-small font-bold text-white underline-offset-4 transition-colors hover:underline"
+            >
+              {action.label}
+            </button>
+          ))
+        }
       </div>
     </div>
   </div>

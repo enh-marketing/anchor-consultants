@@ -159,3 +159,42 @@ export const sanityTeam = () =>
       order
     `,
   });
+
+/**
+ * Sections carry images and rich text at several levels of nesting, so each
+ * block projects its own. GROQ's conditional spread keeps that in one query:
+ * `...` copies the block's plain fields, and the `_type ==` clauses replace the
+ * fields that need an asset resolved.
+ *
+ * Slide and tile alt text is deliberately not projected as a sibling field. It
+ * lives on the image object, `CmsImage` reads it from there, and having one
+ * place for it is what stopped the leader portrait losing its description.
+ */
+const SECTIONS = `sections[]{
+  ...,
+  _type == "heroCarousel" => {
+    "slides": slides[]{ eyebrow, title, body, "image": image${IMAGE} },
+    "backdrop": backdrop${IMAGE}
+  },
+  _type == "serviceHighlightRow" => {
+    "tiles": tiles[]{ title, body, href, overlay, "image": image${IMAGE} }
+  },
+  _type == "aboutSplit" => {
+    "images": images[]{ "image": ${IMAGE} }
+  },
+  _type == "servicesCarousel" => { "background": background${IMAGE} },
+  _type == "leaderProfile" => { "background": background${IMAGE} }
+}`;
+
+export const sanityPages = () =>
+  collection({
+    type: 'page',
+    order: 'title asc',
+    projection: `
+      "id": slug.current,
+      title,
+      "slug": slug.current,
+      ${SECTIONS},
+      "seo": seo${SEO}
+    `,
+  });

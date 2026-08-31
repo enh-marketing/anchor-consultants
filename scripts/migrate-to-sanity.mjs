@@ -414,12 +414,174 @@ export async function run({ client: injected, dry, only } = {}) {
     }
   }
 
+  if (!skip('pages')) {
+    console.log('\npages');
+    await importHomePage();
+  }
+
   console.log(
     '\nDone.' +
       (dryRun
         ? ' Re-run without --dry-run to write.'
         : '\nNext: set PUBLIC_SANITY_PROJECT_ID in .env and rebuild to read from Sanity.'),
   );
+}
+
+/**
+ * The home page as a `page` document.
+ *
+ * The values here are the ones the components ship with, so importing this
+ * changes where the home page's content comes from without changing a word of
+ * it. That is what makes the result verifiable: the CMS build is compared
+ * against the pre-migration build, and any difference is a bug rather than a
+ * judgement call.
+ *
+ * The three photographic backdrops are deliberately left empty. They are
+ * decorative theme imagery, the fields exist so they can be changed, and an
+ * empty field keeps the local build-optimised asset. The hero backdrop is the
+ * page's largest above-the-fold image, so moving it to a third-party CDN by
+ * default would trade measured performance for an edit nobody has asked for.
+ */
+async function importHomePage() {
+  const img = (rel, alt, decorative = false) => uploadImage(`../../assets/${rel}`, alt, decorative);
+
+  const sections = [
+    {
+      _type: 'heroCarousel',
+      _key: 's0',
+      slides: [
+        {
+          _key: 'h0',
+          eyebrow: 'UAE Mortgage & Real-Estate Finance Specialists',
+          title: 'Unlocking Your Financing Potential',
+          body: 'We help you compare leading UAE lenders and structure the right financing whether you\u2019re buying, refinancing, building, or unlocking equity.',
+          image: await img(
+            'images/hero/slide-1.png',
+            'Mortgage consultant ready to advise on UAE property finance',
+          ),
+        },
+        {
+          _key: 'h1',
+          eyebrow: 'Expert Financial Strategy',
+          title: 'Unlocking Your Future Wealth',
+          body: 'We help clients from around the world find and use the best tools and opportunities to grow their portfolio.',
+          image: await img(
+            'images/hero/slide-2.png',
+            'Financial strategist advising on portfolio growth',
+          ),
+        },
+        {
+          _key: 'h2',
+          eyebrow: 'Strategic UAE Development',
+          title: 'Fueling Your Growth Potential',
+          body: 'We help clients from around the world find and use the best tools and opportunities to fund their UAE projects.',
+          image: await img(
+            'images/hero/slide-3.png',
+            'Adviser supporting UAE development project funding',
+          ),
+        },
+      ],
+      cta: { label: 'Book a Free Consultation', href: '/contact/' },
+    },
+    {
+      _type: 'serviceHighlightRow',
+      _key: 's1',
+      label: 'Financing at a glance',
+      tiles: [
+        {
+          _key: 't0',
+          title: 'Home Loan',
+          body: 'Finance of villas, apartments and even off-plan properties for salaried and self-employed individuals',
+          href: '/services/mortgage-solutions/',
+          overlay: 'ink',
+          image: await img('images/features/tile-1.jpg', '', true),
+        },
+        {
+          _key: 't1',
+          title: 'Commercial Finance',
+          body: 'Asset backed financing solutions for Self-Employed Individuals, UAE based entities such as SMEs, Large and Mid-Corporates, Trusts, Offshore Companies, etc.',
+          href: '/services/commercial-finances/',
+          overlay: 'teal',
+          image: await img('images/features/tile-2.jpg', '', true),
+        },
+        {
+          _key: 't2',
+          title: 'Construction & Developer Finance',
+          body: 'Finance against commercial properties, construction and rental backed finance',
+          href: '/services/construction-developer-finance/',
+          overlay: 'ink',
+          image: await img('images/features/tile-3.jpg', '', true),
+        },
+      ],
+    },
+    {
+      _type: 'aboutSplit',
+      _key: 's2',
+      eyebrow: 'About Us',
+      title: 'Real-World Banking Experience',
+      // The shipped copy is one paragraph split by double <br>s. As Portable
+      // Text it becomes three real paragraphs, which the component's
+      // `.about-body` rule spaces to the same 26px rhythm.
+      body: toPortableText(
+        [
+          '**Anchor Mortgage Consultants UAE-Expert Mortgage Advisory & Home Loans**',
+          '**Secure Your Ideal Home Loan & Property Financing in Dubai, Abu Dhabi, and Across the UAE**',
+          'Anchor Mortgage Consultants UAE is a **leading mortgage advisory firm** dedicated to helping residents, expatriates, and property investors navigate the UAE mortgage market with confidence. Whether you are buying your first home, investing in commercial property, or looking to refinance your existing mortgage, our expert consultants provide **tailored mortgage solutions** that meet your financial goals.',
+        ].join('\n\n'),
+      ),
+      cta: { label: 'Discover More', href: '/about/' },
+      images: [
+        await img(
+          'images/about/split-2.jpg',
+          'Anchor advisers discussing mortgage options with a client',
+        ),
+        await img(
+          'images/about/split-1.jpg',
+          'Client reviewing property financing paperwork with an adviser',
+        ),
+      ],
+    },
+    {
+      _type: 'servicesCarousel',
+      _key: 's3',
+      eyebrow: 'Services',
+      title: 'What We Offer for You',
+      trackLabel: 'What we offer',
+      cardCtaLabel: 'Services Details',
+      cardCtaHref: '/services/',
+    },
+    { _type: 'emiCalculator', _key: 's4', title: 'Calculate Your Financing Path' },
+    {
+      _type: 'leaderProfile',
+      _key: 's5',
+      title: 'Our Leader',
+      ctaHeading: 'You can request an appointment to discuss your financing options.',
+      actions: [
+        { _key: 'a0', label: 'Get An Appointment', dialog: 'contact-dialog' },
+        { _key: 'a1', label: 'Apply For Job', dialog: 'cv-dialog' },
+      ],
+    },
+    {
+      _type: 'faqAccordion',
+      _key: 's6',
+      eyebrow: "FAQ's",
+      title: 'Some Questions & A.',
+      footerText: 'If you have more questions',
+      footerLink: { label: 'Contact Us', href: '/contact/' },
+    },
+    { _type: 'testimonialCarousel', _key: 's7', eyebrow: 'Testimonials', title: 'User Feedback' },
+  ];
+
+  await upsert('page', '/', {
+    title: 'Home',
+    slug: { _type: 'slug', current: '/' },
+    sections,
+    seo: {
+      _type: 'seo',
+      metaDescription:
+        'UAE mortgage and real-estate finance specialists. We compare leading UAE lenders and structure the right financing for buying, refinancing or building.',
+    },
+  });
 }
 
 // Run only when executed directly; the Studio wrapper imports `run` instead.

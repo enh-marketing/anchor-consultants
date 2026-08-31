@@ -1,9 +1,11 @@
 ---
-import { Image } from 'astro:assets';
+import CmsImage from '../ui/CmsImage.astro';
+import PortableText from '../shared/PortableText.astro';
 import SectionHeading from '../ui/SectionHeading.astro';
 import Button from '../ui/Button.astro';
 import img1 from '../../assets/images/about/split-2.jpg';
 import img2 from '../../assets/images/about/split-1.jpg';
+import { altProp, resolveLink, type AboutSplitBlock } from '../../lib/sections';
 
 // Measured from the original at 1440:
 //   section 790px tall, padding 110px / 30px
@@ -12,6 +14,39 @@ import img2 from '../../assets/images/about/split-1.jpg';
 //   body at y=1716, 16px/400 #777 on a 26px line box, 640px wide
 //   CTA at y=2023, 202x60 — note the background is teal #0E6C90 here,
 //   not the navy used by every other button on the page.
+
+interface Props {
+  block?: AboutSplitBlock;
+}
+const { block } = Astro.props;
+
+const eyebrow = block?.eyebrow ?? 'About Us';
+const title = block?.title ?? 'Real-World Banking Experience';
+const cta = resolveLink(block?.cta, { label: 'Discover More', href: '/about/' });
+
+// The shipped copy is one paragraph whose three parts are separated by two
+// <br>s, which is markup rather than structure. Portable Text would render it
+// as three <p> elements instead, so the two are not interchangeable: the CMS
+// path gets its own `.about-body` rule below that reproduces the same rhythm
+// (a 26px gap equals the empty line box the double <br> used to create).
+//
+// Keeping the original markup as the fallback means the no-CMS build stays
+// byte-for-byte what it was, and the CMS path is verified against the same
+// measurement rather than assumed equivalent.
+const cmsBody = Array.isArray(block?.body) ? block.body : null;
+
+const images = (block?.images ?? []).flatMap((entry) =>
+  entry.image ? [{ image: entry.image, alt: entry.alt }] : [],
+);
+const [first, second] = images.length === 2 ? images : [];
+const firstImage = first ?? {
+  image: img1,
+  alt: 'Anchor advisers discussing mortgage options with a client',
+};
+const secondImage = second ?? {
+  image: img2,
+  alt: 'Client reviewing property financing paperwork with an adviser',
+};
 ---
 
 <section class="overflow-hidden pt-[110px] pb-[30px]">
@@ -26,17 +61,17 @@ import img2 from '../../assets/images/about/split-1.jpg';
       <div
         class="reveal relative mx-auto w-full max-w-[590px] lg:mx-0 lg:max-w-[600px] lg:py-[10px]"
       >
-        <Image
-          src={img1}
-          alt="Anchor advisers discussing mortgage options with a client"
+        <CmsImage
+          src={firstImage.image}
+          {...altProp(firstImage.alt)}
           class="h-auto w-[71.186%]"
           loading="lazy"
           widths={[300, 420, 840]}
           sizes="(min-width: 992px) 420px, 71vw"
         />
-        <Image
-          src={img2}
-          alt="Client reviewing property financing paperwork with an adviser"
+        <CmsImage
+          src={secondImage.image}
+          {...altProp(secondImage.alt)}
           class="-mt-[35.593%] ml-[28.814%] h-auto w-[71.186%]"
           loading="lazy"
           widths={[300, 420, 840]}
@@ -49,30 +84,62 @@ import img2 from '../../assets/images/about/split-1.jpg';
            starts 31px above the section's padding box. Reproduced directly
            rather than by imitating Elementor's flex-overflow quirk. -->
       <div class="reveal lg:-mt-[31px]" data-reveal-delay="0.1">
-        <SectionHeading eyebrow="About Us" title="Real-World Banking Experience" />
+        <SectionHeading eyebrow={eyebrow} title={title} />
 
-        <p class="text-body mt-[30px] max-w-[640px] text-base leading-[26px]">
-          <b class="text-ink-strong">
-            Anchor Mortgage Consultants UAE-Expert Mortgage Advisory &amp; Home Loans
-          </b><br /><br />
-          <b class="text-ink-strong">
-            Secure Your Ideal Home Loan &amp; Property Financing in Dubai, Abu Dhabi, and Across the
-            UAE
-          </b><br /><br />
-          Anchor Mortgage Consultants UAE is a <b class="text-ink-strong"
-            >leading mortgage advisory firm</b
-          > dedicated to helping residents, expatriates, and property investors navigate the UAE mortgage
-          market with confidence. Whether you are buying your first home, investing in commercial property,
-          or looking to refinance your existing mortgage, our expert consultants provide
-          <b class="text-ink-strong">tailored mortgage solutions</b> that meet your financial goals.
-        </p>
+        {
+          cmsBody ? (
+            <div class="about-body text-body mt-[30px] max-w-[640px] text-base leading-[26px]">
+              <PortableText value={cmsBody} />
+            </div>
+          ) : (
+            <p class="text-body mt-[30px] max-w-[640px] text-base leading-[26px]">
+              <>
+                <b class="text-ink-strong">
+                  Anchor Mortgage Consultants UAE-Expert Mortgage Advisory &amp; Home Loans
+                </b>
+                <br />
+                <br />
+              </>
+              <>
+                <b class="text-ink-strong">
+                  Secure Your Ideal Home Loan &amp; Property Financing in Dubai, Abu Dhabi, and
+                  Across the UAE
+                </b>
+                <br />
+                <br />
+              </>
+              Anchor Mortgage Consultants UAE is a{' '}
+              <b class="text-ink-strong">leading mortgage advisory firm</b> dedicated to helping
+              residents, expatriates, and property investors navigate the UAE mortgage market with
+              confidence. Whether you are buying your first home, investing in commercial property,
+              or looking to refinance your existing mortgage, our expert consultants provide
+              <b class="text-ink-strong">tailored mortgage solutions</b> that meet your financial
+              goals.
+            </p>
+          )
+        }
 
         <!-- The original points this at /~anchor/about/, a leftover
              subdirectory path that redirects (audit defect #6). -->
-        <Button href="/about/" icon="chevron-right" class="!bg-teal hover:!bg-navy mt-[47px]">
-          Discover More
+        <Button href={cta.href} icon="chevron-right" class="!bg-teal hover:!bg-navy mt-[47px]">
+          {cta.label}
         </Button>
       </div>
     </div>
   </div>
 </section>
+
+<style>
+  /* The shipped copy separated its three parts with a double <br>, which adds
+     one empty 26px line box. Portable Text gives real paragraphs instead, so
+     the same 26px reproduces the original rhythm exactly. */
+  .about-body :global(p) {
+    margin: 0;
+  }
+  .about-body :global(p + p) {
+    margin-top: 26px;
+  }
+  .about-body :global(strong) {
+    color: var(--color-ink-strong);
+  }
+</style>

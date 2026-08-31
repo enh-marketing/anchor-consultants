@@ -1,8 +1,10 @@
 import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
+import type { Loader } from 'astro/loaders';
 import { sanityEnabled } from './lib/sanity/client';
 import {
   sanityFaqs,
+  sanityPages,
   sanityPosts,
   sanityServices,
   sanityTeam,
@@ -166,4 +168,42 @@ const team = defineCollection({
     }),
 });
 
-export const collections = { services, testimonials, faqs, posts, team };
+/**
+ * → Sanity `page`
+ *
+ * The one collection with no markdown fallback, because a page's fallback is
+ * the fixed `.astro` route that already exists. With no Sanity document the
+ * route renders its shipped sections; with one, the document drives them. That
+ * is why every field in `src/lib/sections.ts` is optional.
+ *
+ * `sections` is validated only as far as "an array of objects that each name a
+ * type". Validating all eight block shapes here would duplicate
+ * `src/lib/sections.ts` field for field, and it would buy nothing: the
+ * components already default every field, so a missing one degrades to the
+ * shipped value rather than blanking a section. What this does catch is a
+ * section that is not an object or has no `_type`, which is the shape a
+ * renderer cannot reason about at all.
+ */
+/**
+ * With Sanity switched off there are no page documents, and asking Sanity for
+ * them would throw. An empty collection is the honest answer: every route falls
+ * back to its shipped sections, which is exactly the no-CMS behaviour.
+ */
+const noPages: Loader = {
+  name: 'no-pages',
+  load: async ({ store }) => {
+    store.clear();
+  },
+};
+
+const pages = defineCollection({
+  loader: sanityEnabled ? sanityPages() : noPages,
+  schema: z.object({
+    title: z.string(),
+    slug: z.string(),
+    sections: z.array(z.object({ _type: z.string(), _key: z.string().optional() }).passthrough()),
+    seo,
+  }),
+});
+
+export const collections = { services, testimonials, faqs, posts, team, pages };

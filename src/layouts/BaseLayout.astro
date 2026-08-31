@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import { resolveSeo, organizationSchema, type SeoInput } from '../lib/seo';
 import { getSite } from '../data/get-site';
+import { sanityEnabled } from '../lib/sanity/client';
 
 interface Props extends SeoInput {
   /** Extra JSON-LD graphs to emit alongside the Organization/WebSite graph. */
@@ -39,6 +40,14 @@ const graphs = [organizationSchema(site), ...schemas];
 
     {seo.publishedTime && <meta property="article:published_time" content={seo.publishedTime} />}
     {seo.modifiedTime && <meta property="article:modified_time" content={seo.modifiedTime} />}
+
+    {
+      /* CMS imagery is served from Sanity's CDN, and on the home page one of
+        those images is above the fold and loaded eagerly. Without this, the
+        browser pays a DNS lookup and a TLS handshake before it can even start
+        fetching it. Only emitted when Sanity is actually the source. */
+    }
+    {sanityEnabled && <link rel="preconnect" href="https://cdn.sanity.io" crossorigin />}
 
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="sitemap" href="/sitemap-index.xml" />

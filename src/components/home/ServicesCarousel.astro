@@ -2,6 +2,7 @@
 import { Image } from 'astro:assets';
 import CmsImage from '../ui/CmsImage.astro';
 import SectionHeading from '../ui/SectionHeading.astro';
+import type { ServicesCarouselBlock } from '../../lib/sections';
 import bg from '../../assets/images/services/carousel-bg.jpg';
 import iconMortgage from '../../assets/images/services/carousel-icon-mortgage.png';
 import iconCommercial from '../../assets/images/services/carousel-icon-commercial.png';
@@ -28,6 +29,20 @@ const cards = [
 // Three sets so the track can translate continuously and reset seamlessly,
 // which is what Swiper's loop mode does with duplicate slides.
 const track = [...cards, ...cards, ...cards];
+
+interface Props {
+  block?: ServicesCarouselBlock;
+}
+const { block } = Astro.props;
+
+const eyebrow = block?.eyebrow ?? 'Services';
+const title = block?.title ?? 'What We Offer for You';
+const trackLabel = block?.trackLabel ?? 'What we offer';
+// The per-card button is aria-hidden and tabindex -1: the whole card is the
+// link target, so this label is decorative. It is still editable, because the
+// wording shows on screen.
+const cardCtaLabel = block?.cardCtaLabel ?? 'Services Details';
+const cardCtaHref = block?.cardCtaHref ?? '/services/';
 ---
 
 <section class="services-carousel relative isolate overflow-hidden pt-[33px] pb-[45px]">
@@ -43,12 +58,12 @@ const track = [...cards, ...cards, ...cards];
   <div aria-hidden="true" class="absolute inset-0 -z-10 bg-[#436B88] opacity-90"></div>
 
   <div class="container-bs">
-    <SectionHeading eyebrow="Services" title="What We Offer for You" onDark align="center" />
+    <SectionHeading eyebrow={eyebrow} title={title} onDark align="center" />
   </div>
 
   <div class="relative mt-[45px]">
     <div class="container-bs overflow-hidden">
-      <div class="sc-track flex" role="list" aria-label="What we offer">
+      <div class="sc-track flex" role="list" aria-label={trackLabel}>
         {
           track.map((card, i) => (
             <div class="sc-slide w-[var(--card-w)] shrink-0" role="listitem" data-slide={i}>
@@ -66,12 +81,12 @@ const track = [...cards, ...cards, ...cards];
                 </h3>
               </div>
               <a
-                href="/services/"
+                href={cardCtaHref}
                 class="sc-btn bg-navy hover:bg-navy-600 flex h-[60px] items-center justify-center rounded-b-[5px] text-base font-bold text-white transition-[opacity,background-color] duration-300"
                 tabindex="-1"
                 aria-hidden="true"
               >
-                Services Details
+                {cardCtaLabel}
               </a>
             </div>
           ))

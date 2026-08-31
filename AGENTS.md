@@ -21,6 +21,14 @@ and the milestone checklist.
   and GSAP cover almost everything.
 - **Content never lives in markup.** It goes in `src/content/` collections or
   `src/data/site.ts`, so the later Sanity migration is a loader swap.
+- **Sections are blocks.** A page's sections come from a `page` document's
+  `sections[]` array, rendered by
+  `src/components/sections/SectionRenderer.astro`. Block types are declared once
+  in `studio/schemaTypes/blocks/` and typed in `src/lib/sections.ts`. Two rules
+  hold: **a block models content, never presentation** (no colour, size or
+  margin fields; variation goes through a named variant the component
+  translates), and **every field is optional**, so a section falls back to the
+  values it shipped with rather than blanking.
 
 ## Conventions
 

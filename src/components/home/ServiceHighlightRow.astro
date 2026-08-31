@@ -1,9 +1,10 @@
 ---
-import { Image } from 'astro:assets';
+import CmsImage from '../ui/CmsImage.astro';
 import Icon from '../ui/Icon.astro';
 import tile1 from '../../assets/images/features/tile-1.jpg';
 import tile2 from '../../assets/images/features/tile-2.jpg';
 import tile3 from '../../assets/images/features/tile-3.jpg';
+import type { ServiceHighlightRowBlock } from '../../lib/sections';
 
 // Measured from the original at 1440:
 //   full-bleed 3-column row, 381px tall, each column 475px wide
@@ -25,7 +26,7 @@ import tile3 from '../../assets/images/features/tile-3.jpg';
 // Tiles 1 and 3 pass either way; changed together for consistency.
 // with a 0.3s transition.
 
-const tiles = [
+const defaultTiles = [
   {
     title: 'Home Loan',
     body: 'Finance of villas, apartments and even off-plan properties for salaried and self-employed individuals',
@@ -52,13 +53,42 @@ const tiles = [
     overlayOpacity: 'opacity-70 group-hover:opacity-80',
   },
 ];
+
+interface Props {
+  block?: ServiceHighlightRowBlock;
+}
+const { block } = Astro.props;
+
+// The overlay is a named variant, not a colour field: the middle tile reads
+// blue because of a teal overlay at 0.8, and letting an editor pick any colour
+// would break the contrast that was measured for this section.
+const OVERLAYS = {
+  ink: { overlay: 'bg-ink', overlayOpacity: 'opacity-70 group-hover:opacity-80' },
+  teal: { overlay: 'bg-teal', overlayOpacity: 'opacity-80' },
+} as const;
+
+const cmsTiles = (block?.tiles ?? []).flatMap((tile) =>
+  tile.title && tile.href && tile.image
+    ? [
+        {
+          title: tile.title,
+          body: tile.body ?? '',
+          href: tile.href,
+          image: tile.image,
+          ...OVERLAYS[tile.overlay ?? 'ink'],
+        },
+      ]
+    : [],
+);
+const tiles = cmsTiles.length ? cmsTiles : defaultTiles;
+const label = block?.label ?? 'Financing at a glance';
 ---
 
-<section aria-label="Financing at a glance" class="grid md:grid-cols-3">
+<section aria-label={label} class="grid md:grid-cols-3">
   {
     tiles.map((tile) => (
       <article class="group relative isolate flex min-h-[381px] flex-col justify-start px-8 py-16 lg:px-[60px] lg:py-[70px]">
-        <Image
+        <CmsImage
           src={tile.image}
           alt=""
           aria-hidden="true"

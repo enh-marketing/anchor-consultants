@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import SectionHeading from '../ui/SectionHeading.astro';
+import type { TestimonialCarouselBlock } from '../../lib/sections';
 
 // Measured from the original at 1440:
 //   section 400px, transparent, padding 30/30
@@ -19,13 +20,21 @@ const all = (await getCollection('testimonials')).sort((a, b) => a.data.order - 
 const items = all.slice(0, 5);
 // Three sets so the track can translate continuously, as Swiper's loop does.
 const track = [...items, ...items, ...items];
+
+interface Props {
+  block?: TestimonialCarouselBlock;
+}
+const { block } = Astro.props;
+
+const eyebrow = block?.eyebrow ?? 'Testimonials';
+const title = block?.title ?? 'User Feedback';
 ---
 
 <section class="testimonials py-[30px]">
   <div class="container-bs">
     <SectionHeading
-      eyebrow="Testimonials"
-      title="User Feedback"
+      eyebrow={eyebrow}
+      title={title}
       align="center"
       titleClass="!text-black"
       class="pt-[13px]"

@@ -1,6 +1,7 @@
 ---
-import { getCollection } from 'astro:content';
+import { getCollection, getEntry } from 'astro:content';
 import PageLayout from '../layouts/PageLayout.astro';
+import SectionRenderer from '../components/sections/SectionRenderer.astro';
 import HeroCarousel from '../components/home/HeroCarousel.astro';
 import ServiceHighlightRow from '../components/home/ServiceHighlightRow.astro';
 import AboutSplit from '../components/home/AboutSplit.astro';
@@ -11,29 +12,62 @@ import FaqAccordion from '../components/home/FaqAccordion.astro';
 import TestimonialCarousel from '../components/home/TestimonialCarousel.astro';
 import { faqSchema } from '../lib/seo';
 
-// Homepage, complete:
+// Homepage.
 //   milestone 04 — hero, service highlight row, about split
 //   milestone 05 — services carousel, leader, appointment CTA
 //   milestone 06 — EMI calculator
 //   milestone 07 — FAQ accordion, testimonials
 //   milestone 13 — FAQPage structured data for the accordion below
+//   milestone 16 — sections come from the `page` document when one exists
+//
+// The fixed order below is the fallback, not dead code: it is what renders
+// when Sanity is switched off, and it is the reference the CMS output is
+// verified against. Keeping it means the page cannot be lost to a bad or
+// missing document, which is the same rule the scroll reveals follow.
+const home = await getEntry('pages', '/');
+const sections = home?.data.sections ?? [];
 
 // The accordion renders these same entries, so the markup and the structured
 // data cannot drift apart.
-const faqs = (await getCollection('faqs')).sort((a, b) => a.data.order - b.data.order);
+//
+// It is also conditional on the accordion actually being on the page. Hiding or
+// removing the FAQ section from the CMS while still emitting FAQPage data would
+// describe questions a visitor cannot see, which is exactly the kind of
+// misleading structured data the audit set out to remove.
+const hasFaqSection =
+  sections.length === 0 ||
+  sections.some((section) => section['_type'] === 'faqAccordion' && section['hidden'] !== true);
+
+const faqs = hasFaqSection
+  ? (await getCollection('faqs')).sort((a, b) => a.data.order - b.data.order)
+  : [];
+
+const description =
+  home?.data.seo?.metaDescription ??
+  'UAE mortgage and real-estate finance specialists. We compare leading UAE lenders and structure the right financing for buying, refinancing or building.';
 ---
 
 <PageLayout
-  description="UAE mortgage and real-estate finance specialists. We compare leading UAE lenders and structure the right financing for buying, refinancing or building."
+  description={description}
   path="/"
-  schemas={[faqSchema(faqs.map((f) => ({ question: f.data.question, answer: f.data.answer })))]}
+  schemas={faqs.length
+    ? [faqSchema(faqs.map((f) => ({ question: f.data.question, answer: f.data.answer })))]
+    : []}
 >
-  <HeroCarousel />
-  <ServiceHighlightRow />
-  <AboutSplit />
-  <ServicesCarousel />
-  <EmiCalculator />
-  <LeaderProfile />
-  <FaqAccordion />
-  <TestimonialCarousel />
+  {
+    sections.length ? (
+      <SectionRenderer sections={sections} />
+    ) : (
+      <>
+        <HeroCarousel />
+        <ServiceHighlightRow />
+        <AboutSplit />
+        <ServicesCarousel />
+        <EmiCalculator />
+        <LeaderProfile />
+        <FaqAccordion />
+        <TestimonialCarousel />
+      </>
+    )
+  }
 </PageLayout>
