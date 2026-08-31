@@ -1,6 +1,36 @@
 import type { Site } from '../data/site';
 import { SITE_URL, IS_PRODUCTION_HOST } from '../data/site-url.mjs';
 
+/**
+ * SEO fields as an editor sets them in the Studio.
+ *
+ * Every one is optional and every one falls back, so a page with an empty SEO
+ * tab still emits correct tags. That is deliberate: spec §6 asks for sensible
+ * defaults so editors do not have to fill everything, and a half-filled tab
+ * must never produce a worse page than an empty one.
+ */
+export interface CmsSeo {
+  // Each field is `?: T | undefined` rather than `?: T`, because these values
+  // come from a Zod-inferred type and `exactOptionalPropertyTypes` treats
+  // "absent" and "present and undefined" as different things.
+  metaTitle?: string | undefined;
+  metaDescription?: string | undefined;
+  canonicalUrl?: string | undefined;
+  /** Tighten-only. See `resolveSeo`. */
+  noindex?: boolean | undefined;
+  nofollow?: boolean | undefined;
+  ogTitle?: string | undefined;
+  ogDescription?: string | undefined;
+  ogImage?: string | undefined;
+  ogImageAlt?: string | undefined;
+  twitterTitle?: string | undefined;
+  twitterDescription?: string | undefined;
+  twitterImage?: string | undefined;
+  breadcrumbTitle?: string | undefined;
+  /** Emits a WebPage node with this `@type` when set. */
+  schemaType?: string | undefined;
+}
+
 export interface SeoInput {
   /** Page title without the site suffix. Omit on the homepage. */
   title?: string;
@@ -22,6 +52,8 @@ export interface SeoInput {
   noindex?: boolean;
   publishedTime?: string;
   modifiedTime?: string;
+  /** Overrides from the CMS. Each field falls back to the values above. */
+  cms?: CmsSeo;
 }
 
 export interface ResolvedSeo {
@@ -31,35 +63,109 @@ export interface ResolvedSeo {
   image: string;
   type: 'website' | 'article';
   robots: string;
+  ogTitle: string;
+  ogDescription: string;
+  twitterTitle: string;
+  twitterDescription: string;
+  twitterImage: string;
+  /** Only present when the CMS image carries alt text. */
+  imageAlt: string | undefined;
   // Explicit `| undefined` rather than `?`, because `exactOptionalPropertyTypes`
   // distinguishes "absent" from "present and undefined".
   publishedTime: string | undefined;
   modifiedTime: string | undefined;
+  schemaType: string | undefined;
 }
 
 const DEFAULT_OG_IMAGE = '/og-default.png';
 
 export function resolveSeo(input: SeoInput, site: Site): ResolvedSeo {
-  const title = input.title ? `${input.title} - ${site.name}` : `${site.name} - ${site.tagline}`;
+  const cms = input.cms ?? {};
 
-  const canonical = new URL(input.path, SITE_URL).href;
-  const image = new URL(input.image ?? DEFAULT_OG_IMAGE, SITE_URL).href;
+  // The CMS title replaces the page's own, and the site name is still appended
+  // so the suffix cannot be forgotten or duplicated by hand.
+  const pageTitle = cms.metaTitle?.trim() || input.title;
+  const title = pageTitle ? `${pageTitle} - ${site.name}` : `${site.name} - ${site.tagline}`;
 
-  // Staging stays noindex. Only a production build may be indexed.
-  const indexable = IS_PRODUCTION_HOST && !input.noindex;
-  const robots = indexable
-    ? 'index, follow, max-image-preview:large, max-snippet:-1'
-    : 'noindex, nofollow';
+  const description = cms.metaDescription?.trim() || input.description;
+
+  // A canonical override has to be absolute. A relative one would resolve
+  // against SITE_URL and silently point somewhere on this site, which defeats
+  // the only reason to override it.
+  const override = cms.canonicalUrl?.trim();
+  const canonical =
+    override && /^https?:\/\//.test(override) ? override : new URL(input.path, SITE_URL).href;
+
+  const image = new URL(cms.ogImage ?? input.image ?? DEFAULT_OG_IMAGE, SITE_URL).href;
+  const twitterImage = new URL(
+    cms.twitterImage ?? cms.ogImage ?? input.image ?? DEFAULT_OG_IMAGE,
+    SITE_URL,
+  ).href;
+
+  /**
+   * Robots. The CMS may only ever tighten this.
+   *
+   * `IS_PRODUCTION_HOST` gates indexing and stays in code, so a staging build
+   * is `noindex` no matter what any document says. On production, a page is
+   * indexable unless the route asks otherwise or an editor ticks the box. There
+   * is deliberately no way for content to force indexing on: a content edit that
+   * deindexed the site would be bad, and one that indexed a staging build or a
+   * page the route marked private would be worse.
+   */
+  const noindex = input.noindex === true || cms.noindex === true;
+  const nofollow = cms.nofollow === true;
+  const indexable = IS_PRODUCTION_HOST && !noindex;
+
+  let robots: string;
+  if (!indexable) {
+    robots = 'noindex, nofollow';
+  } else if (nofollow) {
+    robots = 'index, nofollow, max-image-preview:large, max-snippet:-1';
+  } else {
+    robots = 'index, follow, max-image-preview:large, max-snippet:-1';
+  }
+
+  const ogTitle = cms.ogTitle?.trim() || title;
+  const ogDescription = cms.ogDescription?.trim() || description;
 
   return {
     title,
-    description: input.description,
+    description,
     canonical,
     image,
     type: input.type ?? 'website',
     robots,
+    ogTitle,
+    ogDescription,
+    twitterTitle: cms.twitterTitle?.trim() || ogTitle,
+    twitterDescription: cms.twitterDescription?.trim() || ogDescription,
+    twitterImage,
+    imageAlt: cms.ogImageAlt?.trim() || undefined,
     publishedTime: input.publishedTime,
     modifiedTime: input.modifiedTime,
+    schemaType: cms.schemaType?.trim() || undefined,
+  };
+}
+
+/**
+ * A `WebPage` node tying the page to the Organization graph.
+ *
+ * Only emitted when a page names its type, because an untyped `WebPage` node
+ * says nothing a crawler cannot already see. The allowed types are a fixed list
+ * in the Studio: `ContactPage` on a blog post would be false structured data,
+ * and spec §6 rules that out explicitly.
+ */
+export function webPageSchema(seo: ResolvedSeo) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': seo.schemaType,
+    '@id': `${seo.canonical}#webpage`,
+    url: seo.canonical,
+    name: seo.title,
+    description: seo.description,
+    isPartOf: { '@id': `${SITE_URL}/#website` },
+    publisher: { '@id': `${SITE_URL}/#organization` },
+    inLanguage: 'en-AE',
   };
 }
 

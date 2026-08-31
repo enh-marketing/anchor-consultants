@@ -11,6 +11,7 @@ import LeaderProfile from '../components/home/LeaderProfile.astro';
 import FaqAccordion from '../components/home/FaqAccordion.astro';
 import TestimonialCarousel from '../components/home/TestimonialCarousel.astro';
 import { faqSchema } from '../lib/seo';
+import { pageSeo } from '../lib/page';
 
 // Homepage.
 //   milestone 04 — hero, service highlight row, about split
@@ -42,14 +43,14 @@ const faqs = hasFaqSection
   ? (await getCollection('faqs')).sort((a, b) => a.data.order - b.data.order)
   : [];
 
-const description =
-  home?.data.seo?.metaDescription ??
-  'UAE mortgage and real-estate finance specialists. We compare leading UAE lenders and structure the right financing for buying, refinancing or building.';
+const seo = await pageSeo('/', {
+  description:
+    'UAE mortgage and real-estate finance specialists. We compare leading UAE lenders and structure the right financing for buying, refinancing or building.',
+});
 ---
 
 <PageLayout
-  description={description}
-  path="/"
+  {...seo}
   schemas={faqs.length
     ? [faqSchema(faqs.map((f) => ({ question: f.data.question, answer: f.data.answer })))]
     : []}

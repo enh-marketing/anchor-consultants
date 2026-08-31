@@ -3,7 +3,7 @@ import PageLayout from '../layouts/PageLayout.astro';
 import SectionRenderer from '../components/sections/SectionRenderer.astro';
 import PageBannerSection from '../components/sections/PageBannerSection.astro';
 import { getSite } from '../data/get-site';
-import { pageSections, pageDescription } from '../lib/page';
+import { pageSections, pageSeo } from '../lib/page';
 import { breadcrumbSchema } from '../lib/seo';
 import banner from '../assets/images/banners/generic-3.jpg';
 
@@ -14,31 +14,13 @@ const site = await getSite();
 // holding copy uses per-element spacing a generic prose rhythm cannot match;
 // once real text arrives through the CMS, `.cms-prose` governs it.
 const pageBlocks = await pageSections('/privacy-policy/');
-const description = await pageDescription(
-  '/privacy-policy/',
-  'How Anchor Consultants handles personal data. Our full privacy policy is being finalised; contact us in the meantime with any privacy enquiry.',
-);
+const seo = await pageSeo('/privacy-policy/', {
+  title: 'Privacy Policy',
+  description:
+    'How Anchor Consultants handles personal data. Our full privacy policy is being finalised; contact us in the meantime with any privacy enquiry.',
+});
 
-/**
- * Privacy policy.
- *
- * Closes audit defect #7: the footer linked "Privacy Policy" to `#` on every
- * page, and the only privacy content on WordPress sat unlinked at
- * `/privacy-policy-2/`.
- *
- * That WordPress page is **not** carried over. It is the unedited default
- * WordPress boilerplate: every section still opens "Suggested text:", it
- * names the theme author's demo domain (finaxio.themeori.com) as the site
- * owner, and it describes comments, Gravatar, login pages and media uploads,
- * none of which exist here. Publishing it for a UAE financial-services firm
- * would be inaccurate and a real compliance risk.
- *
- * Writing a replacement is not something to invent either: a privacy policy
- * is a legal document that has to describe what this business actually does
- * with personal data. So this page is an honest holding notice with a real
- * route for privacy enquiries, and it stays `noindex` until the client
- * supplies the approved text. See MIGRATION.md Q15.
- */
+/** What the finished policy has to cover. Listed on the holding page. */
 const sections = [
   'Who we are, and how to contact us about privacy',
   'What personal data we collect, and why',
@@ -51,9 +33,7 @@ const sections = [
 ---
 
 <PageLayout
-  title="Privacy Policy"
-  description={description}
-  path="/privacy-policy/"
+  {...seo}
   noindex
   schemas={[breadcrumbSchema([{ name: 'Privacy Policy', path: '/privacy-policy/' }])]}
 >

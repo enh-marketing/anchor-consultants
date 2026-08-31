@@ -27,7 +27,22 @@ const IMAGE = `{
   "lqip": asset->metadata.lqip
 }`;
 
-const SEO = `{ metaDescription, metaTitle, "ogImage": ogImage.asset->url }`;
+const SEO = `{
+  metaTitle,
+  metaDescription,
+  canonicalUrl,
+  noindex,
+  nofollow,
+  ogTitle,
+  ogDescription,
+  "ogImage": ogImage.asset->url,
+  "ogImageAlt": ogImage.alt,
+  twitterTitle,
+  twitterDescription,
+  "twitterImage": twitterImage.asset->url,
+  breadcrumbTitle,
+  schemaType
+}`;
 
 interface Options {
   /** GROQ document type. */

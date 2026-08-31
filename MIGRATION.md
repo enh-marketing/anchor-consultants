@@ -909,6 +909,111 @@ the contact page. Reverting restored all twelve pages to baseline exactly.
 **Checks:** 12 routes, 10 sitemap URLs, 25 tests passing, `astro check` 0 errors
 across 116 files, `sanity schema validate` 0 errors, Prettier clean.
 
+### SEO fields, validation and slugs — Milestone 19 COMPLETE
+
+The SEO object went from three fields to fifteen, every one of them falling back
+so an empty tab still produces a correct page. Indexing stayed in code, and the
+sitemap can no longer contradict the robots tag.
+
+| Group    | Fields                                                                              |
+| -------- | ----------------------------------------------------------------------------------- |
+| Basics   | search title (60-char warning), meta description (120–160, required), target phrase |
+| Social   | share image + alt, share title, share description, X title, X description, X image  |
+| Advanced | hide from search, do not follow links, canonical URL, breadcrumb label, page type   |
+
+Before this milestone only `metaDescription`, `metaTitle` and `ogImage` existed
+— and `metaTitle` was never read by anything, which is the "looks functional but
+is not" problem this project has criticised elsewhere. It is wired now.
+
+**The fallback chain.** X falls back to Open Graph, Open Graph falls back to the
+search title and meta description, and those fall back to the route's own title
+and hand-written description. Verified on a production build with every CMS
+field empty: correct `<title>`, description, canonical, `og:*` and `twitter:*`
+tags with nothing entered.
+
+**Indexing can only be tightened, and that is enforced rather than documented.**
+`IS_PRODUCTION_HOST` still decides whether the site is indexable at all. There is
+deliberately no "index this page" switch. Tested on a production build:
+
+| Case                                          | Result               |
+| --------------------------------------------- | -------------------- |
+| No CMS setting                                | `index, follow, …`   |
+| CMS `nofollow` ticked                         | `index, nofollow, …` |
+| CMS `noindex` ticked                          | `noindex, nofollow`  |
+| Route says noindex, CMS says `noindex: false` | `noindex, nofollow`  |
+| Staging build, whatever the CMS says          | `noindex, nofollow`  |
+
+The fourth row is the one that matters: a document asking to be indexed on a
+page the route marked private is ignored.
+
+**A defect this surfaced.** Setting `noindex` on a page from the Studio left its
+URL in the sitemap, which contradicts the robots tag on the page itself. The
+sitemap's exclusions were a hardcoded list in `astro.config.mjs`, and a list can
+only know what was true when it was written — it could never see a CMS toggle
+added two milestones later.
+
+Fixed with `src/lib/sitemap-noindex.mjs`, an integration that reads the built
+HTML after the build and prunes any URL whose page says `noindex`. Deriving it
+from the output means the two can no longer disagree, whatever decided the
+value: route, environment, or editor.
+
+Two details worth recording, both found by testing rather than reasoning:
+
+- It runs only on a production build. Every page on a staging build is `noindex`
+  by design, and pruning there emptied the sitemap entirely — a blanket is not
+  the same kind of contradiction as one hidden page inside an indexable site,
+  and the staging sitemap is useful for checking what a build produced.
+- `dir` in `astro:build:done` is a file URL, and `.pathname` percent-encodes
+  path characters that URLs disallow. This project's directory contains a space,
+  so `readdir` was looking for `%20` and failing inside a silent `catch`. Now it
+  uses `fileURLToPath`, and the failure logs a warning instead of returning
+  quietly — a sitemap still listing noindex URLs is exactly the kind of problem
+  that ships when a check fails silently.
+
+**Slug uniqueness is now enforced.** Sanity does not do this by itself, and two
+documents sharing a slug is a real failure rather than a warning: the second
+silently overwrites the first in the content collection, so a page just
+disappears with nothing to explain why. `studio/schemaTypes/uniqueSlug.ts` is
+wired into `page`, `service` and `post`, and excludes both the draft and
+published ids of the document being edited, or every document would report
+itself as a duplicate the moment it had unsaved changes.
+
+**The target phrase field publishes nothing, and says so.** Keyword meta tags
+have been ignored by search engines for years. The field is useful as a note for
+whoever writes the page, so it exists, and its description states plainly that
+it is not published. Verified: the phrase set during testing appears nowhere in
+the built HTML. A field that looked like it did something would be worse than no
+field at all.
+
+**Two additions to every page's head**, both deliberate:
+
+- `og:site_name`, a standard tag that was simply missing.
+- `og:image:alt`, but only when the CMS share image carries alt text. An empty
+  one would tell a screen reader the image is decorative when it is the page's
+  share card.
+
+**Structured data.** A `WebPage` node is emitted only when a page names its type
+from a fixed list of four. An untyped node says nothing a crawler cannot already
+see, and a wrong type is worse than none, which is spec §6's own rule. Left
+unset in the imported documents, so no page's structured data changed.
+
+**Also fixed:** two deprecated Zod calls, `z.string().url()` and
+`.passthrough()`, the latter introduced in M17. `astro check` now reports 0
+warnings as well as 0 errors across 118 files.
+
+**Acceptance test.** Every field set at once on `/about/` from the Studio:
+search title, meta description, target phrase, share title, share description,
+share image with alt, X title, canonical URL, breadcrumb label, page type and
+nofollow. All rendered correctly — canonical pointing off-site as instructed,
+the breadcrumb reading "Who We Are", an `AboutPage` node in the graph, X
+description correctly inheriting from the share description, and the target
+phrase absent from the HTML. Reverting restored every page to baseline.
+
+**Checks:** 12 routes, 10 sitemap URLs on staging, 25 tests passing,
+`astro check` 0 errors and 0 warnings across 118 files, `sanity schema validate`
+0 errors, Prettier clean. All twelve pages byte-identical in body text; the only
+head change anywhere is the two added tags.
+
 ## Open Questions
 
 These need your input. None of them block starting at Milestone 0; I have noted the assumption I will proceed with if you would rather decide later.

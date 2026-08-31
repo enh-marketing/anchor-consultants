@@ -3,7 +3,7 @@ import PageLayout from '../../layouts/PageLayout.astro';
 import SectionRenderer from '../../components/sections/SectionRenderer.astro';
 import PageBannerSection from '../../components/sections/PageBannerSection.astro';
 import BlogIndexSection from '../../components/sections/BlogIndexSection.astro';
-import { pageSections, pageDescription } from '../../lib/page';
+import { pageSections, pageSeo, pageCrumb } from '../../lib/page';
 import { breadcrumbSchema } from '../../lib/seo';
 import { SITE_URL } from '../../data/site-url.mjs';
 import banner from '../../assets/images/banners/generic-2.jpg';
@@ -15,18 +15,18 @@ import banner from '../../assets/images/banners/generic-2.jpg';
 // empty, since two posts fit on one page. Worth adding once there is enough
 // content to need it.
 const sections = await pageSections('/blog/');
-const description = await pageDescription(
-  '/blog/',
-  'News, guidance and market notes from Anchor Consultants on mortgages, refinancing and property finance for buyers and investors in the UAE.',
-);
+const seo = await pageSeo('/blog/', {
+  title: 'Blog',
+  description:
+    'News, guidance and market notes from Anchor Consultants on mortgages, refinancing and property finance for buyers and investors in the UAE.',
+});
+const crumb = await pageCrumb('/blog/', 'Blog');
 ---
 
 <PageLayout
-  title="Blog"
-  description={description}
-  path="/blog/"
+  {...seo}
   schemas={[
-    breadcrumbSchema([{ name: 'Blog', path: '/blog/' }]),
+    breadcrumbSchema([{ name: crumb, path: '/blog/' }]),
     {
       '@context': 'https://schema.org',
       '@type': 'Blog',

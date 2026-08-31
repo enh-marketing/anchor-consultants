@@ -55,12 +55,39 @@ const sanityImage = z.object({
 /** Sanity stores body copy as Portable Text; markdown bodies stay strings. */
 const portableText = z.array(z.record(z.string(), z.unknown())).optional();
 
+/**
+ * Per-page SEO, mirroring `studio/schemaTypes/objects/seo.ts`.
+ *
+ * Only the description is required, and its bounds are wider here than in the
+ * Studio on purpose: the Studio enforces 120–160 while writing, and this only
+ * has to catch something structurally wrong. Failing a build over a description
+ * an editor already published would take the site down for a copy nitpick.
+ *
+ * `noindex` and `nofollow` are read but can only tighten indexing; `resolveSeo`
+ * owns that rule.
+ */
 const seo = z
   .object({
-    /** Hand-written, 120–160 chars. Never auto-generated from body text. */
     metaDescription: z.string().min(50).max(200),
     metaTitle: z.string().optional(),
+    // A regex rather than `z.string().url()`, which is deprecated in this Zod
+    // version. The Studio already validates the field as a URL; this only has
+    // to reject something structurally wrong.
+    canonicalUrl: z
+      .string()
+      .regex(/^https?:\/\//, 'Canonical URLs must start with http:// or https://')
+      .optional(),
+    noindex: z.boolean().optional(),
+    nofollow: z.boolean().optional(),
+    ogTitle: z.string().optional(),
+    ogDescription: z.string().optional(),
     ogImage: z.string().optional(),
+    ogImageAlt: z.string().optional(),
+    twitterTitle: z.string().optional(),
+    twitterDescription: z.string().optional(),
+    twitterImage: z.string().optional(),
+    breadcrumbTitle: z.string().optional(),
+    schemaType: z.string().optional(),
   })
   .optional();
 
@@ -201,7 +228,12 @@ const pages = defineCollection({
   schema: z.object({
     title: z.string(),
     slug: z.string(),
-    sections: z.array(z.object({ _type: z.string(), _key: z.string().optional() }).passthrough()),
+    sections: z.array(
+      // A loose object: the known keys are validated and the block's own fields
+      // pass through untouched, which is the point — validating all eighteen
+      // block shapes here would duplicate src/lib/sections.ts field for field.
+      z.looseObject({ _type: z.string(), _key: z.string().optional() }),
+    ),
     seo,
   }),
 });

@@ -1,4 +1,5 @@
 import { getEntry } from 'astro:content';
+import type { SeoInput } from './seo';
 
 /**
  * Helpers for a route that can be driven by a `page` document.
@@ -30,6 +31,39 @@ export async function pageSections(slug: string): Promise<Section[]> {
 export async function pageDescription(slug: string, fallback: string): Promise<string> {
   const entry = await getEntry('pages', slug);
   return entry?.data.seo?.metaDescription ?? fallback;
+}
+
+/**
+ * A route's SEO input, with the CMS document's overrides attached.
+ *
+ * This exists so the fallback chain lives in one place. Every route passes its
+ * own hand-written title and description as the floor, and anything set in the
+ * Studio layers on top inside `resolveSeo`. A route therefore cannot end up
+ * with a missing description because someone cleared a field.
+ */
+export async function pageSeo(
+  slug: string,
+  fallback: { title?: string; description: string },
+): Promise<SeoInput> {
+  const entry = await getEntry('pages', slug);
+  const cms = entry?.data.seo;
+  return {
+    ...(fallback.title ? { title: fallback.title } : {}),
+    description: fallback.description,
+    path: slug,
+    ...(cms ? { cms } : {}),
+  };
+}
+
+/**
+ * The label a page uses in a breadcrumb trail.
+ *
+ * Falls back to the route's own name, so a long page title can be shortened for
+ * the trail without touching the heading.
+ */
+export async function pageCrumb(slug: string, fallback: string): Promise<string> {
+  const entry = await getEntry('pages', slug);
+  return entry?.data.seo?.breadcrumbTitle?.trim() || fallback;
 }
 
 /**

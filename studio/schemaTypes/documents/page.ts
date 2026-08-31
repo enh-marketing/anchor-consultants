@@ -1,4 +1,5 @@
 import { defineType, defineField } from 'sanity';
+import { isUniqueSlug } from '../uniqueSlug';
 
 /**
  * A page, built from an ordered list of sections.
@@ -40,7 +41,7 @@ export const page = defineType({
       group: 'content',
       description:
         'The page URL. Use "/" for the home page. Changing this changes the address, and any existing links to the old one will break until a redirect is added.',
-      options: { source: 'title', maxLength: 96 },
+      options: { source: 'title', maxLength: 96, isUnique: isUniqueSlug },
       validation: (Rule) => Rule.required(),
     }),
     defineField({

@@ -3,7 +3,7 @@ import PageLayout from '../layouts/PageLayout.astro';
 import SectionRenderer from '../components/sections/SectionRenderer.astro';
 import PageBannerSection from '../components/sections/PageBannerSection.astro';
 import ErrorPanel from '../components/sections/ErrorPanel.astro';
-import { pageSections, pageDescription } from '../lib/page';
+import { pageSections, pageSeo } from '../lib/page';
 import banner from '../assets/images/banners/generic-1.jpg';
 
 /**
@@ -17,13 +17,14 @@ import banner from '../assets/images/banners/generic-1.jpg';
  * made indexable would be a genuine SEO problem.
  */
 const sections = await pageSections('/404/');
-const description = await pageDescription(
-  '/404/',
-  'The page you were looking for could not be found. Browse our UAE mortgage and property finance services, or get in touch and we will help.',
-);
+const seo = await pageSeo('/404/', {
+  title: 'Page not found',
+  description:
+    'The page you were looking for could not be found. Browse our UAE mortgage and property finance services, or get in touch and we will help.',
+});
 ---
 
-<PageLayout title="Page not found" description={description} path="/404/" noindex>
+<PageLayout {...seo} noindex>
   {
     sections.length ? (
       <SectionRenderer sections={sections} />

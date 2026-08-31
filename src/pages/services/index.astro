@@ -4,23 +4,20 @@ import SectionRenderer from '../../components/sections/SectionRenderer.astro';
 import PageBannerSection from '../../components/sections/PageBannerSection.astro';
 import ServiceCardGrid from '../../components/sections/ServiceCardGrid.astro';
 import SkillsPanel from '../../components/sections/SkillsPanel.astro';
-import { pageSections, pageDescription } from '../../lib/page';
+import { pageSections, pageSeo, pageCrumb } from '../../lib/page';
 import { breadcrumbSchema } from '../../lib/seo';
 import banner from '../../assets/images/banners/services.jpg';
 
 const sections = await pageSections('/services/');
-const description = await pageDescription(
-  '/services/',
-  'Mortgage solutions, commercial finance, construction and developer finance, and lease rental discounting for residents and investors in the UAE.',
-);
+const seo = await pageSeo('/services/', {
+  title: 'Services',
+  description:
+    'Mortgage solutions, commercial finance, construction and developer finance, and lease rental discounting for residents and investors in the UAE.',
+});
+const crumb = await pageCrumb('/services/', 'Services');
 ---
 
-<PageLayout
-  title="Services"
-  description={description}
-  path="/services/"
-  schemas={[breadcrumbSchema([{ name: 'Services', path: '/services/' }])]}
->
+<PageLayout {...seo} schemas={[breadcrumbSchema([{ name: crumb, path: '/services/' }])]}>
   {
     sections.length ? (
       <SectionRenderer sections={sections} />

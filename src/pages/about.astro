@@ -4,7 +4,7 @@ import SectionRenderer from '../components/sections/SectionRenderer.astro';
 import PageBannerSection from '../components/sections/PageBannerSection.astro';
 import AboutIntro from '../components/sections/AboutIntro.astro';
 import CopyWithImage from '../components/sections/CopyWithImage.astro';
-import { pageSections, pageDescription } from '../lib/page';
+import { pageSections, pageSeo, pageCrumb } from '../lib/page';
 import { breadcrumbSchema } from '../lib/seo';
 import banner from '../assets/images/banners/about.jpg';
 
@@ -12,18 +12,15 @@ import banner from '../assets/images/banners/about.jpg';
 // The fixed order below is the fallback and the reference the CMS output is
 // verified against, exactly as on the home page.
 const sections = await pageSections('/about/');
-const description = await pageDescription(
-  '/about/',
-  'Anchor Consultants is a UAE mortgage and property finance advisory built on deep banking experience, with access to multiple lenders across the Emirates.',
-);
+const seo = await pageSeo('/about/', {
+  title: 'About',
+  description:
+    'Anchor Consultants is a UAE mortgage and property finance advisory built on deep banking experience, with access to multiple lenders across the Emirates.',
+});
+const crumb = await pageCrumb('/about/', 'About');
 ---
 
-<PageLayout
-  title="About"
-  description={description}
-  path="/about/"
-  schemas={[breadcrumbSchema([{ name: 'About', path: '/about/' }])]}
->
+<PageLayout {...seo} schemas={[breadcrumbSchema([{ name: crumb, path: '/about/' }])]}>
   {
     sections.length ? (
       <SectionRenderer sections={sections} />

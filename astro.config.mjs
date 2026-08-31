@@ -5,6 +5,7 @@ import sitemap from '@astrojs/sitemap';
 import node from '@astrojs/node';
 
 import { SITE_URL } from './src/data/site-url.mjs';
+import { sitemapNoindex } from './src/lib/sitemap-noindex.mjs';
 
 // https://astro.build/config
 export default defineConfig({
@@ -34,12 +35,18 @@ export default defineConfig({
 
   integrations: [
     sitemap({
-      // /privacy-policy/ is noindex while it is a holding page (see the
-      // page comment and MIGRATION.md Q15). Listing a noindex URL in the
-      // sitemap contradicts the robots tag, so it is excluded until the
-      // client supplies the approved text.
+      // Route-level exclusions, the ones already known here at config time.
+      // /privacy-policy/ is noindex while it is a holding page (see the page
+      // comment and MIGRATION.md Q15), and listing a noindex URL contradicts
+      // the robots tag.
       filter: (page) => !page.includes('/api/') && !page.includes('/privacy-policy/'),
     }),
+
+    // Everything decided later. `noindex` can also come from an editor's toggle
+    // in the Studio, which the filter above cannot see, so this reads the built
+    // HTML and prunes whatever ended up hidden. Listed after the sitemap
+    // integration so it runs once those files exist.
+    sitemapNoindex(),
   ],
 
   vite: {

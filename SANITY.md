@@ -277,6 +277,35 @@ it. A button set to "Go to a page" with no destination is not rendered.
 The phone number is stored once, in international format. Every `tel:` link on
 the site is built from it.
 
+### SEO on a page
+
+Every page, service and post has an SEO section with three tabs.
+
+**Basics.** The search title and meta description are what Google shows. The
+site name is added to the title automatically, so do not type it again. The
+description has to be 120 to 160 characters — that is enforced, because the
+WordPress site let a plugin invent descriptions and one of them read "No
+testimonials found".
+
+The **target phrase** field is a note for whoever writes the page. It is not
+published anywhere. Keyword meta tags have been ignored by search engines for
+years, so a field that pretended to publish one would be misleading.
+
+**Social sharing.** Leave all of it empty and sharing still works: X falls back
+to the Open Graph fields, and those fall back to the search title and
+description. Only fill a field when it should differ. If you add a share image,
+give it alt text — it is used.
+
+**Advanced.** "Hide from search engines" takes a page out of search results and
+out of the sitemap. There is no switch for the opposite, on purpose: whether the
+site is indexable at all is decided by the build, so this can only ever hide a
+page. Leave the canonical URL empty unless the page deliberately duplicates one
+elsewhere. Set the page type only if it is accurate.
+
+**Slugs must be unique.** The Studio will refuse a slug another page already
+uses. Two pages sharing one would mean the second silently replaces the first on
+the site.
+
 ### What is editable where
 
 | Page         | What you can change from the Studio                                   |

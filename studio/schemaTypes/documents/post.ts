@@ -1,4 +1,5 @@
 import { defineType, defineField } from 'sanity';
+import { isUniqueSlug } from '../uniqueSlug';
 
 export const post = defineType({
   name: 'post',
@@ -9,7 +10,7 @@ export const post = defineType({
     defineField({
       name: 'slug',
       type: 'slug',
-      options: { source: 'title', maxLength: 96 },
+      options: { source: 'title', maxLength: 96, isUnique: isUniqueSlug },
       description: 'Sets the URL: /blog/<slug>/.',
       validation: (Rule) => Rule.required(),
     }),
