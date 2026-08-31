@@ -70,3 +70,117 @@ export function validateCv(file: { name: string; size: number; type: string } | 
 }
 
 export const hasErrors = (errors: Errors) => Object.keys(errors).length > 0;
+
+// ---------------------------------------------------------------------------
+// Generic validation, driven by a form definition (milestone 21)
+//
+// The rules come from the definition rather than being written per form, which
+// is the whole point: the browser and `src/pages/api/contact.ts` both call
+// `validateForm` with the same definition, so a field made required in the
+// Studio is required in both places. Client-side validation stays a
+// convenience; the server call is the control.
+// ---------------------------------------------------------------------------
+
+export interface FileLike {
+  name: string;
+  size: number;
+  type: string;
+}
+
+export type FormValues = Record<string, string | FileLike | null | undefined>;
+
+/** Errors keyed by field name, so a response maps straight onto the inputs. */
+export type FormErrors = Record<string, string>;
+
+const asText = (value: FormValues[string]): string =>
+  typeof value === 'string' ? value.trim() : '';
+
+/**
+ * Validates values against a definition.
+ *
+ * Order matters: a required field that is empty reports "required" and nothing
+ * else, so a blank email is not also told its format is wrong.
+ */
+export function validateForm(form: FormDefinitionLike, values: FormValues): FormErrors {
+  const errors: FormErrors = {};
+
+  for (const field of form.fields) {
+    const raw = values[field.name];
+
+    if (field.type === 'file') {
+      const file = raw && typeof raw === 'object' ? raw : null;
+      if (!file || !file.name) {
+        if (field.required) {
+          errors[field.name] = field.requiredMessage ?? 'Please choose a file to upload.';
+        }
+        continue;
+      }
+      const fileError = validateCv(file).file;
+      if (fileError) errors[field.name] = field.invalidMessage ?? fileError;
+      continue;
+    }
+
+    if (field.type === 'checkbox') {
+      const ticked = raw === 'on' || raw === 'true' || raw === '1';
+      if (field.required && !ticked) {
+        errors[field.name] = field.requiredMessage ?? 'Please tick this to continue.';
+      }
+      continue;
+    }
+
+    const text = asText(raw);
+
+    if (!text) {
+      if (field.required) {
+        errors[field.name] =
+          field.requiredMessage ?? `Please enter your ${field.label.toLowerCase()}.`;
+      }
+      continue;
+    }
+
+    if (field.maxLength && text.length > field.maxLength) {
+      errors[field.name] = `Please keep this under ${field.maxLength} characters.`;
+      continue;
+    }
+
+    if (field.type === 'email' && !EMAIL.test(text)) {
+      errors[field.name] = field.invalidMessage ?? 'That email address does not look right.';
+      continue;
+    }
+
+    if (field.type === 'tel' && !PHONE.test(text)) {
+      errors[field.name] = field.invalidMessage ?? 'That phone number does not look right.';
+      continue;
+    }
+
+    if (field.type === 'select' && field.options && !field.options.some((o) => o.value === text)) {
+      // A value outside the list means the markup was tampered with, so the
+      // wording stays generic rather than naming the allowed values.
+      errors[field.name] = field.invalidMessage ?? 'Please choose one of the options.';
+    }
+  }
+
+  return errors;
+}
+
+/**
+ * The shape `validateForm` needs, structural rather than imported.
+ *
+ * `src/lib/forms.ts` is bundled into the browser, and importing the definition
+ * module here would pull every form's copy into the client bundle alongside the
+ * one being rendered.
+ */
+export interface FormDefinitionLike {
+  fields: Array<{
+    name: string;
+    type: string;
+    label: string;
+    required?: boolean | undefined;
+    requiredMessage?: string | undefined;
+    invalidMessage?: string | undefined;
+    maxLength?: number | undefined;
+    options?: Array<{ label: string; value: string }> | undefined;
+  }>;
+}
+
+export const hasFormErrors = (errors: FormErrors) => Object.keys(errors).length > 0;

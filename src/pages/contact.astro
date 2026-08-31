@@ -1,7 +1,7 @@
 ---
 import PageLayout from '../layouts/PageLayout.astro';
 import PageBanner from '../components/shared/PageBanner.astro';
-import ContactForm from '../components/shared/ContactForm.astro';
+import CmsForm from '../components/forms/CmsForm.astro';
 import Icon from '../components/ui/Icon.astro';
 import { getSite } from '../data/get-site';
 import { breadcrumbSchema } from '../lib/seo';
@@ -132,7 +132,7 @@ const contactSchema = {
         <div class="reveal bg-mist p-[15px] md:p-[40px]" data-reveal-delay="0.1">
           <h2 class="text-ink text-[24px] leading-[34px] font-bold">Ask Question or Get Quote</h2>
           <div class="mt-[25px]">
-            <ContactForm id="contact-page-form" />
+            <CmsForm formId="contact" id="contact-page-form" />
           </div>
         </div>
       </div>

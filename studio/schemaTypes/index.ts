@@ -26,6 +26,7 @@ import { testimonialGrid } from './blocks/testimonialGrid';
 import { author } from './documents/author';
 import { category } from './documents/category';
 import { faq } from './documents/faq';
+import { form } from './documents/form';
 import { page } from './documents/page';
 import { post } from './documents/post';
 import { service } from './documents/service';
@@ -70,6 +71,7 @@ export const schemaTypes = [
   category,
   tag,
   faq,
+  form,
   testimonial,
   teamMember,
 ];

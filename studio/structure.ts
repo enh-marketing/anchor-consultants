@@ -21,6 +21,7 @@ export const structure: StructureResolver = (S) =>
       S.documentTypeListItem('tag').title('Blog tags'),
       S.documentTypeListItem('author').title('Authors'),
       S.documentTypeListItem('faq').title('FAQs'),
+      S.documentTypeListItem('form').title('Forms'),
       S.documentTypeListItem('testimonial').title('Testimonials'),
       S.documentTypeListItem('teamMember').title('Team'),
     ]);

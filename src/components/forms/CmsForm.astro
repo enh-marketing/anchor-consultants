@@ -1,0 +1,549 @@
+---
+import { getForm } from '../../data/get-forms';
+import type { FormField } from '../../data/forms';
+
+/**
+ * Renders a form from its definition.
+ *
+ * One component for every form on the site, because the alternative is two
+ * copies of the same validation, submit and status logic drifting apart — which
+ * is what the CV modal and the contact form were before this.
+ *
+ * Two layouts, because there are genuinely two designs. `page` and `modal` are
+ * the placeholder-only treatment with an icon in each field, measured from the
+ * original contact form. `labelled` is the modal treatment with visible labels
+ * and shorter inputs. They are named layouts rather than style options: an
+ * editor picks neither, the route does.
+ *
+ * The definition is also emitted as JSON beside the form. That is the mechanism
+ * that keeps the two sides honest: the browser validates against the same
+ * object `src/pages/api/contact.ts` will validate against, so a field made
+ * required in the Studio is required in both places rather than only in the one
+ * that happened to be updated. `recipientEmail` is stripped before it goes to
+ * the client, since it is configuration rather than content and publishing an
+ * address invites scraping.
+ *
+ * Fixes carried in from the audit:
+ *   #15 — the original has no labels at all and uses `type="text"` for email
+ *         and phone. Real labels are present, visually hidden where the design
+ *         is placeholder-only, with correct types.
+ *   #16 — errors are announced through a live region.
+ */
+interface Props {
+  formId: string;
+  layout?: 'page' | 'modal' | 'labelled';
+  id: string;
+  class?: string;
+}
+const { formId, layout = 'page', id, class: className = '' } = Astro.props;
+
+const form = await getForm(formId);
+const compact = layout === 'modal';
+const labelled = layout === 'labelled';
+
+/** Only the rules the browser needs. Recipient and notification config stay server-side. */
+const clientDefinition = {
+  fields: form.fields.map((f) => ({
+    name: f.name,
+    type: f.type,
+    label: f.label,
+    ...(f.required ? { required: true } : {}),
+    ...(f.requiredMessage ? { requiredMessage: f.requiredMessage } : {}),
+    ...(f.invalidMessage ? { invalidMessage: f.invalidMessage } : {}),
+    ...(f.maxLength ? { maxLength: f.maxLength } : {}),
+    ...(f.options ? { options: f.options } : {}),
+  })),
+  submitLabel: form.submitLabel,
+  sendingLabel: form.sendingLabel,
+  successMessage: form.successMessage,
+  errorMessage: form.errorMessage,
+  validationMessage: form.validationMessage,
+};
+
+/**
+ * Consecutive half-width fields pair up into a two-column row.
+ *
+ * The original puts name and message full width with email and phone beside
+ * each other, and this reproduces that from the field list rather than from
+ * hardcoded markup.
+ */
+type Row = { kind: 'single'; field: FormField } | { kind: 'pair'; fields: FormField[] };
+const rows: Row[] = [];
+for (const field of form.fields) {
+  const last = rows[rows.length - 1];
+  if (!labelled && field.width === 'half') {
+    if (last?.kind === 'pair' && last.fields.length < 2) {
+      last.fields.push(field);
+      continue;
+    }
+    rows.push({ kind: 'pair', fields: [field] });
+    continue;
+  }
+  rows.push({ kind: 'single', field });
+}
+
+const ICON_PATHS: Record<string, string> = {
+  user: '<circle cx="10" cy="6.5" r="3.2" stroke="currentColor" stroke-width="1.4"></circle><path d="M3.5 17c.6-3.2 3.3-5 6.5-5s5.9 1.8 6.5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path>',
+  envelope:
+    '<rect x="2" y="4" width="16" height="12" rx="1.6" stroke="currentColor" stroke-width="1.4"></rect><path d="m2.6 5.4 6.6 4.5a1.4 1.4 0 0 0 1.6 0l6.6-4.5" stroke="currentColor" stroke-width="1.4"></path>',
+  phone:
+    '<path d="M5.5 2.5h2.2l1.1 3-1.5 1a9 9 0 0 0 4.2 4.2l1-1.5 3 1.1v2.2a1.5 1.5 0 0 1-1.6 1.5A12.4 12.4 0 0 1 2.5 4.1 1.5 1.5 0 0 1 4 2.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"></path>',
+  pencil:
+    '<path d="M13.5 3.2 16.8 6.5 7.6 15.7l-4 .7.7-4Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"></path>',
+};
+---
+
+<form
+  class:list={[
+    'cms-form',
+    labelled ? 'is-labelled' : 'is-placeholder',
+    compact && 'is-compact',
+    className,
+  ]}
+  id={id}
+  method="post"
+  action="/api/contact"
+  data-cms-form
+  novalidate
+>
+  <input type="hidden" name="kind" value={form.id} />
+
+  <!-- Honeypot. Off-screen rather than display:none, which some bots skip. -->
+  <div class="sr-only-focusable absolute" aria-hidden="true">
+    <label for={`${id}-website`}>Leave this field empty</label>
+    <input id={`${id}-website`} type="text" name="website" tabindex="-1" autocomplete="off" />
+  </div>
+
+  <!--
+    Row gap per layout, matching what each form actually rendered.
+
+    The placeholder layout is 25px. Its compact variant carried
+    `gap-[25px] gap-4`, intending 16px, and that never took effect: Tailwind
+    resolves competing utilities by their order in the stylesheet rather than in
+    the attribute, and `gap-[25px]` is emitted later. So the modal has always
+    been 25px and the `gap-4` was dead. Forcing 16px now would change how the
+    modal looks, so the rendered design is kept.
+
+    The labelled layout is 16px, where `gap-4` had no competitor and did apply.
+  -->
+  <div class:list={[labelled ? 'grid gap-4' : 'grid gap-[25px]']}>
+    {
+      rows.map((row) => {
+        const cells = row.kind === 'pair' ? row.fields : [row.field];
+        const inner = cells.map((field) => {
+          const fieldId = `${id}-${field.name}`;
+          const errId = `${fieldId}-err`;
+          const hintId = field.helpText ? `${fieldId}-hint` : undefined;
+          const describedBy = [errId, hintId].filter(Boolean).join(' ');
+          const icon = field.icon ? ICON_PATHS[field.icon] : undefined;
+
+          return (
+            <div class="field">
+              <label
+                for={fieldId}
+                class:list={[
+                  labelled
+                    ? 'text-ink text-small mb-1.5 block font-medium'
+                    : 'sr-only-focusable absolute',
+                ]}
+              >
+                {field.label}
+              </label>
+
+              <div class="relative">
+                {field.type === 'textarea' ? (
+                  <textarea
+                    id={fieldId}
+                    name={field.name}
+                    rows={field.rows ?? (compact ? 4 : 7)}
+                    placeholder={field.placeholder}
+                    required={field.required}
+                    aria-describedby={describedBy}
+                  />
+                ) : field.type === 'select' ? (
+                  <select
+                    id={fieldId}
+                    name={field.name}
+                    required={field.required}
+                    aria-describedby={describedBy}
+                  >
+                    <option value="">{field.placeholder ?? 'Please choose'}</option>
+                    {(field.options ?? []).map((o) => (
+                      <option value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                ) : field.type === 'checkbox' ? (
+                  <input
+                    id={fieldId}
+                    name={field.name}
+                    type="checkbox"
+                    required={field.required}
+                    aria-describedby={describedBy}
+                  />
+                ) : field.type === 'file' ? (
+                  <input
+                    id={fieldId}
+                    name={field.name}
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    required={field.required}
+                    aria-describedby={describedBy}
+                  />
+                ) : (
+                  <input
+                    id={fieldId}
+                    name={field.name}
+                    type={field.type}
+                    autocomplete={field.autocomplete}
+                    placeholder={field.placeholder}
+                    required={field.required}
+                    aria-describedby={describedBy}
+                  />
+                )}
+
+                {icon && (
+                  <svg
+                    class:list={['field-icon', field.type === 'textarea' && 'field-icon-top']}
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    aria-hidden="true"
+                    set:html={icon}
+                  />
+                )}
+              </div>
+
+              {field.helpText && (
+                <p id={hintId} class="text-body text-small mt-1.5">
+                  {field.helpText}
+                </p>
+              )}
+              <p class="err" id={errId} />
+            </div>
+          );
+        });
+
+        return row.kind === 'pair' && inner.length > 1 ? (
+          <div class="grid gap-[25px] sm:grid-cols-2 sm:gap-x-[23px]">{inner}</div>
+        ) : (
+          inner
+        );
+      })
+    }
+
+    <button type="submit" class="submit">
+      <span class="label">{form.submitLabel}</span>
+      {
+        !labelled && (
+          <svg class="h-3 w-3.5" viewBox="0 0 14 12" fill="none" aria-hidden="true">
+            <path
+              d="M1 6h12m0 0-5-5m5 5-5 5"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        )
+      }
+    </button>
+
+    <!-- Result. Assertive so a failure is announced immediately. -->
+    <p class="status" role="status" aria-live="polite"></p>
+  </div>
+</form>
+
+<script
+  type="application/json"
+  data-form-definition={id}
+  set:html={JSON.stringify(clientDefinition)}
+/>
+
+<style>
+  /* --- placeholder layout: measured from the original contact form --- */
+  .cms-form.is-placeholder input[type='text'],
+  .cms-form.is-placeholder input[type='email'],
+  .cms-form.is-placeholder input[type='tel'],
+  .cms-form.is-placeholder select,
+  .cms-form.is-placeholder textarea {
+    width: 100%;
+    background: #fff;
+    border: 1px solid #ededed;
+    border-radius: 0;
+    font-size: 14px;
+    color: #1c1e22;
+    padding: 1px 44px 1px 20px;
+  }
+  .cms-form.is-placeholder input[type='text'],
+  .cms-form.is-placeholder input[type='email'],
+  .cms-form.is-placeholder input[type='tel'],
+  .cms-form.is-placeholder select {
+    height: 60px;
+  }
+  .cms-form.is-placeholder textarea {
+    display: block;
+    padding: 15px 44px 2px 20px;
+    height: 220px;
+    min-height: 60px;
+    resize: vertical;
+  }
+  .cms-form.is-compact textarea {
+    height: 140px;
+  }
+  .cms-form.is-compact .submit {
+    margin-top: 0;
+  }
+
+  /* --- labelled layout: the CV modal --- */
+  .cms-form.is-labelled input[type='text'],
+  .cms-form.is-labelled input[type='email'],
+  .cms-form.is-labelled input[type='tel'],
+  .cms-form.is-labelled select {
+    width: 100%;
+    height: 52px;
+    background: #fff;
+    border: 1px solid #ededed;
+    font-size: 14px;
+    color: #1c1e22;
+    padding: 1px 16px;
+  }
+  .cms-form.is-labelled textarea {
+    width: 100%;
+    background: #fff;
+    border: 1px solid #ededed;
+    font-size: 14px;
+    color: #1c1e22;
+    padding: 12px 16px;
+    resize: vertical;
+  }
+  .cms-form.is-labelled .submit {
+    height: 52px;
+  }
+
+  /* --- shared --- */
+  .cms-form input[type='file'] {
+    width: 100%;
+    font-size: 14px;
+    color: var(--color-body);
+  }
+  .cms-form input[type='file']::file-selector-button {
+    margin-right: 12px;
+    border: 1px solid #d6d6d6;
+    background: #f7f7f7;
+    color: #1c1e22;
+    padding: 10px 16px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .cms-form input::placeholder,
+  .cms-form textarea::placeholder {
+    color: var(--color-body);
+  }
+  .cms-form input:focus-visible,
+  .cms-form select:focus-visible,
+  .cms-form textarea:focus-visible {
+    outline: 2px solid #084876;
+    outline-offset: -1px;
+  }
+
+  .field-icon {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    width: 16px;
+    height: 16px;
+    transform: translateY(-50%);
+    color: var(--color-body);
+    pointer-events: none;
+  }
+  .field-icon-top {
+    top: 22px;
+    transform: none;
+  }
+
+  /* Invalid state is driven by the script, not :invalid, so errors only
+     appear once the visitor has actually tried the field. */
+  .cms-form [aria-invalid='true'] {
+    border-color: var(--color-danger);
+  }
+
+  .err {
+    display: none;
+    margin-top: 6px;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--color-danger);
+  }
+  .err:not(:empty) {
+    display: block;
+  }
+
+  .submit {
+    /* The grid gap is 25px; the original leaves 33px above the button. */
+    margin-top: 8px;
+    display: inline-flex;
+    height: 60px;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border-radius: 3px;
+    background: #084876;
+    font-size: 14px;
+    font-weight: 500;
+    color: #fff;
+    transition: background-color 0.2s;
+  }
+  .cms-form.is-labelled .submit {
+    margin-top: 0;
+  }
+  .submit:hover {
+    background: #0a5488;
+  }
+  .submit[disabled] {
+    opacity: 0.7;
+    cursor: progress;
+  }
+
+  .status {
+    display: none;
+    font-size: 14px;
+    line-height: 22px;
+  }
+  .status:not(:empty) {
+    display: block;
+  }
+  .status[data-state='ok'] {
+    color: #1b6b50;
+  }
+  .status[data-state='error'] {
+    color: var(--color-danger);
+  }
+</style>
+
+<script>
+  import { validateForm, hasFormErrors, type FormValues } from '../../lib/forms';
+  import { recaptchaToken } from '../../lib/recaptcha';
+
+  /**
+   * One handler for every form on the page.
+   *
+   * The rules are read from the JSON the component emitted, which is the same
+   * object the server validates against. Nothing about which fields exist or
+   * what they require is written here, so a field added in the Studio is
+   * enforced in the browser without this file changing.
+   */
+  document.querySelectorAll<HTMLFormElement>('form[data-cms-form]').forEach((form) => {
+    const json = document.querySelector<HTMLScriptElement>(
+      `script[data-form-definition="${CSS.escape(form.id)}"]`,
+    );
+    if (!json?.textContent) return;
+
+    const def = JSON.parse(json.textContent) as {
+      fields: Array<{ name: string; type: string; label: string; required?: boolean }>;
+      submitLabel: string;
+      sendingLabel: string;
+      successMessage: string;
+      errorMessage: string;
+      validationMessage: string;
+    };
+
+    const control = (name: string) =>
+      form.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
+        `[name="${CSS.escape(name)}"]`,
+      );
+    const errBox = (name: string) =>
+      form.querySelector<HTMLElement>(`#${CSS.escape(`${form.id}-${name}-err`)}`);
+    const status = form.querySelector<HTMLElement>('.status')!;
+    const submit = form.querySelector<HTMLButtonElement>('.submit')!;
+    const label = submit.querySelector<HTMLElement>('.label')!;
+
+    const values = (): FormValues => {
+      const out: FormValues = {};
+      for (const field of def.fields) {
+        const el = control(field.name);
+        if (!el) continue;
+        if (field.type === 'file') {
+          const file = (el as HTMLInputElement).files?.[0] ?? null;
+          out[field.name] = file ? { name: file.name, size: file.size, type: file.type } : null;
+        } else if (field.type === 'checkbox') {
+          out[field.name] = (el as HTMLInputElement).checked ? 'on' : '';
+        } else {
+          out[field.name] = el.value;
+        }
+      }
+      return out;
+    };
+
+    const paint = (errors: Record<string, string>, only?: string) => {
+      for (const field of def.fields) {
+        if (only && only !== field.name) continue;
+        const el = control(field.name);
+        const box = errBox(field.name);
+        const msg = errors[field.name] ?? '';
+        if (box) box.textContent = msg;
+        el?.setAttribute('aria-invalid', msg ? 'true' : 'false');
+      }
+    };
+
+    // Validate a field once it has been left, then live as it is corrected.
+    for (const field of def.fields) {
+      const el = control(field.name);
+      if (!el) continue;
+      const revalidate = () => paint(validateForm(def, values()), field.name);
+      el.addEventListener('blur', revalidate);
+      el.addEventListener(field.type === 'file' ? 'change' : 'input', () => {
+        if (field.type === 'file' || el.getAttribute('aria-invalid') === 'true') revalidate();
+      });
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const errors = validateForm(def, values());
+      paint(errors);
+      status.textContent = '';
+      status.removeAttribute('data-state');
+
+      if (hasFormErrors(errors)) {
+        const first = def.fields.find((f) => errors[f.name]);
+        if (first) control(first.name)?.focus();
+        status.dataset['state'] = 'error';
+        status.textContent = def.validationMessage;
+        return;
+      }
+
+      submit.disabled = true;
+      const original = label.textContent;
+      label.textContent = def.sendingLabel;
+
+      try {
+        const body = new FormData(form);
+        const token = await recaptchaToken(form.id);
+        if (token) body.set('token', token);
+        const res = await fetch(form.action, { method: 'POST', body });
+        const data = await res.json();
+
+        if (!res.ok || !data.ok) {
+          if (data.errors) paint(data.errors);
+          status.dataset['state'] = 'error';
+          status.textContent = data.reason ?? def.errorMessage;
+        } else if (data.delivered === false) {
+          // Never claim a message was sent when it was not.
+          status.dataset['state'] = 'error';
+          status.textContent =
+            'Email delivery is not configured on this environment yet, so this was not sent. Please call or email us directly.';
+        } else {
+          status.dataset['state'] = 'ok';
+          status.textContent = def.successMessage;
+          form.reset();
+          paint({});
+        }
+      } catch {
+        status.dataset['state'] = 'error';
+        status.textContent = 'We could not reach the server. Please try again, or call us.';
+      } finally {
+        submit.disabled = false;
+        label.textContent = original;
+      }
+    });
+  });
+</script>

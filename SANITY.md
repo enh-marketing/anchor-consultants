@@ -277,6 +277,34 @@ it. A button set to "Go to a page" with no destination is not rendered.
 The phone number is stored once, in international format. Every `tel:` link on
 the site is built from it.
 
+### Editing a form
+
+**Forms** in the sidebar holds the enquiry form and the CV upload form. Editing
+a field changes both what a visitor sees and what the server accepts, so marking
+something required really does require it.
+
+- **Field name** is what the field is submitted under and what the notification
+  email calls it. Lower case, no spaces.
+- **Type** matters: email and phone are checked for format, not just presence.
+  File uploads accept PDF or Word up to 5 MB.
+- **Half width** fields pair up side by side on the enquiry form. It is not a
+  size — those are the only two widths the design has.
+- **Send submissions to** is optional. Leave it empty and the site email address
+  is used. Hosting can override it, so if enquiries are arriving somewhere
+  unexpected, check with whoever runs the deployment before editing this.
+
+Turning on **also email the person who submitted** sends a plain-text
+acknowledgement. It is plain text deliberately: an editable message rendered as
+HTML into an email is a security risk, and plain text reads fine.
+
+What is _not_ here, and should not be: the mail server details and the
+reCAPTCHA secret. Those are deployment settings, not content, and this document
+is readable by everyone with access to the dataset.
+
+You cannot create a brand-new form here and have it appear on the site — a form
+needs a page to put it on. Ask a developer to add the route, then it becomes
+editable like these two.
+
 ### Writing a blog post
 
 The sidebar has four blog entries: **Blog posts**, **Blog categories**, **Blog

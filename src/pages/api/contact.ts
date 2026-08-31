@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
 import nodemailer from 'nodemailer';
-import { validateContact, validateCv, hasErrors, CV_MAX_BYTES } from '../../lib/forms';
+import { validateForm, hasFormErrors, CV_MAX_BYTES, type FormValues } from '../../lib/forms';
 import { getSite } from '../../data/get-site';
+import { getForm } from '../../data/get-forms';
 
 /**
  * The only server route in the build. Everything else prerenders.
@@ -18,6 +19,13 @@ import { getSite } from '../../data/get-site';
  * end can be exercised end to end. It never silently pretends to have sent
  * something: the response carries `delivered: false` and the reason, and the
  * forms say so in plain words.
+ *
+ * Validation is driven by the form's own definition, loaded through the same
+ * `getForm()` the browser rendered from. That is deliberate and it is the point
+ * of milestone 21: a field made required in the Studio is enforced here without
+ * this file changing. Hardcoding the rules is how a CMS ends up with validation
+ * that only looks enforced — the browser asks for a field the server never
+ * checks.
  */
 export const prerender = false;
 
@@ -73,35 +81,47 @@ export const POST: APIRoute = async ({ request }) => {
   // Silently accept bot submissions so they get no signal either way.
   if (honeypot.trim()) return json({ ok: true, delivered: false, reason: 'Discarded.' });
 
-  const payload = {
-    name: String(form.get('name') ?? ''),
-    email: String(form.get('email') ?? ''),
-    phone: String(form.get('phone') ?? ''),
-    message: String(form.get('message') ?? ''),
-  };
-
-  let errors = kind === 'cv' ? {} : validateContact(payload);
-
-  let cv: File | null = null;
-  if (kind === 'cv') {
-    const entry = form.get('cv');
-    cv = entry instanceof File ? entry : null;
-    errors = {
-      ...errors,
-      ...validateCv(cv ? { name: cv.name, size: cv.size, type: cv.type } : null),
-    };
-    // A CV submission still needs a way to reply.
-    const contactErrors = validateContact({ ...payload, message: '' });
-    if (contactErrors.email) errors.email = contactErrors.email;
-    if (contactErrors.name) errors.name = contactErrors.name;
+  // An unknown form id means the request did not come from a form this site
+  // renders. Nothing is validated against a guess.
+  let definition;
+  try {
+    definition = await getForm(kind);
+  } catch {
+    return json({ ok: false, delivered: false, reason: 'Unknown form.' }, 400);
   }
 
-  if (hasErrors(errors)) {
-    return json({ ok: false, delivered: false, errors: errors as Record<string, string> }, 422);
+  /**
+   * Values read strictly from the definition.
+   *
+   * Anything the form does not declare is ignored rather than forwarded, so an
+   * extra field injected into the POST cannot end up in the notification email.
+   */
+  const values: FormValues = {};
+  const files: Record<string, File> = {};
+  for (const field of definition.fields) {
+    const entry = form.get(field.name);
+    if (field.type === 'file') {
+      const file = entry instanceof File && entry.name ? entry : null;
+      if (file) files[field.name] = file;
+      values[field.name] = file ? { name: file.name, size: file.size, type: file.type } : null;
+    } else {
+      values[field.name] = typeof entry === 'string' ? entry : '';
+    }
   }
 
-  if (cv && cv.size > CV_MAX_BYTES) {
-    return json({ ok: false, delivered: false, errors: { file: 'That file is over 5 MB.' } }, 413);
+  const errors = validateForm(definition, values);
+  if (hasFormErrors(errors)) {
+    return json({ ok: false, delivered: false, errors }, 422);
+  }
+
+  // Size is re-checked against the real upload rather than the reported figure.
+  for (const [name, file] of Object.entries(files)) {
+    if (file.size > CV_MAX_BYTES) {
+      return json(
+        { ok: false, delivered: false, errors: { [name]: 'That file is over 5 MB.' } },
+        413,
+      );
+    }
   }
 
   const captcha = await verifyRecaptcha(String(form.get('token') ?? '') || undefined);
@@ -112,13 +132,34 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 
+  const site = await getSite();
+
+  /** A human-readable line per declared field, in the order the form shows them. */
+  const lines = definition.fields
+    .filter((field) => field.type !== 'file')
+    .map((field) => {
+      const value = values[field.name];
+      const text = typeof value === 'string' ? value.trim() : '';
+      return text ? `${field.label}: ${text}` : null;
+    })
+    .filter((line): line is string => line !== null);
+
+  const attachedNames = Object.values(files).map((f) => f.name);
+  if (attachedNames.length) lines.push('', `Attached: ${attachedNames.join(', ')}`);
+
+  // Used for Reply-To and the confirmation, when the form collects an address.
+  const emailField = definition.fields.find((field) => field.type === 'email');
+  const replyTo = emailField ? String(values[emailField.name] ?? '').trim() : '';
+  const nameField = definition.fields.find((field) => field.name === 'name');
+  const submitterName = nameField ? String(values[nameField.name] ?? '').trim() : '';
+
   const smtpConfigured = Boolean(env('SMTP_HOST') && env('SMTP_USER') && env('SMTP_PASSWORD'));
   if (!smtpConfigured) {
     // Deliberately loud: this must not look like a working send.
     console.warn(
       `[contact] SMTP is not configured — submission accepted but NOT delivered.\n` +
-        `  kind: ${kind}\n  name: ${payload.name}\n  email: ${payload.email}\n` +
-        `  phone: ${payload.phone}\n  file: ${cv ? `${cv.name} (${cv.size} bytes)` : 'none'}`,
+        `  form: ${definition.id}\n` +
+        lines.map((line) => `  ${line}`).join('\n'),
     );
     return json({
       ok: true,
@@ -136,17 +177,19 @@ export const POST: APIRoute = async ({ request }) => {
     auth: { user: env('SMTP_USER'), pass: env('SMTP_PASSWORD') },
   });
 
-  const to = env('CONTACT_TO') ?? (await getSite()).contact.email.address;
+  // CONTACT_TO wins over the form's recipient, which wins over the site email.
+  // The environment stays the final say so a content edit cannot redirect
+  // enquiries somewhere they were never meant to go.
+  const to = env('CONTACT_TO') ?? definition.recipientEmail ?? site.contact.email.address;
   const from = env('SMTP_FROM') ?? env('SMTP_USER')!;
-  const isCv = kind === 'cv';
 
-  const lines = [
-    `Name:  ${payload.name}`,
-    `Email: ${payload.email}`,
-    ...(payload.phone ? [`Phone: ${payload.phone}`] : []),
-    '',
-    isCv ? 'A CV was attached to this submission.' : payload.message || '(no message)',
-  ];
+  const attachments = await Promise.all(
+    Object.values(files).map(async (file) => ({
+      filename: file.name,
+      content: Buffer.from(await file.arrayBuffer()),
+      contentType: file.type || 'application/octet-stream',
+    })),
+  );
 
   try {
     await transport.sendMail({
@@ -154,20 +197,12 @@ export const POST: APIRoute = async ({ request }) => {
       from,
       // The visitor's address goes in Reply-To, never in From: sending as
       // them would fail SPF and DMARC on most providers.
-      replyTo: `${payload.name} <${payload.email}>`,
-      subject: isCv ? `CV submission — ${payload.name}` : `Website enquiry — ${payload.name}`,
+      ...(replyTo ? { replyTo: submitterName ? `${submitterName} <${replyTo}>` : replyTo } : {}),
+      subject: submitterName
+        ? `${definition.subjectPrefix} — ${submitterName}`
+        : definition.subjectPrefix,
       text: lines.join('\n'),
-      ...(cv
-        ? {
-            attachments: [
-              {
-                filename: cv.name,
-                content: Buffer.from(await cv.arrayBuffer()),
-                contentType: cv.type || 'application/octet-stream',
-              },
-            ],
-          }
-        : {}),
+      ...(attachments.length ? { attachments } : {}),
     });
   } catch (error) {
     // Never report success for a send that failed.
@@ -180,6 +215,32 @@ export const POST: APIRoute = async ({ request }) => {
       },
       502,
     );
+  }
+
+  /**
+   * Acknowledgement to the submitter, when the form asks for one.
+   *
+   * Sent as plain text on purpose. The body is editable content, and rendering
+   * editable content as HTML into an email is how a content field becomes an
+   * injection vector — spec §22 rules that out, and a plain-text
+   * acknowledgement reads perfectly well.
+   *
+   * A failure here is logged and swallowed: the office already has the enquiry,
+   * and telling the visitor their message failed because a courtesy email did
+   * would be wrong.
+   */
+  if (definition.sendConfirmation && replyTo && definition.confirmationBody) {
+    try {
+      await transport.sendMail({
+        to: replyTo,
+        from,
+        replyTo: to,
+        subject: definition.confirmationSubject ?? `Thank you for contacting ${site.name}`,
+        text: definition.confirmationBody,
+      });
+    } catch (error) {
+      console.error('[contact] confirmation email failed (enquiry was delivered)', error);
+    }
   }
 
   return json({ ok: true, delivered: true });

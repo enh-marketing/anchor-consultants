@@ -1111,6 +1111,102 @@ are drafts and one is placeholder text from WordPress. Everything above is built
 and tested but the blog cannot be verified against real editorial content until
 the client supplies some.
 
+### Forms as content — Milestone 21 COMPLETE
+
+Both forms are defined by a document, and the same document drives what the
+browser renders and what the server enforces. That equivalence is the milestone;
+everything else follows from it.
+
+**The mechanism.** `getForm(id)` reads the definition — Sanity when configured,
+`src/data/forms.ts` otherwise — and both sides call it. The component renders
+from it and also emits it as JSON beside the form, so the browser validates
+against the same object `src/pages/api/contact.ts` will validate against. The
+API reads the definition by the submitted form id and validates with the same
+`validateForm()`. Neither side has any rule written into it.
+
+_Why not a content collection in the API route:_ a spike showed the route reads
+a build-time snapshot at best, and `getSite()` already fetches from Sanity at
+request time inside that exact file. Reusing the proven pattern avoids depending
+on the content layer being available in server code.
+
+**Proven, not asserted.** A required select field was added to the enquiry form
+in the Studio, with three options and a custom message, and the button and
+success message were changed. With no code touched:
+
+| Request                                  | Result                                                             |
+| ---------------------------------------- | ------------------------------------------------------------------ |
+| New field omitted                        | 422, `budget: "Please tell us your budget range."`                 |
+| New field set to a value not in the list | 422, "Please choose one of the options."                           |
+| New field set to a valid option          | Accepted, and the value appears in the email                       |
+| Browser                                  | Select rendered, required, options correct, new button and message |
+
+Seven more cases checked on the shipped definitions: valid submission, missing
+required field, malformed email, unknown form id, honeypot, CV form with no
+file, and copy over its character limit. All behave correctly.
+
+**Values are read strictly from the definition.** A field the form does not
+declare is ignored rather than forwarded, so an extra parameter injected into
+the POST cannot reach the notification email. Verified: `secret=evil` was
+accepted and absent from the body.
+
+**Security held, and tightened in one place.** No credential is in the
+document, and `CONTACT_TO` still overrides the form's own recipient, so hosting
+keeps the final say on where enquiries go — a content edit cannot redirect them.
+The definition sent to the browser is stripped of `recipientEmail`, since that
+is configuration and publishing an address invites scraping. Checked against the
+client bundle: zero hits for `SMTP_`, `RECAPTCHA_SECRET`, `CONTACT_TO`,
+`recipientEmail` or `nodemailer`, and the JSON carries only labels, rules and
+messages.
+
+The confirmation email to the submitter is plain text on purpose. The body is
+editable content, and rendering editable content as HTML into an email is how a
+content field becomes an injection vector (spec §22). A failure there is logged
+and swallowed: the office already has the enquiry, and telling the visitor their
+message failed because a courtesy email did would be wrong.
+
+**Two forms became one component.** `ContactForm.astro` and the CV modal's
+markup were near-identical copies of the same validation, submit and status
+logic — which is how two forms on one site end up behaving differently for no
+reason. `CmsForm.astro` replaces both, with two named layouts because there are
+genuinely two designs: `placeholder` (icon in each field, labels for screen
+readers only) and `labelled` (visible labels, shorter inputs). The route picks
+the layout; an editor picks neither.
+
+**A latent bug found while consolidating.** The compact modal variant carried
+`gap-[25px] gap-4`, intending a 16px gap. It never applied: Tailwind resolves
+competing utilities by their order in the stylesheet, not in the attribute, and
+`gap-[25px]` is emitted later. So the modal has always rendered at 25px and the
+`gap-4` was dead. Forcing 16px would have changed the modal's appearance, so the
+rendered design was kept and the class that did nothing was removed. The CV
+form's `gap-4` had no competitor and did apply, so the labelled layout keeps
+16px. This is the same trap that bit the header chevron in the UI refinement
+pass, and the second time it has hidden a rule in plain sight.
+
+**Two of my own regressions, caught by diffing.** Consolidating initially
+changed the CV form's button from "Submit Now" to "Send CV" and reworded its
+help text, and gave its name and email fields the contact form's placeholders
+and in-field icons. All four were reverted to the shipped wording and
+appearance.
+
+**Now editable per form:** every field's label, name, type, required flag,
+placeholder, help text, both validation messages, select options, width, icon,
+maximum length and autofill hint; the button text; the success, error and
+validation messages; the recipient; the email subject prefix; and an optional
+confirmation email to the submitter.
+
+**Verified:** contact form geometry unchanged at 1440 — inputs 60px, textarea
+220px, 25px row gap, 23px column gap, `#EDEDED` border, padding
+`1px 44px 1px 20px`, 4 icons, labels visually hidden. All three forms render
+byte-equivalent field sets from Sanity and from the committed defaults. All 12
+pages back to baseline on text, headings, images, links and input count. 25
+tests passing, `astro check` 0 errors and 0 warnings across 128 files,
+`sanity schema validate` 0 errors, Prettier clean.
+
+**Not testable here.** The confirmation email and real delivery need SMTP
+credentials, which the client has not supplied. Both paths are implemented and
+the endpoint reports `delivered: false` with the reason rather than pretending,
+which the forms surface in plain words.
+
 ## Open Questions
 
 These need your input. None of them block starting at Milestone 0; I have noted the assumption I will proceed with if you would rather decide later.

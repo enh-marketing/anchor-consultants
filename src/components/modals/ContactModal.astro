@@ -1,6 +1,6 @@
 ---
 import Dialog from './Dialog.astro';
-import ContactForm from '../shared/ContactForm.astro';
+import CmsForm from '../forms/CmsForm.astro';
 
 // Replaces Popup Maker's pum-1979 ("contact-us"), which the original opens
 // from "Lets Connect", "Get An Appointment" and "Free Consultation".
@@ -11,5 +11,5 @@ import ContactForm from '../shared/ContactForm.astro';
   title="Contact Us"
   intro="Tell us what you need and we will come back with a clear next step."
 >
-  <ContactForm id="contact-modal-form" variant="modal" />
+  <CmsForm formId="contact" id="contact-modal-form" layout="modal" />
 </Dialog>
