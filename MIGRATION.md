@@ -1613,6 +1613,39 @@ linking to the blog points there. Left out per the client's decision; it is one
 document in the Studio under Redirects whenever it is wanted, and the mechanism is
 built and tested.
 
+### Publishing the privacy policy from Sanity — a trap closed
+
+The client said the privacy text, blog posts and phone number would be added
+later from Sanity. Two of those three already worked. The privacy policy did not,
+and it would have failed silently.
+
+The route hardcoded `noindex`, and `astro.config.mjs` excluded
+`/privacy-policy/` from the sitemap by name. Both were right while the page was a
+holding notice: a search result promising a privacy policy that says "being
+finalised" is worse than no result. But they were wrong the moment the page could
+carry real text — publishing the legal text would have rendered it correctly and
+left the page invisible to search engines, with nothing to indicate that.
+
+Both are now conditional on the same thing:
+
+- The route is `noindex` only while there is no `page` document. Once one supplies
+  real text the page is indexable like any other, and its SEO tab can hide it
+  again if wanted.
+- The hardcoded sitemap exclusion is gone. `buildFixups` already prunes whatever
+  actually ended up `noindex`, which cannot fall out of step with the page the way
+  a name in a config file can.
+
+Verified in both states on a simulated production build:
+
+| State                      | Robots              | In sitemap | Sitemap URLs |
+| -------------------------- | ------------------- | ---------- | ------------ |
+| Holding page (no document) | `noindex, nofollow` | No         | 10           |
+| Legal text published       | `index, follow`     | Yes        | 11           |
+
+With the text published the holding notice disappears, the meta description
+comes from the SEO tab, and the prose renders through `.cms-prose` with real
+headings. So adding it later from Sanity now does what it looks like it does.
+
 ## Open Questions
 
 These need your input. None of them block starting at Milestone 0; I have noted the assumption I will proceed with if you would rather decide later.

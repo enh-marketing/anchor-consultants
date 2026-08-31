@@ -13,7 +13,17 @@ const site = await getSite();
 // waiting on legal text. Its shipped markup is kept as the fallback because the
 // holding copy uses per-element spacing a generic prose rhythm cannot match;
 // once real text arrives through the CMS, `.cms-prose` governs it.
+//
+// Indexing follows the same switch. While this is the holding page it must stay
+// out of search results: it says the policy is being finalised, and a search
+// result promising a privacy policy that does not exist is worse than none. Once
+// a `page` document supplies real text, the page becomes indexable like any
+// other and its SEO tab controls it — including hiding it again if wanted.
+//
+// Hardcoding `noindex` here would have made publishing the legal text look like
+// it worked while leaving the page invisible, with nothing to say so.
 const pageBlocks = await pageSections('/privacy-policy/');
+const isHoldingPage = pageBlocks.length === 0;
 const seo = await pageSeo('/privacy-policy/', {
   title: 'Privacy Policy',
   description:
@@ -34,7 +44,7 @@ const sections = [
 
 <PageLayout
   {...seo}
-  noindex
+  noindex={isHoldingPage}
   schemas={[breadcrumbSchema([{ name: 'Privacy Policy', path: '/privacy-policy/' }])]}
 >
   {

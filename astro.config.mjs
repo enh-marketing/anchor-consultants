@@ -48,11 +48,14 @@ export default defineConfig({
 
   integrations: [
     sitemap({
-      // Route-level exclusions, the ones already known here at config time.
-      // /privacy-policy/ is noindex while it is a holding page (see the page
-      // comment and MIGRATION.md Q15), and listing a noindex URL contradicts
-      // the robots tag.
-      filter: (page) => !page.includes('/api/') && !page.includes('/privacy-policy/'),
+      // Only the API route, which is not a page at all.
+      //
+      // /privacy-policy/ used to be excluded here by name, because it is noindex
+      // while it is a holding page. That became wrong the moment the page could
+      // legitimately become indexable: a hardcoded exclusion would have kept the
+      // published legal text out of the sitemap for ever. `buildFixups` prunes
+      // whatever actually ended up noindex, which cannot fall out of step.
+      filter: (page) => !page.includes('/api/'),
     }),
 
     // Everything decided later. `noindex` can also come from an editor's toggle
