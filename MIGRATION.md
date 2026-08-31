@@ -1646,7 +1646,7 @@ With the text published the holding notice disappears, the meta description
 comes from the SEO tab, and the prose renders through `.cms-prose` with real
 headings. So adding it later from Sanity now does what it looks like it does.
 
-### Defect #29 — form submissions would be world-readable
+### Defect #29 — form submissions would be world-readable — RESOLVED
 
 Found immediately after the repository was made public, and it needs a decision
 before the form goes live.
@@ -1674,17 +1674,39 @@ submission can be written. This is a defect to fix before launch, not an inciden
 this is resolved. That variable is the only thing standing between a submitted
 enquiry and a public dataset.
 
-Options, in the order I would pick them:
+**Resolved on 2026-08-31** with option 1, a separate private dataset — which was
+the milestone 22 recommendation, declined then for simplicity and revisited once
+the repository went public.
 
-1. **A separate private dataset for submissions.** What was recommended in
-   milestone 22 and declined for simplicity. The write client points at it; the
-   Studio reads it through a second workspace. Content stays token-free.
-2. **Make `production` private.** Smaller change — the build gains a read token —
-   but it also means the build can no longer run without a credential, which is a
-   real loss for a static site.
-3. **Do not store submissions.** Email only, as the site behaves today. No
-   exposure, no archive, no admin list.
-4. **Document-level access control**, if the Sanity plan allows it.
+A `submissions` dataset was created with private visibility. The write client in
+`src/lib/submissions.ts` targets it, and it never falls back to the content
+dataset: a typo in `SANITY_SUBMISSIONS_DATASET` must not silently start writing
+personal data somewhere world-readable.
+
+The Studio became two workspaces — `/content` on `production` and `/submissions`
+on the private dataset. The `submission` type left the content workspace's schema
+entirely, so the content Studio cannot create one by hand, which it never should:
+a submission is a record of what somebody sent rather than something anyone
+authors. Both workspaces need the same number of `basePath` segments, which is why
+content moved from `/` to `/content`.
+
+**Proven end to end**, through the real route:
+
+| Check                                      | Result                       |
+| ------------------------------------------ | ---------------------------- |
+| Submission written to the private dataset  | Yes                          |
+| Present in the public `production` dataset | No                           |
+| Readable with no token                     | No — empty result            |
+| Site build                                 | Unaffected, still token-free |
+
+**One detail worth recording.** A private Sanity dataset answers a tokenless
+query with `200` and an empty result, not `401`. A check that looked for a `401`
+would have concluded the dataset was public. It was verified instead by writing a
+canary document, confirming it was returned with a token, absent without one, and
+absent from `production` — then deleting it.
+
+The write token now only needs access to `submissions`, and should not be given
+access to `production`.
 
 ## Open Questions
 
@@ -1752,8 +1774,8 @@ zero occurrences of `enhdemo` remain in the source or the built site.
 _The mailbox has to exist by launch._ Nothing on the site checks that, and an
 enquiry sent to an address that bounces is worse than one that never sent.
 
-**Q17. Submission storage after going public.** See defect #29. The `production`
-dataset is world-readable and the project id is now on a public repository, so
-stored enquiries would be public. Decide between a separate private dataset,
-making `production` private, or not storing submissions. **Do not set
-`SANITY_WRITE_TOKEN` until this is settled.**
+**Q17. Submission storage after going public.** **ANSWERED — a separate private
+dataset.** See defect #29, now resolved. Enquiries are written to a private
+`submissions` dataset and are unreadable without a token; the content dataset
+stays public-read so the build needs no credential. `SANITY_WRITE_TOKEN` is now
+safe to set, and needs write access to `submissions` only.

@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { createClient } from '@sanity/client';
-import { SANITY_PROJECT_ID, SANITY_DATASET } from './sanity/client';
+import { SANITY_PROJECT_ID } from './sanity/client';
 
 /**
  * Storing and rate-limiting form submissions.
@@ -8,6 +8,17 @@ import { SANITY_PROJECT_ID, SANITY_DATASET } from './sanity/client';
  * Server-only. This module is imported by `src/pages/api/contact.ts` and by
  * nothing else, and it must stay that way: it constructs a write client from a
  * token that must never reach the browser.
+ *
+ * Submissions live in their own **private** dataset, not alongside the content.
+ * The content dataset is public-read by design — that is what lets a static build
+ * fetch pages without a credential — and once the repository went public the
+ * project id was published with it, so anything in that dataset is readable by
+ * anyone. Enquiries carry names, emails and phone numbers, so they are kept where
+ * a token is required to read them (defect #29).
+ *
+ * Verified rather than assumed: a document written here is returned to a
+ * tokenless query as an empty result, not a 401. A check that looked for a 401
+ * would have concluded the dataset was public.
  *
  * Everything degrades rather than failing. With no write token, submissions are
  * not stored and the enquiry is still emailed — losing the archive is bad, but
@@ -33,6 +44,15 @@ const env = (key: string): string | undefined => {
 const RATE_LIMIT = 5;
 const RATE_WINDOW_MINUTES = 10;
 
+/**
+ * The private dataset submissions are written to.
+ *
+ * Overridable so a staging deployment can keep its enquiries separate, but it
+ * deliberately does not fall back to the content dataset: a typo in the variable
+ * must not silently start writing personal data somewhere world-readable.
+ */
+const SUBMISSIONS_DATASET = () => env('SANITY_SUBMISSIONS_DATASET') ?? 'submissions';
+
 export interface SubmissionEntry {
   label: string;
   value: string;
@@ -57,7 +77,7 @@ function writeClient() {
   if (!token || !SANITY_PROJECT_ID) return null;
   return createClient({
     projectId: SANITY_PROJECT_ID,
-    dataset: SANITY_DATASET,
+    dataset: SUBMISSIONS_DATASET(),
     apiVersion: '2024-10-01',
     token,
     useCdn: false,

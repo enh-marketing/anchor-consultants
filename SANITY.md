@@ -323,8 +323,17 @@ round in circles.
 
 ### Form submissions
 
-**Form submissions** in the sidebar lists every enquiry, newest first, with the
-name and email in the title so the list can be scanned.
+Enquiries are in a **separate Studio workspace**, not in the sidebar with the
+content. Switch to it with the workspace picker at the top of the Studio, or go
+straight to `/submissions`. Content is at `/content`.
+
+They are kept apart for a reason. The content dataset is readable by anyone —
+that is what lets the site build without a password, and it is fine for content
+that is published anyway. Enquiries carry names, emails and phone numbers, so
+they live in a private dataset that cannot be read without a token.
+
+The list shows every enquiry, newest first, with the name and email in the title
+so it can be scanned.
 
 Everything is read-only. An enquiry is a record of what somebody sent, so it
 cannot be edited — only read, and eventually deleted under the retention policy.
@@ -336,9 +345,9 @@ Two things worth knowing:
 
 - **No IP addresses are kept.** Rate limiting needs to recognise a repeat
   submitter, not identify one, so only a one-way hash is stored.
-- **These are personal data.** Anyone who can open this Studio can read every
-  enquiry. If that needs restricting, Sanity's role-based access can hide this
-  section from ordinary editors. Ask before granting Studio access to someone who
+- **These are personal data.** Anyone who can open this workspace can read every
+  enquiry. They are no longer in the same dataset as the content, so read access
+  can be granted separately — ask before giving submissions access to someone who
   only needs to edit content.
 
 Old submissions are deleted by a script, not automatically. The retention window

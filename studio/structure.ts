@@ -22,10 +22,9 @@ export const structure: StructureResolver = (S) =>
       S.documentTypeListItem('author').title('Authors'),
       S.documentTypeListItem('faq').title('FAQs'),
       S.documentTypeListItem('form').title('Forms'),
-      // Its own divider: enquiries are records rather than content, and the
-      // separation is a reminder that editing them is not a thing you do.
+      // Submissions are not here: they live in their own private dataset and
+      // their own workspace, because the content dataset is public-read.
       S.divider(),
-      S.documentTypeListItem('submission').title('Form submissions'),
       S.documentTypeListItem('redirect').title('Redirects'),
       S.divider(),
       S.documentTypeListItem('testimonial').title('Testimonials'),

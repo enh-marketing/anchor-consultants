@@ -78,8 +78,17 @@ export const schemaTypes = [
   tag,
   faq,
   form,
-  submission,
   redirect,
   testimonial,
   teamMember,
 ];
+
+/**
+ * The submissions workspace's schema.
+ *
+ * Submissions live in their own private dataset, so the type belongs to its own
+ * workspace rather than the content one. Keeping it out of `schemaTypes` also
+ * means the content Studio cannot offer to create a submission by hand, which it
+ * never should: a submission is a record of what somebody sent.
+ */
+export const submissionSchemaTypes = [submission];
