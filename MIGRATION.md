@@ -1646,6 +1646,46 @@ With the text published the holding notice disappears, the meta description
 comes from the SEO tab, and the prose renders through `.cms-prose` with real
 headings. So adding it later from Sanity now does what it looks like it does.
 
+### Defect #29 — form submissions would be world-readable
+
+Found immediately after the repository was made public, and it needs a decision
+before the form goes live.
+
+**The facts, verified rather than assumed.** The `production` dataset is readable
+with no token at all:
+
+    curl "https://ld89i91d.api.sanity.io/v2024-10-01/data/query/production?query=*[_type=='submission']"
+
+That is by design for content — it is what lets a static build read pages without
+a credential. But submissions are stored in the same dataset, which the client
+chose in milestone 22 knowing that anyone with Studio access could read enquiries.
+Publishing the repository changed the scope of that: the project id is now in
+`studio/sanity.config.ts` on a public repository, so the audience is no longer
+Studio users, it is anyone.
+
+Once the form is live, a visitor's name, email, phone number and message would be
+readable by anyone who looks at the repository.
+
+**Nothing is exposed yet.** There are zero submission documents — the test ones
+were deleted — and `SANITY_WRITE_TOKEN` is not set on any deployment, so no
+submission can be written. This is a defect to fix before launch, not an incident.
+
+**The one thing not to do in the meantime:** do not set `SANITY_WRITE_TOKEN` until
+this is resolved. That variable is the only thing standing between a submitted
+enquiry and a public dataset.
+
+Options, in the order I would pick them:
+
+1. **A separate private dataset for submissions.** What was recommended in
+   milestone 22 and declined for simplicity. The write client points at it; the
+   Studio reads it through a second workspace. Content stays token-free.
+2. **Make `production` private.** Smaller change — the build gains a read token —
+   but it also means the build can no longer run without a credential, which is a
+   real loss for a static site.
+3. **Do not store submissions.** Email only, as the site behaves today. No
+   exposure, no archive, no admin list.
+4. **Document-level access control**, if the Sanity plan allows it.
+
 ## Open Questions
 
 These need your input. None of them block starting at Milestone 0; I have noted the assumption I will proceed with if you would rather decide later.
@@ -1711,3 +1751,9 @@ zero occurrences of `enhdemo` remain in the source or the built site.
 
 _The mailbox has to exist by launch._ Nothing on the site checks that, and an
 enquiry sent to an address that bounces is worse than one that never sent.
+
+**Q17. Submission storage after going public.** See defect #29. The `production`
+dataset is world-readable and the project id is now on a public repository, so
+stored enquiries would be public. Decide between a separate private dataset,
+making `production` private, or not storing submissions. **Do not set
+`SANITY_WRITE_TOKEN` until this is settled.**
