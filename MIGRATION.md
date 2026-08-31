@@ -830,6 +830,85 @@ across 116 files, `sanity schema validate` 0 errors, Prettier clean.
 the subject of M21, and converting it twice would be waste. Section spacing
 variants are still absent by design.
 
+### Global settings, header and footer — Milestone 18 COMPLETE
+
+Nothing in the site chrome is left in code. The header, footer, top bar,
+WhatsApp button and favicon all read from Site Settings, and the design is
+unchanged: all twelve pages are byte-identical in text, headings, images and
+links after the import.
+
+| Now editable         | Field                            | Behaviour when empty                  |
+| -------------------- | -------------------------------- | ------------------------------------- |
+| Header logo          | `logo`                           | Committed, build-optimised asset      |
+| Footer logo          | `footerLogo`                     | Header logo, then the committed asset |
+| Favicon              | `favicon`                        | The committed SVG                     |
+| Opening hours        | `businessHours`                  | No row on the contact page at all     |
+| Social profiles      | `social`                         | No social row in the footer at all    |
+| Footer intro         | `footerPitch`                    | The shipped paragraph                 |
+| Both column headings | `footerLinksTitle` / `…Contact…` | "Quick Links" / "Contact Us"          |
+| Footer buttons       | `footerButtons`                  | Free Consultation and Call Now        |
+
+Already CMS-driven before this milestone: name, tagline, description, phone,
+email, WhatsApp, address, maps links, primary nav, footer links, legal links,
+both CTAs, disclaimers and the credit line. The top bar and WhatsApp button
+needed no change — they were already reading settings.
+
+**Empty is the right default for branding, not a gap.** The committed logo is
+optimised at build time and the favicon is an SVG, which is sharper at any size
+than a raster. The importer deliberately writes no branding images, so uploading
+one is a deliberate act rather than a migration artefact. Same for opening hours
+and social profiles: the original site showed neither, so a value there _adds_
+something rather than filling a hole, and nothing changes until someone asks
+for it.
+
+**Footer buttons say what they do, not where they point.** Each carries an
+`action` of "open the enquiry form", "call us" or "go to a page". The `phone`
+action derives its `href` from the one canonical E.164 number, so a Call Now
+button cannot drift from the number in settings — which is exactly the drift the
+WordPress site had with three different phone numbers (defect #4). A button that
+cannot act (a link action with no destination) is dropped rather than rendered.
+
+**Social profiles are named platforms, not free links.** The platform choice
+drives both the icon and the accessible name, so a profile cannot exist without
+one, and an unrecognised platform is dropped rather than rendered as a blank
+square that links somewhere. Six SVG marks were added to `Icon.astro` as filled
+shapes, because an outlined version of a logo reads as the wrong logo.
+
+_Placement assumption worth confirming:_ the footer's social row sits under the
+intro paragraph in column one. The original's social links were hidden and
+pointed at bare platform home pages (defect #20), so there was no working
+placement to preserve and this is a choice rather than a restoration.
+
+**A bug the acceptance test found.** The GROQ projection for `footerButtons`
+omitted the `action` field, so every button failed validation and the footer
+silently fell back to its shipped labels. The page still looked correct, which
+is what made it dangerous: only setting different labels in the Studio and
+checking the output revealed it. Fixed, then re-verified.
+
+**Acceptance test, run end to end.** From the Studio only: uploaded a logo and
+favicon, set opening hours, renamed the links column to "Site Map", replaced the
+footer intro, added three social profiles (one with a nonsense platform) and
+three footer buttons (one with no destination). Result: logo and favicon served
+from the CDN at three sizes, the footer logo inheriting the header logo, the new
+two-paragraph intro, "Site Map" as the heading, exactly two social icons with
+the invalid one dropped, exactly two buttons with the broken one dropped, the
+phone button's href derived as `tel:+971561924606`, and an opening-hours row on
+the contact page. Reverting restored all twelve pages to baseline exactly.
+
+**Two spec items answered rather than built.**
+
+- _Mobile navigation._ Spec §5 lists it separately, but the mobile nav already
+  renders the same `nav` array as the desktop one, so it is already managed. An
+  optional override was considered and rejected: a second nav that can silently
+  diverge from the first is a worse CMS, not a better one.
+- _Footer columns._ Spec §5 asks for configurable footer columns. The footer is
+  a fixed three-column design (logo and intro, links, contact), so the content
+  of each column is editable but the column count is not. Making it arbitrary
+  would be a redesign, which the brief rules out.
+
+**Checks:** 12 routes, 10 sitemap URLs, 25 tests passing, `astro check` 0 errors
+across 116 files, `sanity schema validate` 0 errors, Prettier clean.
+
 ## Open Questions
 
 These need your input. None of them block starting at Milestone 0; I have noted the assumption I will proceed with if you would rather decide later.

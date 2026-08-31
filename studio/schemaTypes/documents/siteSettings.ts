@@ -32,8 +32,10 @@ export const siteSettings = defineType({
   type: 'document',
   groups: [
     { name: 'identity', title: 'Identity', default: true },
+    { name: 'brand', title: 'Branding' },
     { name: 'contact', title: 'Contact' },
     { name: 'nav', title: 'Navigation' },
+    { name: 'footer', title: 'Footer' },
     { name: 'cta', title: 'Calls to action' },
     { name: 'legal', title: 'Legal & credits' },
   ],
@@ -65,6 +67,36 @@ export const siteSettings = defineType({
       group: 'identity',
       description: 'One-paragraph description of the business, used in structured data.',
       validation: (Rule) => Rule.required(),
+    }),
+
+    // ---- branding ----
+    //
+    // Every image here is optional, and empty is the better default. The
+    // committed assets are optimised at build time and the favicon is an SVG,
+    // which is sharper at every size than a raster. Uploading replaces them
+    // only when someone deliberately wants that.
+    defineField({
+      name: 'logo',
+      title: 'Logo',
+      type: 'altImage',
+      group: 'brand',
+      description: 'Shown in the header. Leave empty to keep the logo that ships with the site.',
+    }),
+    defineField({
+      name: 'footerLogo',
+      title: 'Footer logo',
+      type: 'altImage',
+      group: 'brand',
+      description:
+        'Only needed if the footer should use a different mark. Leave empty and the header logo is used.',
+    }),
+    defineField({
+      name: 'favicon',
+      title: 'Favicon',
+      type: 'image',
+      group: 'brand',
+      description:
+        'The browser tab icon. Upload a square image, 512x512 or larger. Leave empty to keep the built-in one, which is a vector and stays sharp at any size.',
     }),
 
     // ---- contact ----
@@ -124,6 +156,14 @@ export const siteSettings = defineType({
       group: 'contact',
       description: 'Used for the embedded map on the contact page.',
     }),
+    defineField({
+      name: 'businessHours',
+      title: 'Opening hours',
+      type: 'string',
+      group: 'contact',
+      description:
+        'For example "Sunday to Thursday, 9am to 6pm". Leave empty to show nothing: the site currently displays no hours, so filling this adds a row to the contact page.',
+    }),
 
     // ---- navigation ----
     defineField({
@@ -171,8 +211,120 @@ export const siteSettings = defineType({
       type: 'array',
       group: 'nav',
       description:
-        'Left empty deliberately: the original markup pointed at bare x.com and youtube.com placeholders rather than real profiles (audit defect #20).',
-      of: [{ type: 'object', name: 'socialLink', fields: linkFields, preview: linkPreview }],
+        'Empty by default, and nothing is shown while it is empty. The original markup pointed at bare x.com and youtube.com rather than real profiles (audit defect #20), so there was no working row to carry over. Adding one profile shows a row of icons in the footer.',
+      of: [
+        {
+          type: 'object',
+          name: 'socialProfile',
+          fields: [
+            defineField({
+              name: 'platform',
+              type: 'string',
+              description: 'Chooses the icon and the label a screen reader reads.',
+              options: {
+                list: [
+                  { title: 'Facebook', value: 'facebook' },
+                  { title: 'Instagram', value: 'instagram' },
+                  { title: 'LinkedIn', value: 'linkedin' },
+                  { title: 'X', value: 'x' },
+                  { title: 'YouTube', value: 'youtube' },
+                  { title: 'TikTok', value: 'tiktok' },
+                ],
+              },
+              validation: (Rule) => Rule.required(),
+            }),
+            defineField({
+              name: 'url',
+              title: 'Profile URL',
+              type: 'url',
+              description: 'The full address of the profile, not the platform home page.',
+              validation: (Rule) => Rule.required(),
+            }),
+          ],
+          preview: { select: { title: 'platform', subtitle: 'url' } },
+        },
+      ],
+    }),
+
+    // ---- footer ----
+    defineField({
+      name: 'footerPitch',
+      title: 'Footer intro',
+      type: 'text',
+      rows: 5,
+      group: 'footer',
+      description: 'The paragraph beside the footer logo. Leave a blank line between paragraphs.',
+    }),
+    defineField({
+      name: 'footerLinksTitle',
+      title: 'Links column heading',
+      type: 'string',
+      group: 'footer',
+    }),
+    defineField({
+      name: 'footerContactTitle',
+      title: 'Contact column heading',
+      type: 'string',
+      group: 'footer',
+    }),
+    defineField({
+      name: 'footerButtons',
+      title: 'Footer buttons',
+      type: 'array',
+      group: 'footer',
+      description: 'The two white buttons under the contact details.',
+      of: [
+        {
+          type: 'object',
+          name: 'footerButton',
+          fields: [
+            defineField({
+              name: 'label',
+              type: 'string',
+              validation: (Rule) => Rule.required(),
+            }),
+            defineField({
+              name: 'action',
+              title: 'What it does',
+              type: 'string',
+              description:
+                'Call us always uses the phone number above, so it cannot fall out of step with it.',
+              options: {
+                list: [
+                  { title: 'Open the enquiry form', value: 'dialog' },
+                  { title: 'Call us', value: 'phone' },
+                  { title: 'Go to a page', value: 'link' },
+                ],
+                layout: 'radio',
+              },
+              initialValue: 'dialog',
+              validation: (Rule) => Rule.required(),
+            }),
+            defineField({
+              name: 'dialog',
+              title: 'Which form',
+              type: 'string',
+              hidden: ({ parent }) => parent?.action !== 'dialog',
+              options: {
+                list: [
+                  { title: 'Enquiry form', value: 'contact-dialog' },
+                  { title: 'CV upload form', value: 'cv-dialog' },
+                ],
+              },
+              initialValue: 'contact-dialog',
+            }),
+            defineField({
+              name: 'href',
+              title: 'Destination',
+              type: 'string',
+              hidden: ({ parent }) => parent?.action !== 'link',
+              description: 'A site path such as /contact/, or a full URL.',
+            }),
+          ],
+          preview: { select: { title: 'label', subtitle: 'action' } },
+        },
+      ],
+      validation: (Rule) => Rule.max(3),
     }),
 
     // ---- calls to action ----

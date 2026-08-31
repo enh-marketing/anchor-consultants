@@ -1,3 +1,5 @@
+import type { CmsImageValue } from '../lib/sanity/image';
+
 /**
  * Single source of truth for site-wide data.
  *
@@ -27,18 +29,72 @@ export interface Site {
       mapsUrl: string;
       mapsEmbedQuery: string;
     };
+    /**
+     * Opening hours, as free text. Empty by default: the original site showed
+     * none, so a value here adds a row to the contact page rather than filling
+     * one that already exists.
+     */
+    hours: string;
   };
   nav: NavItem[];
   footerLinks: NavItem[];
   legalLinks: NavItem[];
+  /**
+   * Branding images. Each is optional: absent means the component keeps the
+   * asset it imports from `src/assets`, which is build-optimised and therefore
+   * the better default.
+   */
+  brand: {
+    logo?: CmsImageValue;
+    footerLogo?: CmsImageValue;
+    favicon?: CmsImageValue;
+  };
+  /** The footer's first column and its two column headings. */
+  footer: {
+    pitch: string;
+    linksTitle: string;
+    contactTitle: string;
+    buttons: FooterButton[];
+  };
   cta: {
     primary: { label: string; href: string };
     header: { label: string; href: string };
   };
   disclaimers: { footer: string; calculator: string };
   credit: { text: string; href: string };
-  social: NavItem[];
+  social: SocialProfile[];
 }
+
+/**
+ * A social profile.
+ *
+ * `platform` drives both the icon and the accessible name, so a profile cannot
+ * be added without one. The original markup carried hidden links pointing at
+ * bare `x.com` and `youtube.com` rather than real profiles (audit defect #20),
+ * which is why this list ships empty.
+ */
+/**
+ * A footer button.
+ *
+ * `action` says what the button does rather than encoding it in the href, so
+ * "call us" cannot drift from the phone number in Site Settings: the `phone`
+ * action always derives its href from the one canonical number.
+ */
+export interface FooterButton {
+  label: string;
+  action: 'dialog' | 'phone' | 'link';
+  /** Dialog id, for `action: 'dialog'`. */
+  dialog?: string;
+  /** Destination, for `action: 'link'`. */
+  href?: string;
+}
+
+export interface SocialProfile {
+  platform: SocialPlatform;
+  url: string;
+}
+
+export type SocialPlatform = 'facebook' | 'instagram' | 'linkedin' | 'x' | 'youtube' | 'tiktok';
 
 export interface NavItem {
   label: string;
@@ -84,6 +140,8 @@ export const site: Site = {
       mapsUrl: 'https://share.google/dhZtx2q6smETbWxYM',
       mapsEmbedQuery: '37, Unique World, Oud Metha Plaza, Dubai, UAE',
     },
+    /** Empty on purpose. The original showed no opening hours. */
+    hours: '',
   },
 
   /** Primary navigation. Flat, six items, no dropdowns — matches the original. */
@@ -112,6 +170,27 @@ export const site: Site = {
     { label: 'Privacy Policy', href: '/privacy-policy/' },
   ],
 
+  /**
+   * Branding images, all absent by default so each component keeps the
+   * build-optimised asset it imports from `src/assets`.
+   */
+  brand: {},
+
+  footer: {
+    /**
+     * The original is a single unstyled paragraph with a blank line between the
+     * question and the body, not a bold heading followed by copy.
+     */
+    pitch:
+      'Ready to Compare Options and Move Faster?\n\nTell us your property type, timeline, and borrower profile. We\u2019ll respond with a clear next step, required documents, and the most suitable lender pathways.',
+    linksTitle: 'Quick Links',
+    contactTitle: 'Contact Us',
+    buttons: [
+      { label: 'Free Consultation', action: 'dialog', dialog: 'contact-dialog' },
+      { label: 'Call Now', action: 'phone' },
+    ],
+  },
+
   cta: {
     primary: { label: 'Book a Free Consultation', href: '/contact/' },
     header: { label: 'Lets Connect', href: '/contact/' },
@@ -135,5 +214,5 @@ export const site: Site = {
    * `http://x.com` and `http://youtube.com` — placeholders, not real
    * profiles (audit defect #20). Left empty until real URLs are supplied.
    */
-  social: [] as NavItem[],
+  social: [],
 };

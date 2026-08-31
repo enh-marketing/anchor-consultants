@@ -3,6 +3,7 @@ import '../styles/global.css';
 import { resolveSeo, organizationSchema, type SeoInput } from '../lib/seo';
 import { getSite } from '../data/get-site';
 import { sanityEnabled } from '../lib/sanity/client';
+import { isSanityImage, sanityImageUrl } from '../lib/sanity/image';
 
 interface Props extends SeoInput {
   /** Extra JSON-LD graphs to emit alongside the Organization/WebSite graph. */
@@ -14,6 +15,16 @@ const { schemas = [], bodyClass = '', ...seoInput } = Astro.props;
 const site = await getSite();
 const seo = resolveSeo(seoInput, site);
 const graphs = [organizationSchema(site), ...schemas];
+
+/**
+ * An uploaded favicon, if there is one.
+ *
+ * Only a Sanity image can be resized on the fly, so a local fallback is not
+ * routed through here — the committed SVG is used directly instead.
+ */
+const favicon = site.brand.favicon;
+const faviconUrl = (value: NonNullable<typeof favicon>, size: number) =>
+  isSanityImage(value) ? sanityImageUrl(value, size) : '/favicon.svg';
 ---
 
 <!doctype html>
@@ -49,7 +60,23 @@ const graphs = [organizationSchema(site), ...schemas];
     }
     {sanityEnabled && <link rel="preconnect" href="https://cdn.sanity.io" crossorigin />}
 
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    {
+      /* An uploaded favicon is resized by Sanity's CDN rather than generated at
+        build time, so this needs no icon pipeline. The committed SVG stays the
+        default: it is sharper at every size than a raster ever is, so it is
+        only replaced when someone deliberately uploads a replacement. */
+    }
+    {
+      favicon ? (
+        <>
+          <link rel="icon" href={faviconUrl(favicon, 32)} sizes="32x32" />
+          <link rel="icon" href={faviconUrl(favicon, 192)} sizes="192x192" />
+          <link rel="apple-touch-icon" href={faviconUrl(favicon, 180)} />
+        </>
+      ) : (
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+      )
+    }
     <link rel="sitemap" href="/sitemap-index.xml" />
 
     {

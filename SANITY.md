@@ -253,6 +253,30 @@ Sections cannot change colours, fonts, sizes or spacing. That is not an
 oversight: the layout was measured against the original site, and the CMS is
 scoped to content so an edit cannot break it.
 
+### Site Settings
+
+One document, opened from the top of the sidebar. The tabs are Identity,
+Branding, Contact, Navigation, Footer, Calls to action, and Legal & credits.
+
+A few fields are empty on purpose, and empty means "show nothing" rather than
+"not configured yet":
+
+- **Branding.** The logo and favicon that ship with the site are already
+  optimised, and the favicon is a vector so it stays sharp at any size.
+  Uploading replaces them; leaving them empty keeps the better default.
+- **Opening hours.** The site shows none today. Entering hours _adds_ a row to
+  the contact page.
+- **Social profiles.** Adding one shows a row of icons in the footer. Pick the
+  platform from the list, since that chooses the icon and what a screen reader
+  reads, and paste the full profile URL rather than the platform home page.
+
+**Footer buttons** are described by what they do, not by a URL. "Call us" always
+uses the phone number from the Contact tab, so it cannot fall out of step with
+it. A button set to "Go to a page" with no destination is not rendered.
+
+The phone number is stored once, in international format. Every `tel:` link on
+the site is built from it.
+
 ### What is editable where
 
 | Page         | What you can change from the Studio                                   |

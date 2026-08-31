@@ -1,5 +1,5 @@
 ---
-import { Image } from 'astro:assets';
+import CmsImage from '../ui/CmsImage.astro';
 import { getCollection } from 'astro:content';
 import Icon from '../ui/Icon.astro';
 import { getSite } from '../../data/get-site';
@@ -62,13 +62,12 @@ const childrenFor = (href: string) =>
            padded PNG's wordmark rendered at ~117px, centred. Reproducing the
            slot keeps the wordmark and the nav in their original positions. -->
       <a href="/" class="flex w-[150px] shrink-0 justify-center" aria-label={`${site.name} — home`}>
-        <Image
-          src={logo}
+        <CmsImage
+          src={site.brand.logo ?? logo}
           alt={`${site.name} logo`}
-          width={234}
-          densities={[1, 2]}
           class="h-auto w-[117px]"
           loading="eager"
+          width={117}
         />
       </a>
 

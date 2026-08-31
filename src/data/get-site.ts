@@ -1,4 +1,11 @@
-import { site as defaults, type Site } from './site';
+import {
+  site as defaults,
+  type FooterButton,
+  type Site,
+  type SocialPlatform,
+  type SocialProfile,
+} from './site';
+import type { CmsImageValue } from '../lib/sanity/image';
 import { sanityClient, sanityEnabled } from '../lib/sanity/client';
 
 /**
@@ -27,6 +34,16 @@ interface Link {
   hasChildren?: boolean;
 }
 
+/** Image fields arrive already flattened by the GROQ projection below. */
+interface SettingsImage {
+  src?: string;
+  assetId?: string;
+  alt?: string;
+  width?: number;
+  height?: number;
+  lqip?: string;
+}
+
 interface SettingsDoc {
   name?: string;
   legalName?: string;
@@ -39,10 +56,18 @@ interface SettingsDoc {
   addressLines?: string[];
   mapsUrl?: string;
   mapsEmbedQuery?: string;
+  businessHours?: string;
+  logo?: SettingsImage;
+  footerLogo?: SettingsImage;
+  favicon?: SettingsImage;
   nav?: Link[];
   footerLinks?: Link[];
   legalLinks?: Link[];
-  social?: Link[];
+  social?: Array<{ platform?: string; url?: string }>;
+  footerPitch?: string;
+  footerLinksTitle?: string;
+  footerContactTitle?: string;
+  footerButtons?: Array<{ label?: string; action?: string; dialog?: string; href?: string }>;
   ctaPrimary?: Link;
   ctaHeader?: Link;
   disclaimerFooter?: string;
@@ -51,14 +76,28 @@ interface SettingsDoc {
   creditHref?: string;
 }
 
+const IMAGE = `{
+  "src": asset->url,
+  "assetId": asset->_id,
+  "alt": coalesce(alt, ""),
+  "width": asset->metadata.dimensions.width,
+  "height": asset->metadata.dimensions.height,
+  "lqip": asset->metadata.lqip
+}`;
+
 const QUERY = `*[_type == "siteSettings" && !(_id in path("drafts.**"))][0]{
   name, legalName, tagline, description,
   phoneE164, phoneDisplay, email, whatsappNumber,
-  addressLines, mapsUrl, mapsEmbedQuery,
+  addressLines, mapsUrl, mapsEmbedQuery, businessHours,
+  "logo": logo${IMAGE},
+  "footerLogo": footerLogo${IMAGE},
+  "favicon": favicon${IMAGE},
   "nav": nav[]{ label, href, hasChildren },
   "footerLinks": footerLinks[]{ label, href },
   "legalLinks": legalLinks[]{ label, href },
-  "social": social[]{ label, href },
+  "social": social[]{ platform, url },
+  footerPitch, footerLinksTitle, footerContactTitle,
+  "footerButtons": footerButtons[]{ label, action, dialog, href },
   ctaPrimary{ label, href },
   ctaHeader{ label, href },
   disclaimerFooter, disclaimerCalculator, creditText, creditHref
@@ -74,6 +113,48 @@ const links = (value: Link[] | undefined) =>
       ...(l.hasChildren ? { hasChildren: true } : {}),
     }));
 
+/**
+ * A Sanity image only counts as set once its asset resolves. A field that
+ * exists but points at a deleted asset would otherwise render a broken image
+ * where the local fallback would have worked.
+ */
+function image(value: SettingsImage | undefined): CmsImageValue | undefined {
+  if (!value?.src) return undefined;
+  return {
+    src: value.src,
+    ...(value.assetId ? { assetId: value.assetId } : {}),
+    alt: value.alt ?? '',
+    decorative: false,
+    ...(value.width ? { width: value.width } : {}),
+    ...(value.height ? { height: value.height } : {}),
+    ...(value.lqip ? { lqip: value.lqip } : {}),
+  } as CmsImageValue;
+}
+
+const PLATFORMS = new Set<SocialPlatform>([
+  'facebook',
+  'instagram',
+  'linkedin',
+  'x',
+  'youtube',
+  'tiktok',
+]);
+
+/**
+ * Keeps only profiles with a known platform and a real URL.
+ *
+ * The platform drives the icon and the accessible name, so an unrecognised one
+ * has nothing to render. Dropping it is better than a blank square linking
+ * somewhere.
+ */
+function socials(value: SettingsDoc['social']): SocialProfile[] {
+  return (value ?? []).flatMap((entry) => {
+    const platform = entry?.platform as SocialPlatform | undefined;
+    const url = entry?.url?.trim();
+    return platform && PLATFORMS.has(platform) && url ? [{ platform, url }] : [];
+  });
+}
+
 function merge(doc: SettingsDoc): Site {
   const e164 = doc.phoneE164 ?? defaults.contact.phone.e164;
   const email = doc.email ?? defaults.contact.email.address;
@@ -86,7 +167,22 @@ function merge(doc: SettingsDoc): Site {
   const nav = links(doc.nav);
   const footerLinks = links(doc.footerLinks);
   const legalLinks = links(doc.legalLinks);
-  const social = links(doc.social);
+
+  // A button must be able to do something. A dialog action needs a dialog id
+  // and a link action needs an href; a phone action needs neither, because it
+  // derives from the canonical number. Anything else would render a button that
+  // does nothing when clicked.
+  const footerButtons: FooterButton[] = (doc.footerButtons ?? []).flatMap((b): FooterButton[] => {
+    if (!b?.label) return [];
+    if (b.action === 'dialog' && b.dialog) {
+      return [{ label: b.label, action: 'dialog', dialog: b.dialog }];
+    }
+    if (b.action === 'link' && b.href) {
+      return [{ label: b.label, action: 'link', href: b.href }];
+    }
+    if (b.action === 'phone') return [{ label: b.label, action: 'phone' }];
+    return [];
+  });
 
   return {
     name: doc.name ?? defaults.name,
@@ -109,11 +205,25 @@ function merge(doc: SettingsDoc): Site {
         mapsUrl: doc.mapsUrl ?? defaults.contact.address.mapsUrl,
         mapsEmbedQuery: doc.mapsEmbedQuery ?? defaults.contact.address.mapsEmbedQuery,
       },
+      hours: doc.businessHours ?? defaults.contact.hours,
     },
 
     nav: nav.length ? nav : [...defaults.nav],
     footerLinks: footerLinks.length ? footerLinks : [...defaults.footerLinks],
     legalLinks: legalLinks.length ? legalLinks : [...defaults.legalLinks],
+
+    brand: {
+      ...(image(doc.logo) ? { logo: image(doc.logo)! } : {}),
+      ...(image(doc.footerLogo) ? { footerLogo: image(doc.footerLogo)! } : {}),
+      ...(image(doc.favicon) ? { favicon: image(doc.favicon)! } : {}),
+    },
+
+    footer: {
+      pitch: doc.footerPitch ?? defaults.footer.pitch,
+      linksTitle: doc.footerLinksTitle ?? defaults.footer.linksTitle,
+      contactTitle: doc.footerContactTitle ?? defaults.footer.contactTitle,
+      buttons: footerButtons.length ? footerButtons : [...defaults.footer.buttons],
+    },
 
     cta: {
       primary: {
@@ -136,7 +246,7 @@ function merge(doc: SettingsDoc): Site {
       href: doc.creditHref ?? defaults.credit.href,
     },
 
-    social,
+    social: socials(doc.social),
   };
 }
 
