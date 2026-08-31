@@ -277,6 +277,32 @@ it. A button set to "Go to a page" with no destination is not rendered.
 The phone number is stored once, in international format. Every `tel:` link on
 the site is built from it.
 
+### Writing a blog post
+
+The sidebar has four blog entries: **Blog posts**, **Blog categories**, **Blog
+tags** and **Authors**.
+
+Set these up once, then reuse them:
+
+- **Authors.** One document per person, with a role, photo and short bio. A post
+  points at an author, so changing a role or photo updates every article at once.
+- **Categories.** Each one gets its own page at `/blog/category/<slug>/`, so give
+  it a description and, if you want, its own SEO. A category with no posts gets
+  no page — an empty archive would compete in search with the pages that matter.
+- **Tags.** Just a label. No page of its own, on purpose. Tags also drive the
+  "Related reading" suggestions at the end of a post.
+
+On the post itself: one category is usually right, and the Studio caps it at
+three. Leave **Related posts** empty and posts sharing a tag or category are
+suggested automatically; fill it in and your choices are used instead.
+
+**Images inside the body** can carry a caption as well as alt text. They are
+different things and both are worth filling in: the alt describes the picture for
+someone who cannot see it, the caption is copy everyone reads.
+
+**Drafts stay off the site.** An unpublished post is not built, not in the
+sitemap, and not in the sidebar.
+
 ### SEO on a page
 
 Every page, service and post has an SEO section with three tabs.

@@ -1,5 +1,6 @@
 import { altImage } from './objects/altImage';
 import { blockContent } from './objects/blockContent';
+import { captionedImage } from './objects/captionedImage';
 import { sectionLink } from './objects/sectionLink';
 import { seo } from './objects/seo';
 import { serviceFeature } from './objects/serviceFeature';
@@ -22,11 +23,14 @@ import { skillsPanel } from './blocks/skillsPanel';
 import { testimonialCarousel } from './blocks/testimonialCarousel';
 import { testimonialGrid } from './blocks/testimonialGrid';
 
+import { author } from './documents/author';
+import { category } from './documents/category';
 import { faq } from './documents/faq';
 import { page } from './documents/page';
 import { post } from './documents/post';
 import { service } from './documents/service';
 import { siteSettings } from './documents/siteSettings';
+import { tag } from './documents/tag';
 import { teamMember } from './documents/teamMember';
 import { testimonial } from './documents/testimonial';
 
@@ -34,6 +38,7 @@ export const schemaTypes = [
   // objects
   altImage,
   blockContent,
+  captionedImage,
   sectionLink,
   seo,
   serviceFeature,
@@ -61,6 +66,9 @@ export const schemaTypes = [
   page,
   service,
   post,
+  author,
+  category,
+  tag,
   faq,
   testimonial,
   teamMember,

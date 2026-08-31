@@ -1014,6 +1014,103 @@ phrase absent from the HTML. Reverting restored every page to baseline.
 0 errors, Prettier clean. All twelve pages byte-identical in body text; the only
 head change anywhere is the two added tags.
 
+### The blog, properly — Milestone 20 COMPLETE
+
+Authors, categories and tags are documents rather than strings on each post, and
+each category has a real archive page. Verified against temporary content, since
+the site still has no published posts.
+
+| New type   | Carries                                     | Routes to                  |
+| ---------- | ------------------------------------------- | -------------------------- |
+| `author`   | name, slug, role, photo, bio, profile links | Nothing yet, slug reserved |
+| `category` | title, slug, description, own SEO           | `/blog/category/<slug>/`   |
+| `tag`      | title, slug                                 | Nothing, by design         |
+
+**Tags are deliberately thinner than categories.** No description, no SEO, no
+archive route. Categories organise the blog; tags label a post and feed related
+reading. Giving both the same weight is how a site ends up with two parallel
+taxonomies nobody maintains and a pile of thin archives competing with the pages
+that matter.
+
+**Both content sources still work.** Markdown stores an author and a category as
+plain strings; Sanity stores references the loader resolves into objects. Rather
+than every template branching on which it got, `src/lib/blog.ts` normalises once
+— and the functions are total, so a post with no categories returns an empty
+array rather than undefined.
+
+**Related posts.** Hand-picked ones win. Otherwise posts are scored by shared
+tags (weighted double) then shared categories, which beats "most recent" and
+costs nothing at build time. Drafts and the post itself are always excluded — a
+"related" link to a page that does not exist would be worse than showing
+nothing. Verified: the post with a hand-picked reference rendered exactly that
+one, the other two rendered two scored suggestions each.
+
+**Category archives only exist where there are posts.** An archive listing
+nothing is a thin, indexable page competing with the ones that matter. The
+template is the index's, deliberately: same Bootstrap col-8 / col-4, same card,
+same sidebar, so moving between them does not feel like a different site.
+
+A category with no description gets a composed meta description stating the
+article count and topic. That is the one place a generated description is
+defensible here, because it states a fact about the page rather than scraping
+body text — which is what produced "No testimonials found" on WordPress
+(defect #22).
+
+**Sidebar categories now link to real pages** when a category document exists,
+and fall back to the client-side filter when it does not. Without Sanity there
+are no archive routes, and linking to a page that was never built is the
+dead-link class of defect this rebuild has been closing.
+
+**Three defects found and fixed.**
+
+- _A draft filter I dropped in M17._ Extracting `BlogIndexSection` from
+  `blog/index.astro` lost `!data.draft`, so on the markdown fallback both
+  placeholder posts — one of which is keyboard mash — would have rendered on the
+  blog index with a full sidebar. It hid because Sanity's loader already excludes
+  drafts, so with the CMS on both paths agreed and M17's verification could not
+  see it. Every other post query in the codebase had kept the filter; only this
+  one lost it.
+- _Body images bypassed the width clamp and reserved no space._ The Portable Text
+  renderer built its image without dimensions, so `CmsImage` had no asset width
+  to clamp against: a 570×500 image advertised `760w` and `1290w`, neither of
+  which exists. The same omission left the `<img>` with no width or height
+  attributes, so the figure collapsed to the height of its caption and the
+  article shifted when the image loaded. Both fixed by projecting the asset's
+  dimensions. Audited across the blog: 0 over-claiming srcsets, and the figure
+  now measures 776×526 before the image arrives.
+- _Related-post card titles were `<h2>` siblings of the "Related reading"
+  `<h2>`._ `PostCard` now takes a heading level, defaulting to 2 for the index
+  where nothing encloses the list, and the related section passes 3. Verified
+  heading order on a post: h1, h2, h3, h3, then the sidebar's own h2/h3.
+
+**Captions are a separate type, not a field on every image.** `captionedImage`
+exists only inside body copy. Adding a caption to `altImage` would have put a
+caption box on hero backdrops and tile backgrounds where it renders nowhere, and
+a field that cannot do anything is the CMS noise the brief warns against. Alt
+text and caption are both kept, because they are different things: one describes
+the image for someone who cannot see it, the other is editorial copy everyone
+reads.
+
+**Verified with temporary content**, created in Sanity and deleted afterwards:
+one author, two categories, three tags, three posts, one with an inline
+captioned image and one with a hand-picked related post. Results: 17 routes
+built (3 posts, 2 archives), correct byline with author, published date, updated
+date and linked category, tags rendered as pills, author card with photo, role,
+bio and profile link, captions as real `<figure>`/`<figcaption>`, archives
+listing the right two posts each, sidebar counting categories across every post
+rather than only the first. Geometry unchanged: banner 226px, article 856px at
+x=72, sidebar 416px at x=952.
+
+**Checks:** 12 routes with the test content removed, sitemap identical to
+baseline, all existing pages unchanged, both content sources verified, 25 tests
+passing, `astro check` 0 errors and 0 warnings, `sanity schema validate` 0
+errors, Prettier clean.
+
+**Still blocked on content.** There are no published posts. Both existing ones
+are drafts and one is placeholder text from WordPress. Everything above is built
+and tested but the blog cannot be verified against real editorial content until
+the client supplies some.
+
 ## Open Questions
 
 These need your input. None of them block starting at Milestone 0; I have noted the assumption I will proceed with if you would rather decide later.

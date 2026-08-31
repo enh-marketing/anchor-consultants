@@ -49,6 +49,6 @@ export const blockContent = defineType({
         ],
       },
     }),
-    defineArrayMember({ type: 'altImage' }),
+    defineArrayMember({ type: 'captionedImage' }),
   ],
 });

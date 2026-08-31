@@ -1,0 +1,97 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { getCollection } from 'astro:content';
+import PageLayout from '../../../layouts/PageLayout.astro';
+import PageBanner from '../../../components/shared/PageBanner.astro';
+import PostCard from '../../../components/blog/PostCard.astro';
+import BlogSidebar from '../../../components/blog/BlogSidebar.astro';
+import { breadcrumbSchema } from '../../../lib/seo';
+import { postCategories } from '../../../lib/blog';
+import banner from '../../../assets/images/banners/generic-2.jpg';
+
+/**
+ * A category archive.
+ *
+ * This is what makes a category worth being a document rather than a string:
+ * a real page with its own heading, description and SEO, instead of the
+ * client-side filter the sidebar used to link to. The WordPress site's category
+ * links pointed at taxonomy routes a static build does not have, which is the
+ * dead-link class of defect this rebuild has been closing.
+ *
+ * Only categories that actually have published posts get a page. An archive
+ * listing nothing is a thin page that competes with the ones that matter, and
+ * it would be indexable. The same reasoning drops the sidebar when a page has
+ * no posts to show.
+ *
+ * The layout is the index's: Bootstrap col-8 / col-4, same card, same sidebar.
+ * A visitor moving between them should not notice a change of template.
+ */
+export const getStaticPaths = (async () => {
+  const [categories, posts] = await Promise.all([
+    getCollection('categories'),
+    getCollection('posts', ({ data }) => !data.draft),
+  ]);
+
+  return categories.flatMap((category) => {
+    const matching = posts
+      .filter((post) => postCategories(post.data).some((t) => t.slug === category.data.slug))
+      .sort((a, b) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime());
+
+    if (!matching.length) return [];
+    return [{ params: { slug: category.data.slug }, props: { category, posts: matching } }];
+  });
+}) satisfies GetStaticPaths;
+
+const { category, posts } = Astro.props;
+const path = `/blog/category/${category.data.slug}/`;
+
+// A category with no description has no hand-written meta description either,
+// so one is composed from the category name and the post count. This is the one
+// place a generated description is defensible: it states a fact about the page
+// rather than scraping body text, which is what produced "No testimonials found"
+// on the WordPress site (defect #22).
+const count = posts.length;
+const description =
+  category.data.seo?.metaDescription ??
+  category.data.description ??
+  `${count} article${count === 1 ? '' : 's'} on ${category.data.title.toLowerCase()} from Anchor Consultants, covering UAE mortgages, refinancing and property finance.`;
+---
+
+<PageLayout
+  title={category.data.title}
+  description={description}
+  path={path}
+  {...category.data.seo ? { cms: category.data.seo } : {}}
+  schemas={[
+    breadcrumbSchema([
+      { name: 'Blog', path: '/blog/' },
+      { name: category.data.title, path },
+    ]),
+  ]}
+>
+  <PageBanner title={category.data.title} crumb={category.data.title} image={banner} />
+
+  <section class="py-[120px]">
+    <div class="container-bs">
+      <div class="-mx-3 grid gap-y-[30px] lg:grid-cols-[66.667%_33.333%]">
+        <div class="min-w-0 px-3">
+          {
+            category.data.description && (
+              <p class="text-body mb-[40px] max-w-[60ch] text-base leading-[26px]">
+                {category.data.description}
+              </p>
+            )
+          }
+
+          <div class="flex flex-col gap-[40px]">
+            {posts.map((post) => <PostCard post={post} />)}
+          </div>
+        </div>
+
+        <div class="min-w-0 px-3">
+          <BlogSidebar />
+        </div>
+      </div>
+    </div>
+  </section>
+</PageLayout>

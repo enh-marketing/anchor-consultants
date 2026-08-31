@@ -3,6 +3,7 @@ import { glob } from 'astro/loaders';
 import type { Loader } from 'astro/loaders';
 import { sanityEnabled } from './lib/sanity/client';
 import {
+  sanityCategories,
   sanityFaqs,
   sanityPages,
   sanityPosts,
@@ -91,6 +92,21 @@ const seo = z
   })
   .optional();
 
+/**
+ * An empty collection, for types that exist only in Sanity.
+ *
+ * With Sanity switched off there are no page or category documents, and asking
+ * for them would throw. Empty is the honest answer: routes fall back to their
+ * shipped sections, and the category archives simply are not generated, which is
+ * exactly the no-CMS behaviour.
+ */
+const noCollection: Loader = {
+  name: 'empty',
+  load: async ({ store }) => {
+    store.clear();
+  },
+};
+
 /** → Sanity `service` */
 const services = defineCollection({
   loader: sanityEnabled
@@ -162,6 +178,22 @@ const faqs = defineCollection({
 });
 
 /** → Sanity `post` */
+/**
+ * Author, category and tag come through as strings in the markdown fallback and
+ * as resolved objects from Sanity, so each accepts both shapes. The templates
+ * normalise once, in `src/lib/blog.ts`, rather than every one of them checking.
+ */
+const authorRef = z.object({
+  name: z.string(),
+  slug: z.string().optional(),
+  role: z.string().optional(),
+  bio: z.string().optional(),
+  photo: sanityImage.optional(),
+  links: z.array(z.object({ label: z.string(), href: z.string() })).optional(),
+});
+
+const termRef = z.object({ title: z.string(), slug: z.string() });
+
 const posts = defineCollection({
   loader: sanityEnabled ? sanityPosts() : glob({ pattern: '**/*.md', base: './src/content/posts' }),
   schema: ({ image }) =>
@@ -169,15 +201,40 @@ const posts = defineCollection({
       title: z.string(),
       publishedAt: z.coerce.date(),
       updatedAt: z.coerce.date().optional(),
-      author: z.string().default('Anchor Consultants'),
+      author: z.union([z.string(), authorRef]).default('Anchor Consultants'),
       excerpt: z.string(),
       coverImage: z.union([image(), sanityImage]).optional(),
       coverImageAlt: z.string().optional(),
-      category: z.string().default('Uncategorized'),
+      /** Markdown carries one category as a string; Sanity carries references. */
+      category: z.string().optional(),
+      categories: z.array(termRef).optional(),
+      tags: z.array(termRef).optional(),
+      relatedPosts: z
+        .array(
+          z.object({
+            id: z.string(),
+            title: z.string(),
+            publishedAt: z.coerce.date(),
+            excerpt: z.string().optional(),
+            coverImage: sanityImage.optional(),
+          }),
+        )
+        .optional(),
       draft: z.boolean().default(false),
       body: portableText,
       seo,
     }),
+});
+
+/** → Sanity `category` */
+const categories = defineCollection({
+  loader: sanityEnabled ? sanityCategories() : noCollection,
+  schema: z.object({
+    title: z.string(),
+    slug: z.string(),
+    description: z.string().optional(),
+    seo,
+  }),
 });
 
 /** → Sanity `teamMember` */
@@ -211,20 +268,9 @@ const team = defineCollection({
  * section that is not an object or has no `_type`, which is the shape a
  * renderer cannot reason about at all.
  */
-/**
- * With Sanity switched off there are no page documents, and asking Sanity for
- * them would throw. An empty collection is the honest answer: every route falls
- * back to its shipped sections, which is exactly the no-CMS behaviour.
- */
-const noPages: Loader = {
-  name: 'no-pages',
-  load: async ({ store }) => {
-    store.clear();
-  },
-};
 
 const pages = defineCollection({
-  loader: sanityEnabled ? sanityPages() : noPages,
+  loader: sanityEnabled ? sanityPages() : noCollection,
   schema: z.object({
     title: z.string(),
     slug: z.string(),
@@ -238,4 +284,4 @@ const pages = defineCollection({
   }),
 });
 
-export const collections = { services, testimonials, faqs, posts, team, pages };
+export const collections = { services, testimonials, faqs, posts, team, pages, categories };

@@ -2,6 +2,7 @@
 import CmsImage from '../ui/CmsImage.astro';
 import { getCollection } from 'astro:content';
 import Icon from '../ui/Icon.astro';
+import { postCategories } from '../../lib/blog';
 
 /**
  * Blog sidebar.
@@ -63,16 +64,31 @@ for (const post of posts) {
   else months.set(key, { label: monthFmt.format(d), count: 1 });
 }
 
-// Categories, alphabetical.
+// Categories, alphabetical, counted across every published post.
+//
+// A post can now be in more than one, so a post contributes to each of its
+// categories rather than only the first.
 const categories = new Map<string, { label: string; count: number }>();
 for (const post of posts) {
-  const label = post.data.category;
-  const key = label.toLowerCase().replace(/\s+/g, '-');
-  const entry = categories.get(key);
-  if (entry) entry.count += 1;
-  else categories.set(key, { label, count: 1 });
+  for (const term of postCategories(post.data)) {
+    const entry = categories.get(term.slug);
+    if (entry) entry.count += 1;
+    else categories.set(term.slug, { label: term.title, count: 1 });
+  }
 }
 const sortedCategories = [...categories].sort((a, b) => a[1].label.localeCompare(b[1].label));
+
+/**
+ * Categories link to their own archive page when one exists.
+ *
+ * Without Sanity there are no `category` documents and therefore no archive
+ * routes, so those links stay on the client-side filter the index already
+ * supports. Linking to a page that was never built is the dead-link defect this
+ * rebuild has been closing, not something to reintroduce.
+ */
+const archived = new Set((await getCollection('categories')).map((entry) => entry.data.slug));
+const categoryHref = (slug: string) =>
+  archived.has(slug) ? `/blog/category/${slug}/` : `/blog/?category=${slug}`;
 ---
 
 <aside class:list={['flex flex-col gap-[30px]', className]} aria-label="Blog sidebar">
@@ -166,7 +182,7 @@ const sortedCategories = [...categories].sort((a, b) => a[1].label.localeCompare
         <ul class="mt-[30px] flex flex-col gap-[15px]">
           {sortedCategories.map(([key, { label, count }]) => (
             <li>
-              <a href={`/blog/?category=${key}`} class="widget-link">
+              <a href={categoryHref(key)} class="widget-link">
                 <Icon name="folder" size={16} class="shrink-0" />
                 <span>{label}</span>
                 <span class="text-body">({count})</span>

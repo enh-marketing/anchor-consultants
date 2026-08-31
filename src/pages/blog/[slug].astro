@@ -8,6 +8,9 @@ import PortableText from '../../components/shared/PortableText.astro';
 import BlogSidebar from '../../components/blog/BlogSidebar.astro';
 import Icon from '../../components/ui/Icon.astro';
 import { breadcrumbSchema } from '../../lib/seo';
+import { getSite } from '../../data/get-site';
+import { postAuthor, postCategories, postTags, relatedPosts } from '../../lib/blog';
+import PostCard from '../../components/blog/PostCard.astro';
 import { SITE_URL } from '../../data/site-url.mjs';
 import banner from '../../assets/images/banners/generic-2.jpg';
 
@@ -38,8 +41,24 @@ const { post } = Astro.props;
 // former, so it is only called when there is no Portable Text to render.
 const portableBody = Array.isArray(post.data.body) ? post.data.body : null;
 const Content = portableBody ? null : (await render(post)).Content;
-const { title, excerpt, coverImage, coverImageAlt, author, publishedAt, updatedAt, seo } =
-  post.data;
+const { title, excerpt, coverImage, coverImageAlt, publishedAt, updatedAt, seo } = post.data;
+
+const site = await getSite();
+const author = postAuthor(post.data.author, site.name);
+const categories = postCategories(post.data);
+const tags = postTags(post.data);
+
+// Hand-picked related posts win. Otherwise they are suggested from shared tags
+// and categories, so the section is useful without anyone maintaining it.
+const allPosts = await getCollection('posts', ({ data }) => !data.draft);
+const picked = post.data.relatedPosts ?? [];
+const related = picked.length
+  ? allPosts.filter((entry) => picked.some((r) => r.id === entry.id))
+  : relatedPosts(post, allPosts);
+
+const archived = new Set((await getCollection('categories')).map((entry) => entry.data.slug));
+const categoryHref = (slug: string) =>
+  archived.has(slug) ? `/blog/category/${slug}/` : `/blog/?category=${slug}`;
 
 const dateFmt = new Intl.DateTimeFormat('en-GB', {
   day: 'numeric',
@@ -100,17 +119,94 @@ const articleSchema = {
             >
               <span class="flex items-center gap-2">
                 <Icon name="user" size={16} class="shrink-0" />
-                {author}
+                {author.name}
               </span>
               <span class="flex items-center gap-2">
                 <Icon name="calendar" size={16} class="shrink-0" />
                 <time datetime={publishedAt.toISOString()}>{dateFmt.format(publishedAt)}</time>
               </span>
+              {
+                updatedAt && (
+                  <span class="flex items-center gap-2">
+                    Updated{' '}
+                    <time datetime={updatedAt.toISOString()}>{dateFmt.format(updatedAt)}</time>
+                  </span>
+                )
+              }
+              {
+                categories.length > 0 && (
+                  <span class="flex flex-wrap items-center gap-2">
+                    <Icon name="folder" size={16} class="shrink-0" />
+                    {categories.map((term, i) => (
+                      <>
+                        {i > 0 && <span aria-hidden="true">,</span>}
+                        <a href={categoryHref(term.slug)} class="text-navy hover:underline">
+                          {term.title}
+                        </a>
+                      </>
+                    ))}
+                  </span>
+                )
+              }
             </p>
 
             <div class="prose-body">
               {portableBody ? <PortableText value={portableBody} /> : Content && <Content />}
             </div>
+
+            {
+              tags.length > 0 && (
+                <ul class="mt-[35px] flex flex-wrap items-center gap-2" aria-label="Tags">
+                  {tags.map((term) => (
+                    <li class="text-body bg-mist text-small rounded-full px-3 py-1 leading-[22px]">
+                      {term.title}
+                    </li>
+                  ))}
+                </ul>
+              )
+            }
+
+            {
+              (author.bio || author.photo) && (
+                <div class="border-line mt-[35px] flex flex-wrap items-start gap-5 border-t pt-[30px]">
+                  {author.photo && (
+                    <CmsImage
+                      src={author.photo}
+                      alt=""
+                      aria-hidden="true"
+                      width={72}
+                      class="h-[72px] w-[72px] shrink-0 rounded-full object-cover"
+                      loading="lazy"
+                    />
+                  )}
+                  <div class="min-w-0">
+                    <p class="text-ink text-base leading-[26px] font-bold">{author.name}</p>
+                    {author.role && (
+                      <p class="text-body text-small leading-[22px]">{author.role}</p>
+                    )}
+                    {author.bio && (
+                      <p class="text-body mt-2 text-base leading-[26px]">{author.bio}</p>
+                    )}
+                    {author.links.length > 0 && (
+                      <ul class="mt-2 flex flex-wrap gap-4">
+                        {author.links.map((link) => (
+                          <li>
+                            <a
+                              href={link.href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              class="text-navy text-small hover:underline"
+                            >
+                              {link.label}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              )
+            }
 
             <p class="mt-[40px]">
               <a
@@ -122,6 +218,21 @@ const articleSchema = {
               </a>
             </p>
           </article>
+
+          {
+            related.length > 0 && (
+              <section class="mt-[40px]" aria-labelledby="related-heading">
+                <h2 id="related-heading" class="text-ink text-[24px] leading-[34px] font-bold">
+                  Related reading
+                </h2>
+                <div class="mt-[30px] flex flex-col gap-[40px]">
+                  {related.map((entry) => (
+                    <PostCard post={entry} headingLevel={3} />
+                  ))}
+                </div>
+              </section>
+            )
+          }
         </div>
 
         <div class="min-w-0 px-3">
@@ -202,5 +313,17 @@ const articleSchema = {
   .prose-body :global(img) {
     max-width: 100%;
     height: auto;
+  }
+
+  /* A figure needs the same vertical rhythm as a paragraph, or the caption and
+     the copy that follows read as one run of text. */
+  .prose-body :global(figure) {
+    margin: 0 0 26px;
+  }
+  .prose-body :global(figcaption) {
+    margin-top: 10px;
+    font-size: 14px;
+    line-height: 22px;
+    color: var(--color-body);
   }
 </style>

@@ -27,6 +27,28 @@ const IMAGE = `{
   "lqip": asset->metadata.lqip
 }`;
 
+/**
+ * Body copy, with any inline image's asset resolved.
+ *
+ * Portable Text stores an image as a reference, so without this the renderer
+ * receives an unresolved pointer and drops the block — the image would simply
+ * vanish from the article with nothing to explain it. `_ref` is named to match
+ * what `PortableText.astro` reads.
+ */
+const BODY = `body[]{
+  ...,
+  _type == "captionedImage" => {
+    "asset": asset->{
+      url,
+      "_ref": _id,
+      "width": metadata.dimensions.width,
+      "height": metadata.dimensions.height
+    },
+    alt,
+    caption
+  }
+}`;
+
 const SEO = `{
   metaTitle,
   metaDescription,
@@ -114,10 +136,27 @@ export const sanityServices = () =>
       "features": features[]{ title, "icon": icon${IMAGE} },
       checklist,
       order,
-      "body": body,
+      "body": ${BODY},
       "seo": seo${SEO}
     `,
   });
+
+/**
+ * Author, category and tag are references. They are resolved here rather than
+ * on the page, so a template never has to know that the markdown fallback
+ * stores a plain string where Sanity stores a document.
+ *
+ * `relatedPosts` resolves only what a card needs. Following the full projection
+ * would pull each related post's body and its own related posts, and a pair of
+ * posts referencing each other would recurse.
+ */
+const POST_CARD = `{
+  "id": slug.current,
+  title,
+  publishedAt,
+  excerpt,
+  "coverImage": coverImage${IMAGE}
+}`;
 
 export const sanityPosts = () =>
   collection({
@@ -128,11 +167,26 @@ export const sanityPosts = () =>
       title,
       publishedAt,
       updatedAt,
-      author,
+      "author": author->{ name, role, bio, "slug": slug.current, "photo": photo${IMAGE}, "links": links[]{ label, href } },
       excerpt,
       "coverImage": coverImage${IMAGE},
-      category,
-      "body": body,
+      "categories": categories[]->{ title, "slug": slug.current },
+      "tags": tags[]->{ title, "slug": slug.current },
+      "relatedPosts": relatedPosts[]->${POST_CARD},
+      "body": ${BODY},
+      "seo": seo${SEO}
+    `,
+  });
+
+export const sanityCategories = () =>
+  collection({
+    type: 'category',
+    order: 'title asc',
+    projection: `
+      "id": slug.current,
+      title,
+      "slug": slug.current,
+      description,
       "seo": seo${SEO}
     `,
   });

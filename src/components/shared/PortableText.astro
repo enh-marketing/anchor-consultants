@@ -38,8 +38,9 @@ interface Block {
   listItem?: string;
   children?: Span[];
   markDefs?: MarkDef[];
-  asset?: { url?: string; _ref?: string };
+  asset?: { url?: string; _ref?: string; width?: number; height?: number };
   alt?: string;
+  caption?: string;
   decorative?: boolean;
 }
 
@@ -105,19 +106,35 @@ const HEADINGS = new Set(['h2', 'h3', 'h4']);
 
     const { block } = group;
 
-    if (block._type === 'altImage' || block._type === 'image') {
+    if (block._type === 'captionedImage' || block._type === 'altImage' || block._type === 'image') {
       if (!block.asset?.url) return null;
-      return (
+      const image = (
         <CmsImage
           src={{
             src: block.asset.url,
             ...(block.asset._ref ? { assetId: block.asset._ref } : {}),
             alt: block.alt ?? '',
             decorative: block.decorative ?? false,
+            // Without these the image reserves no space, so it pops in and
+            // shoves the article down as it loads — and `CmsImage` cannot clamp
+            // the srcset to widths the asset actually has.
+            ...(block.asset.width ? { width: block.asset.width } : {}),
+            ...(block.asset.height ? { height: block.asset.height } : {}),
           }}
           widths={[760, 1290]}
           sizes="(min-width: 1200px) 750px, 100vw"
         />
+      );
+
+      // A caption makes the image a figure. Without one there is nothing for a
+      // <figcaption> to hold, and an empty figure adds markup for no reason.
+      const caption = block.caption?.trim();
+      if (!caption) return image;
+      return (
+        <figure>
+          {image}
+          <figcaption>{caption}</figcaption>
+        </figure>
       );
     }
 

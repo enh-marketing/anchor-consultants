@@ -1,4 +1,6 @@
 ---
+import { getSite } from '../../data/get-site';
+import { postAuthor, postCategories } from '../../lib/blog';
 import CmsImage from '../ui/CmsImage.astro';
 import type { CollectionEntry } from 'astro:content';
 import Icon from '../ui/Icon.astro';
@@ -19,10 +21,25 @@ import Icon from '../ui/Icon.astro';
  * link that would 404.
  */
 interface Props {
+  /**
+   * Heading level for the card title. Defaults to 2, which is right on the blog
+   * index where nothing encloses the list. Inside a section that already has its
+   * own h2 — "Related reading" — pass 3, or the card titles become siblings of
+   * the section heading rather than children of it.
+   */
+  headingLevel?: 2 | 3;
   post: CollectionEntry<'posts'>;
 }
-const { post } = Astro.props;
-const { title, excerpt, coverImage, author, publishedAt, category } = post.data;
+const { post, headingLevel = 2 } = Astro.props;
+const Heading = `h${headingLevel}` as 'h2' | 'h3';
+const { title, excerpt, coverImage, publishedAt } = post.data;
+
+// Author and categories arrive as strings from markdown and as resolved
+// documents from Sanity; `src/lib/blog.ts` flattens both to one shape.
+const site = await getSite();
+const author = postAuthor(post.data.author, site.name);
+const categories = postCategories(post.data);
+const primary = categories[0];
 
 const href = `/blog/${post.id}/`;
 const dateFmt = new Intl.DateTimeFormat('en-GB', {
@@ -36,9 +53,9 @@ const dateFmt = new Intl.DateTimeFormat('en-GB', {
 <article
   class="reveal"
   data-post
-  data-category={category.toLowerCase().replace(/\s+/g, '-')}
+  data-category={primary?.slug ?? ''}
   data-month={`${publishedAt.getUTCFullYear()}-${String(publishedAt.getUTCMonth() + 1).padStart(2, '0')}`}
-  data-search={`${title} ${excerpt} ${category}`.toLowerCase()}
+  data-search={`${title} ${excerpt} ${categories.map((c) => c.title).join(' ')}`.toLowerCase()}
 >
   {
     coverImage && (
@@ -60,7 +77,7 @@ const dateFmt = new Intl.DateTimeFormat('en-GB', {
     <p class="text-body flex flex-wrap items-center gap-x-[34px] gap-y-1 text-base leading-[26px]">
       <span class="flex items-center gap-2">
         <Icon name="user" size={16} class="shrink-0" />
-        {author}
+        {author.name}
       </span>
       <span class="flex items-center gap-2">
         <Icon name="calendar" size={16} class="shrink-0" />
@@ -68,9 +85,9 @@ const dateFmt = new Intl.DateTimeFormat('en-GB', {
       </span>
     </p>
 
-    <h2 class="mt-[15px] text-[26px] leading-[36px] font-bold [overflow-wrap:anywhere]">
+    <Heading class="mt-[15px] text-[26px] leading-[36px] font-bold [overflow-wrap:anywhere]">
       <a href={href} class="text-ink hover:text-navy transition-colors">{title}</a>
-    </h2>
+    </Heading>
 
     <p class="text-body mt-[10px] text-base leading-[26px] [overflow-wrap:anywhere]">{excerpt}</p>
   </div>

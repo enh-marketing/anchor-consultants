@@ -24,8 +24,9 @@ export const post = defineType({
     defineField({ name: 'updatedAt', title: 'Last updated', type: 'datetime' }),
     defineField({
       name: 'author',
-      type: 'string',
-      initialValue: 'Anchor Consultants',
+      type: 'reference',
+      to: [{ type: 'author' }],
+      description: 'Change a role or photo once on the author, not on every post.',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -37,11 +38,28 @@ export const post = defineType({
     }),
     defineField({ name: 'coverImage', title: 'Cover image', type: 'altImage' }),
     defineField({
-      name: 'category',
-      type: 'string',
-      description: 'Groups the post in the blog sidebar.',
-      initialValue: 'Uncategorized',
-      validation: (Rule) => Rule.required(),
+      name: 'categories',
+      type: 'array',
+      of: [{ type: 'reference', to: [{ type: 'category' }] }],
+      description:
+        'Each category has its own archive page. One is usually enough; a post in five categories is in none of them properly.',
+      validation: (Rule) => Rule.required().min(1).max(3).unique(),
+    }),
+    defineField({
+      name: 'tags',
+      type: 'array',
+      of: [{ type: 'reference', to: [{ type: 'tag' }] }],
+      description: 'Labels for the post. Also used to suggest related reading.',
+      validation: (Rule) => Rule.max(8).unique(),
+    }),
+    defineField({
+      name: 'relatedPosts',
+      title: 'Related posts',
+      type: 'array',
+      of: [{ type: 'reference', to: [{ type: 'post' }] }],
+      description:
+        'Up to three, shown at the end of the post. Leave empty and posts sharing a tag or category are suggested instead.',
+      validation: (Rule) => Rule.max(3).unique(),
     }),
     defineField({ name: 'body', title: 'Body', type: 'blockContent' }),
     defineField({ name: 'seo', type: 'seo', validation: (Rule) => Rule.required() }),
