@@ -39,6 +39,25 @@ interface Options {
   /** Field to use as the entry id. Defaults to the slug. */
 }
 
+/**
+ * GROQ returns `null` for a field that is not set, while Zod's `.optional()`
+ * expects it to be absent — and Zod reports a stray null as "expected string,
+ * received object", which is a confusing way to learn this. Stripping nulls
+ * makes "not set" mean the same thing on both sides.
+ */
+function stripNulls<T>(value: T): T {
+  if (Array.isArray(value)) return value.map(stripNulls) as unknown as T;
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (v === null) continue;
+      out[k] = stripNulls(v);
+    }
+    return out as T;
+  }
+  return value;
+}
+
 function collection({ type, projection, order }: Options): Loader {
   return {
     name: `sanity-${type}`,
@@ -47,7 +66,8 @@ function collection({ type, projection, order }: Options): Loader {
       const docs = await sanityClient().fetch<Array<Record<string, unknown>>>(query);
 
       store.clear();
-      for (const doc of docs) {
+      for (const raw of docs) {
+        const doc = stripNulls(raw);
         const id = String(doc['id'] ?? '');
         if (!id) {
           logger.warn(`Skipped a ${type} with no slug — it cannot have a URL.`);
@@ -106,7 +126,9 @@ export const sanityFaqs = () =>
   collection({
     type: 'faq',
     order: 'order asc',
-    projection: `"id": string::split(_id, "-")[0] + "-" + order, question, answer, order`,
+    // No slug on this type, so the document id is the entry id. It is stable
+    // across edits, which keeps Astro's content cache honest.
+    projection: `"id": _id, question, answer, order`,
   });
 
 export const sanityTestimonials = () =>
@@ -114,7 +136,7 @@ export const sanityTestimonials = () =>
     type: 'testimonial',
     order: 'order asc',
     projection: `
-      "id": string::split(_id, "-")[0] + "-" + order,
+      "id": _id,
       name,
       location,
       quote,
@@ -129,7 +151,7 @@ export const sanityTeam = () =>
     type: 'teamMember',
     order: 'order asc',
     projection: `
-      "id": string::split(_id, "-")[0] + "-" + order,
+      "id": _id,
       name,
       role,
       bio,

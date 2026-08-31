@@ -4,6 +4,7 @@ import CmsImage from '../../components/ui/CmsImage.astro';
 import { getCollection, render } from 'astro:content';
 import PageLayout from '../../layouts/PageLayout.astro';
 import PageBanner from '../../components/shared/PageBanner.astro';
+import PortableText from '../../components/shared/PortableText.astro';
 import BlogSidebar from '../../components/blog/BlogSidebar.astro';
 import Icon from '../../components/ui/Icon.astro';
 import { breadcrumbSchema } from '../../lib/seo';
@@ -32,7 +33,11 @@ export const getStaticPaths = (async () => {
 }) satisfies GetStaticPaths;
 
 const { post } = Astro.props;
-const { Content } = await render(post);
+// The body is markdown when the content comes from `src/content/`, and
+// Portable Text when it comes from Sanity. `render()` only understands the
+// former, so it is only called when there is no Portable Text to render.
+const portableBody = Array.isArray(post.data.body) ? post.data.body : null;
+const Content = portableBody ? null : (await render(post)).Content;
 const { title, excerpt, coverImage, coverImageAlt, author, publishedAt, updatedAt, seo } =
   post.data;
 
@@ -104,7 +109,7 @@ const articleSchema = {
             </p>
 
             <div class="prose-body">
-              <Content />
+              {portableBody ? <PortableText value={portableBody} /> : Content && <Content />}
             </div>
 
             <p class="mt-[40px]">

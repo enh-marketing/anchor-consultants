@@ -146,6 +146,7 @@ const posts = defineCollection({
       coverImageAlt: z.string().optional(),
       category: z.string().default('Uncategorized'),
       draft: z.boolean().default(false),
+      body: portableText,
       seo,
     }),
 });

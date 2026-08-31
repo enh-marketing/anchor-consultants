@@ -1,36 +1,64 @@
 # Sanity
 
-**Status: connected.** Project `ld89i91d`, dataset `production`. The Studio is in
-`studio/`, the loaders are in `src/lib/sanity/`, and the switch is the
-`PUBLIC_SANITY_PROJECT_ID` environment variable. The dataset is still empty —
-run the import below to fill it.
+**Status: live.** Project `ld89i91d` (Anchor Consulting), dataset `production`.
+The schema is deployed, the content is imported, and the site builds from Sanity.
 
-## Getting it running
+| In Sanity    | Count                                |
+| ------------ | ------------------------------------ |
+| Services     | 4, with feature cards and checklists |
+| FAQs         | 6                                    |
+| Testimonials | 7                                    |
+| Blog posts   | 2, both unpublished (placeholders)   |
+| Image assets | 13                                   |
+
+## Running it
 
 ```bash
-cd studio && npm install && npm run dev      # Studio on :3333
-npx sanity schema deploy                      # push the schema
+cd studio && npm install && npm run dev       # Studio on :3333
+npx sanity schema deploy                       # after any schema change
 ```
 
-Back at the repository root, import the existing markdown and its images:
-
-```bash
-SANITY_WRITE_TOKEN=... node scripts/migrate-to-sanity.mjs --dry-run
-SANITY_WRITE_TOKEN=... node scripts/migrate-to-sanity.mjs
-```
-
-Create that token at [sanity.io/manage](https://sanity.io/manage) with Editor
-permission. It is only ever read from the environment, never from a file here.
-
-Then flip the site over by setting these in `.env`:
+The site reads Sanity when these are set, and the markdown in `src/content/`
+when they are not. **`.env` is gitignored, so set them wherever you build,
+including the host.**
 
 ```
 PUBLIC_SANITY_PROJECT_ID=ld89i91d
 PUBLIC_SANITY_DATASET=production
 ```
 
-Unset the project id and the site goes back to reading `src/content/`. Both
-paths are validated by the same Zod schemas, so neither can drift.
+Both paths run through the same Zod schemas, so neither source can drift from
+what the pages expect.
+
+## Re-running the import
+
+Safe to repeat: documents match on slug and are patched, images upload once.
+
+```bash
+cd studio && npx sanity exec scripts/import-from-markdown.mjs --with-user-token -- --dry-run
+cd studio && npx sanity exec scripts/import-from-markdown.mjs --with-user-token
+```
+
+`--with-user-token` borrows the token the CLI already holds, so no credential
+has to be created or stored. `scripts/migrate-to-sanity.mjs` also runs
+standalone with `SANITY_WRITE_TOKEN` in the environment.
+
+## Hiding a document
+
+Sanity has no `draft` field: a document is published or it is not. To hide one
+while keeping its content:
+
+```bash
+cd studio && npx sanity exec scripts/unpublish.mjs --with-user-token -- <slug>
+```
+
+That is how both placeholder posts are kept out of the build and the sitemap.
+
+## Rebuilding on content change
+
+The build reads Sanity once, at build time. A content edit does not appear until
+the site rebuilds, so add a webhook on the host pointing at its deploy hook —
+that is the remaining piece of the CMS loop.
 
 ---
 

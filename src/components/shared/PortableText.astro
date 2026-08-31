@@ -1,0 +1,136 @@
+---
+import CmsImage from '../ui/CmsImage.astro';
+
+/**
+ * Portable Text renderer.
+ *
+ * Hand-written rather than `astro-portabletext` for two reasons: the Studio's
+ * `blockContent` type deliberately allows only the handful of blocks this site
+ * styles, so a general renderer would be mostly dead weight; and the blog and
+ * service templates style body copy against specific elements, so the output
+ * has to be exactly these tags.
+ *
+ * Inline content is assembled as an escaped HTML string because the only marks
+ * in play are strong, em and link. Every text node goes through `escape()`, so
+ * content from the CMS cannot inject markup.
+ *
+ * Anything unrecognised is skipped rather than printed, so a block added in the
+ * Studio before the front end supports it degrades to nothing visible instead
+ * of leaking an object onto the page.
+ */
+
+interface Span {
+  _type: string;
+  text?: string;
+  marks?: string[];
+}
+
+interface MarkDef {
+  _key: string;
+  _type: string;
+  href?: string;
+}
+
+interface Block {
+  _type: string;
+  _key?: string;
+  style?: string;
+  listItem?: string;
+  children?: Span[];
+  markDefs?: MarkDef[];
+  asset?: { url?: string; _ref?: string };
+  alt?: string;
+  decorative?: boolean;
+}
+
+interface Props {
+  value: unknown;
+}
+const { value } = Astro.props;
+const blocks: Block[] = Array.isArray(value) ? (value as Block[]) : [];
+
+const escape = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/** A block's children as escaped HTML, with strong / em / link applied. */
+function inline(block: Block): string {
+  return (block.children ?? [])
+    .map((span) => {
+      if (span._type !== 'span') return '';
+      let html = escape(span.text ?? '');
+      const marks = span.marks ?? [];
+
+      if (marks.includes('strong')) html = `<strong>${html}</strong>`;
+      if (marks.includes('em')) html = `<em>${html}</em>`;
+
+      const linkKey = marks.find((m) => block.markDefs?.some((d) => d._key === m));
+      const href = linkKey ? block.markDefs?.find((d) => d._key === linkKey)?.href : undefined;
+      if (href) {
+        const external = /^https?:\/\//.test(href);
+        const rel = external ? ' target="_blank" rel="noopener noreferrer"' : '';
+        html = `<a href="${escape(href)}"${rel}>${html}</a>`;
+      }
+      return html;
+    })
+    .join('');
+}
+
+/** Consecutive list items of the same kind become one list. */
+type Group = { kind: 'block'; block: Block } | { kind: 'list'; ordered: boolean; items: Block[] };
+
+const groups: Group[] = [];
+for (const block of blocks) {
+  if (block._type === 'block' && block.listItem) {
+    const ordered = block.listItem === 'number';
+    const last = groups[groups.length - 1];
+    if (last?.kind === 'list' && last.ordered === ordered) {
+      last.items.push(block);
+      continue;
+    }
+    groups.push({ kind: 'list', ordered, items: [block] });
+    continue;
+  }
+  groups.push({ kind: 'block', block });
+}
+
+const HEADINGS = new Set(['h2', 'h3', 'h4']);
+---
+
+{
+  groups.map((group) => {
+    if (group.kind === 'list') {
+      const items = group.items.map((item) => `<li>${inline(item)}</li>`).join('');
+      return group.ordered ? <ol set:html={items} /> : <ul set:html={items} />;
+    }
+
+    const { block } = group;
+
+    if (block._type === 'altImage' || block._type === 'image') {
+      if (!block.asset?.url) return null;
+      return (
+        <CmsImage
+          src={{
+            src: block.asset.url,
+            ...(block.asset._ref ? { assetId: block.asset._ref } : {}),
+            alt: block.alt ?? '',
+            decorative: block.decorative ?? false,
+          }}
+          widths={[760, 1290]}
+          sizes="(min-width: 1200px) 750px, 100vw"
+        />
+      );
+    }
+
+    if (block._type !== 'block') return null;
+
+    const html = inline(block);
+    const style = block.style ?? 'normal';
+
+    if (style === 'h2') return <h2 set:html={html} />;
+    if (style === 'h3') return <h3 set:html={html} />;
+    if (style === 'h4') return <h4 set:html={html} />;
+    if (style === 'blockquote') return <blockquote set:html={html} />;
+    if (HEADINGS.has(style)) return <p set:html={html} />;
+    return <p set:html={html} />;
+  })
+}

@@ -2,12 +2,18 @@
  * One-off import of the markdown content in `src/content/` into Sanity,
  * including the local images each entry references.
  *
- *   SANITY_WRITE_TOKEN=... node scripts/migrate-to-sanity.mjs --dry-run
- *   SANITY_WRITE_TOKEN=... node scripts/migrate-to-sanity.mjs
+ * Preferred, because it needs no token of its own — it borrows the one the
+ * Sanity CLI already holds for whoever is logged in:
  *
- * Create the token yourself at sanity.io/manage (Editor permission is enough)
- * and pass it through the environment. It is never read from a file in this
- * repository and must not be committed.
+ *   cd studio && npx sanity exec ../scripts/migrate-to-sanity.mjs --with-user-token
+ *   cd studio && npx sanity exec ../scripts/migrate-to-sanity.mjs --with-user-token -- --dry-run
+ *
+ * Or standalone, with a token you create at sanity.io/manage (Editor is enough):
+ *
+ *   SANITY_WRITE_TOKEN=... node scripts/migrate-to-sanity.mjs --dry-run
+ *
+ * A token is never read from a file in this repository and must not be
+ * committed.
  *
  * Safe to re-run: documents are matched on their slug and patched rather than
  * duplicated, and an image already uploaded is reused by its filename.
@@ -19,32 +25,49 @@
 import { createClient } from '@sanity/client';
 import { readFile, readdir } from 'node:fs/promises';
 import { existsSync, createReadStream } from 'node:fs';
-import { join, resolve, basename, extname } from 'node:path';
+import { join, resolve, basename, extname, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const PROJECT_ID = process.env.SANITY_PROJECT_ID ?? 'ld89i91d';
 const DATASET = process.env.SANITY_DATASET ?? 'production';
-const TOKEN = process.env.SANITY_WRITE_TOKEN;
-const DRY = process.argv.includes('--dry-run');
+/** Set by run(); the helpers below read it. */
+let dryRun = process.argv.includes('--dry-run');
 
-if (!TOKEN && !DRY) {
-  console.error(
-    'SANITY_WRITE_TOKEN is not set.\n' +
-      'Create a token with Editor permission at https://sanity.io/manage and run:\n' +
-      '  SANITY_WRITE_TOKEN=... node scripts/migrate-to-sanity.mjs --dry-run',
-  );
-  process.exit(1);
+/**
+ * The client is injected rather than built here when the import runs through
+ * the Studio wrapper (`studio/scripts/import-from-markdown.mjs`), which borrows
+ * the token the Sanity CLI already holds. Nobody has to create or paste a
+ * credential for that path. Running this file directly falls back to
+ * SANITY_WRITE_TOKEN.
+ */
+function clientFromToken() {
+  const token = process.env.SANITY_WRITE_TOKEN ?? process.env.SANITY_AUTH_TOKEN;
+  if (!token && !dryRun) {
+    console.error(
+      'No write token available.\n\n' +
+        'Either borrow the CLI login:\n' +
+        '  cd studio && npx sanity exec scripts/import-from-markdown.mjs --with-user-token\n\n' +
+        'or supply your own:\n' +
+        '  SANITY_WRITE_TOKEN=... node scripts/migrate-to-sanity.mjs',
+    );
+    process.exit(1);
+  }
+  return createClient({
+    projectId: PROJECT_ID,
+    dataset: DATASET,
+    apiVersion: '2024-10-01',
+    token,
+    useCdn: false,
+  });
 }
 
-const client = createClient({
-  projectId: PROJECT_ID,
-  dataset: DATASET,
-  apiVersion: '2024-10-01',
-  token: TOKEN,
-  useCdn: false,
-});
+let client;
 
-const CONTENT = resolve('src/content');
-const ASSETS = resolve('src/assets');
+// Resolved from this file, not the working directory: `sanity exec` runs with
+// studio/ as cwd, and the content lives at the repository root.
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const CONTENT = join(ROOT, 'src/content');
+const ASSETS = join(ROOT, 'src/assets');
 
 /**
  * Minimal YAML frontmatter reader, sufficient for the flat frontmatter in this
@@ -174,7 +197,7 @@ async function uploadImage(relPath, alt = '', decorative = false) {
   }
   const name = basename(file);
   if (!uploaded.has(name)) {
-    if (DRY) {
+    if (dryRun) {
       uploaded.set(name, { _id: `image-DRY-${name}` });
       console.log(`  would upload ${name}`);
     } else {
@@ -205,7 +228,7 @@ async function entries(dir) {
 
 /** Creates or patches a document, matched on its slug so re-runs are safe. */
 async function upsert(type, slug, doc) {
-  if (DRY) {
+  if (dryRun) {
     console.log(`  would upsert ${type}: ${slug}`);
     return;
   }
@@ -224,7 +247,7 @@ async function upsert(type, slug, doc) {
 
 /** Types without a slug are matched on the field that identifies them. */
 async function upsertBy(type, field, value, doc) {
-  if (DRY) {
+  if (dryRun) {
     console.log(`  would upsert ${type}: ${value}`);
     return;
   }
@@ -241,9 +264,11 @@ async function upsertBy(type, field, value, doc) {
   }
 }
 
-async function main() {
+export async function run({ client: injected, dry } = {}) {
+  if (dry !== undefined) dryRun = dry;
+  client = injected ?? clientFromToken();
   console.log(
-    `${DRY ? 'DRY RUN — nothing will be written' : 'Importing'} into ${PROJECT_ID}/${DATASET}\n`,
+    `${dryRun ? 'DRY RUN — nothing will be written' : 'Importing'} into ${PROJECT_ID}/${DATASET}\n`,
   );
 
   console.log('services');
@@ -327,13 +352,16 @@ async function main() {
 
   console.log(
     '\nDone.' +
-      (DRY
+      (dryRun
         ? ' Re-run without --dry-run to write.'
         : '\nNext: set PUBLIC_SANITY_PROJECT_ID in .env and rebuild to read from Sanity.'),
   );
 }
 
-main().catch((err) => {
-  console.error('\nImport failed:', err.message);
-  process.exit(1);
-});
+// Run only when executed directly; the Studio wrapper imports `run` instead.
+if (process.argv[1] && import.meta.url.endsWith(basename(process.argv[1]))) {
+  run().catch((err) => {
+    console.error('\nImport failed:', err.message);
+    process.exit(1);
+  });
+}
