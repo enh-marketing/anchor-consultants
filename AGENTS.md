@@ -60,7 +60,14 @@ npm run dev      # dev server on :4321
 npm run build    # static build to dist/
 npm run preview  # serve the build with gzip, as deployed
 npm run check    # astro check (types + templates)
+
+npm run studio:dev     # Studio on :3333
+npm run studio:deploy  # publish it to anchor-consultants.sanity.studio
 ```
+
+The hosted Studio is `https://anchor-consultants.sanity.studio` — `/content` for
+the site, `/submissions` for form enquiries. Both paths exist because Sanity
+requires every workspace `basePath` to have the same segment count.
 
 ## Environment
 
@@ -83,17 +90,19 @@ Everything here is a value or a decision the client owes, not unfinished code.
 Each one degrades loudly rather than silently: the build warns, and the affected
 feature says plainly that it is unconfigured.
 
-- **Credentials, all of them.** SMTP, reCAPTCHA v3, and the Sanity write and
-  preview tokens, plus `SUBMISSION_SALT`. See `.env.example`; they belong in the
-  deployment environment and nowhere else. Without them: forms validate but do
-  not send, submissions are not archived, rate limiting is off, and preview
-  answers 503.
-- **Deploy webhook.** Needs the Vercel project to exist. Until it is wired, a
-  publish in the Studio needs a manual build. Steps are in `SANITY.md`.
-- **Production domain.** Connect it in the Vercel dashboard and both the
-  canonical origin and indexing follow automatically. Until a production
-  deployment exists, every build emits `noindex, nofollow`, which is the correct
-  default rather than something to fix.
+- **SMTP and reCAPTCHA v3.** The only credentials still missing; both need
+  accounts the client owns. Without them, forms validate and archive but report
+  `delivered: false` rather than pretending to have sent. The Sanity write and
+  preview tokens and `SUBMISSION_SALT` are set in Vercel, so submission storage,
+  rate limiting and draft preview all work. See `.env.example`; credentials
+  belong in the deployment environment and nowhere else.
+- **Production domain, and the `noindex` that is holding it back.** Connect
+  `anchorconsultants.ae` in the Vercel dashboard, then **delete the
+  `SITE_INDEXABLE` variable** — it is currently forcing `noindex` and will keep
+  doing so after the domain is attached. Nothing else needs changing: the
+  canonical origin follows from Vercel's own variables. Two things start working
+  at the same moment, because both are tied to that origin: indexing, and the
+  Studio's "Open preview" button, whose target is baked in at build time.
 - **Content the client owes.** Privacy policy text, real blog posts, the redirect
   list, and confirmation of the phone number (audit Q10).
 - **A retention window** for stored enquiries. `prune-submissions.mjs` refuses to

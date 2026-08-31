@@ -1797,6 +1797,65 @@ The filter excludes `sanity.imageAsset` and `sanity.fileAsset`, because uploadin
 an image creates a document in `production` — without it, dragging in twelve
 photos fires twelve builds.
 
+### Studio deployed — editors no longer need the repo
+
+Until now the Studio only ran locally, which meant content editing required a
+clone, Node and a terminal. It is now hosted, and the two workspaces are:
+
+| Workspace      | URL                                                  |
+| -------------- | ---------------------------------------------------- |
+| Site content   | https://anchor-consultants.sanity.studio/content     |
+| Form enquiries | https://anchor-consultants.sanity.studio/submissions |
+
+The hostname and the application id are pinned in `studio/sanity.cli.ts` rather
+than answered at a prompt, so a deploy from another machine cannot claim a
+second hostname and leave two Studios editing the same content.
+
+**Two things here were worth checking rather than assuming.**
+
+_The project record still reads `studioHost: null`._ That looks like a failed
+deploy. It is not: current Sanity registers an _application_ with an id, and the
+legacy `studioHost` field stays empty. The friendly hostname 302s to the
+dashboard-hosted URL and preserves the path, so both workspace links work. A
+hostname nobody deployed returns 404, which is how I confirmed the 200s were
+ours and not a wildcard.
+
+_CORS lists only `localhost:3333`._ Also fine, but only because Sanity trusts
+its own origins implicitly. Verified rather than assumed, by sending real
+requests with an `Origin` header: `www.sanity.io` and
+`anchor-consultants.sanity.studio` both come back with matching
+`Access-Control-Allow-Origin` and `Allow-Credentials: true`, while an arbitrary
+origin gets no header at all. So the deployed Studio can read content and the
+API is not simply echoing whatever origin it is handed.
+
+**A real defect found while deploying: the hosted Studio shipped a dead "Open
+preview" button.** `previewAction.ts` fell back to `http://localhost:4321` when
+`SANITY_STUDIO_SITE_URL` was unset, and it is unset — `.env*` is gitignored at
+every level, so `studio/.env` would exist only on the machine that wrote it. The
+fix is not an env file, because that would break the next deploy from anywhere
+else. The fallback is now build-aware: `sanity dev` points at the local site, a
+deployed Studio points at `https://anchorconsultants.ae`, and the variable still
+overrides both.
+
+Confirmed against the emitted bundle rather than trusting Vite's behaviour. The
+production chunk contains
+`(typeof process<"u"?"production":void 0)==="development"`, so `NODE_ENV` was
+replaced with a literal and the dev branch is unreachable. The same line also
+shows `process.env` compiled to an empty object holding only the
+`SANITY_STUDIO_*` values present at build time — which proves the wider point:
+that variable can never be set after the fact, and a Studio must be rebuilt for
+a change to it to land.
+
+Consequence worth stating plainly: **the preview button's links resolve when
+`anchorconsultants.ae` is attached, not before.** The origin has to match
+wherever the editor opened `/api/preview?secret=…`, because that route's cookie
+does not cross origins — so pointing it at the temporary `vercel.app` host would
+have to be undone at launch.
+
+Not verified from here: the Studio rendering once logged in. Browser access to
+that host is blocked in this environment, so the evidence is the successful
+deploy, the bundle contents, the CORS probes and 200s on both workspace paths.
+
 ## Open Questions
 
 These need your input. None of them block starting at Milestone 0; I have noted the assumption I will proceed with if you would rather decide later.

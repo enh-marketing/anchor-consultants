@@ -30,6 +30,44 @@ PUBLIC_SANITY_DATASET=production
 Both paths run through the same Zod schemas, so neither source can drift from
 what the pages expect.
 
+## Where editors log in
+
+The Studio is deployed. Editors do not need the repo, Node, or a terminal:
+
+| Workspace      | URL                                                  |
+| -------------- | ---------------------------------------------------- |
+| Site content   | https://anchor-consultants.sanity.studio/content     |
+| Form enquiries | https://anchor-consultants.sanity.studio/submissions |
+
+The two paths are why the content workspace is not at the root: Sanity requires
+every workspace `basePath` to have the same number of segments, so `/content`
+and `/submissions` sit side by side. Anyone invited to project `ld89i91d` can
+sign in; nothing else grants access, and the enquiries dataset is private, so
+that workspace shows nothing to someone without project access.
+
+`sanity deploy` registers an application rather than the older `studioHost`
+field, which is why the project record reads `studioHost: null` while the
+hostname works. The friendly hostname redirects to the dashboard-hosted URL and
+keeps the path, so the two links above are the ones to share.
+
+Redeploy after a schema or Studio change:
+
+```bash
+npm run studio:deploy
+```
+
+The hostname and application id are pinned in `studio/sanity.cli.ts`, so a
+deploy from another machine cannot quietly claim a second Studio.
+
+**One caveat on "Open preview".** The button's target is baked in at build time:
+Vite replaces `process.env` with only the `SANITY_STUDIO_*` values present
+during the build, so setting `SANITY_STUDIO_SITE_URL` afterwards does nothing
+and the Studio must be rebuilt. With it unset, a deployed Studio points at
+`https://anchorconsultants.ae` and `sanity dev` points at `localhost:4321`. The
+production links therefore start working when the domain is attached, not
+before. The origin has to match wherever the editor opened
+`/api/preview?secret=…`, because that route's cookie does not cross origins.
+
 ## Re-running the import
 
 Safe to repeat: documents match on slug and are patched, images upload once.
