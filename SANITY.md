@@ -511,16 +511,33 @@ code one:
    one called `sanity-publish` on the production branch. Vercel gives you a URL.
 2. In Sanity, open **manage.sanity.io**, then the project, then **API →
    Webhooks**. Create a webhook:
-   - **URL** — the deploy hook URL from step 1
-   - **Dataset** — `production`
-   - **Trigger on** — Create, Update, Delete
-   - **Filter** — `_type in ["page", "service", "post", "category", "tag", "author", "siteSettings", "faq", "testimonial", "teamMember", "form", "redirect"]`
-   - **HTTP method** — `POST`
+
+   | Field       | Value                                                   |
+   | ----------- | ------------------------------------------------------- |
+   | Name        | `Vercel production deploy`                              |
+   | URL         | The deploy hook URL from step 1                         |
+   | **Dataset** | **`production`** — not `*`                              |
+   | Trigger on  | Create, Update **and** Delete                           |
+   | Filter      | `!(_type in ["sanity.imageAsset", "sanity.fileAsset"])` |
+   | HTTP method | `POST`                                                  |
+   | **Drafts**  | **Leave unchecked**                                     |
+   | Secret      | Leave empty — the deploy hook URL is itself the secret  |
+
 3. Publish something and check a deployment starts.
 
-The filter matters. Without it, a webhook fires on every document change
-including each form submission, so every enquiry would trigger a rebuild of the
-whole site. `submission` is deliberately absent from that list for that reason.
+Two of those defaults will cause problems if left alone.
+
+**Dataset** defaults to `*`, which includes the private `submissions` dataset —
+so every contact form enquiry would rebuild the entire site. Scoping it to
+`production` is what prevents that, and it is why the filter no longer needs to
+exclude `submission`: those documents are not in this dataset at all.
+
+**Drafts** is unchecked by default and must stay that way. Every keystroke in the
+Studio saves a draft, so enabling it would trigger a build per keystroke.
+
+The filter excludes asset documents because uploading an image creates one in
+`production`: without it, dragging in twelve photos fires twelve builds.
+Everything else in `production` genuinely affects the site.
 
 ### Scheduled publishing
 
