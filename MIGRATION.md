@@ -1587,6 +1587,32 @@ Not guessed at. `info@anchorconsultants.ae` is the obvious candidate but a
 business email is a real thing with a real mailbox behind it, so this needs
 confirming rather than inferring. Logged as **Q16**.
 
+### Redirects at launch — none, and the URL evidence for that
+
+The client decided on 2026-08-31 not to build a redirect list for launch. Checked
+against the page inventory in section B rather than accepted on trust, and the
+decision holds: almost nothing moved.
+
+| WordPress URL                                               | Now                                | Redirect needed |
+| ----------------------------------------------------------- | ---------------------------------- | --------------- |
+| `/`, `/about/`, `/services/`, `/testimonials/`, `/contact/` | Unchanged                          | No              |
+| `/blog/<slug>/`                                             | Unchanged                          | No              |
+| `/services/mortgage-solutions/`                             | Unchanged                          | No              |
+| `/services/commercial-finanaces/`                           | `commercial-finances` (typo fixed) | No — it 404'd   |
+| `/services/lrd-section/`                                    | `lease-rental-discounting`         | No — it 404'd   |
+| `/services/lrd-construction-developer-finance/`             | `construction-developer-finance`   | No — it 404'd   |
+| `/privacy-policy-2/`                                        | `/privacy-policy/`                 | No — unlinked   |
+| **`/blog-grid/`**                                           | **`/blog/`**                       | **Yes**         |
+
+The three service slugs changed, but those URLs returned 404 on WordPress (B.1
+row 8, and Q2 says so outright), so nothing can link to them. `/privacy-policy-2/`
+was unlinked and is on the demo-page exclusion list.
+
+**`/blog-grid/` is the one real case.** It was the live blog index, so anything
+linking to the blog points there. Left out per the client's decision; it is one
+document in the Studio under Redirects whenever it is wanted, and the mechanism is
+built and tested.
+
 ## Open Questions
 
 These need your input. None of them block starting at Milestone 0; I have noted the assumption I will proceed with if you would rather decide later.
