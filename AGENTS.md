@@ -64,10 +64,18 @@ npm run check    # astro check (types + templates)
 
 ## Environment
 
-`SITE_URL` and `IS_PRODUCTION_HOST` live in `src/data/site-url.mjs`.
-`IS_PRODUCTION_HOST` gates indexing: anything other than a production build
-emits `noindex, nofollow`. The WordPress staging site is `noindex` sitewide,
-and shipping that to production would be a serious regression.
+`SITE_URL` and `IS_PRODUCTION_HOST` are derived in `src/data/site-url.mjs` from
+the environment, not committed. On Vercel both come from Vercel's own variables:
+the origin from `VERCEL_PROJECT_PRODUCTION_URL` (the connected domain) and
+indexing from `VERCEL_ENV === 'production'`. Connecting the domain is the only
+step; `PUBLIC_SITE_URL` and `SITE_INDEXABLE` are overrides for another host.
+
+The default is the safe one. A build that cannot prove it is a production
+deployment emits `noindex, nofollow`, so preview deployments and local builds are
+never indexable. The WordPress staging site is `noindex` sitewide and shipping
+that to production would be a serious regression (defect #21) — and so would a
+staging deployment quietly indexing itself, which a committed flag could not
+prevent.
 
 ## Not yet wired
 
@@ -82,8 +90,10 @@ feature says plainly that it is unconfigured.
   answers 503.
 - **Deploy webhook.** Needs the Vercel project to exist. Until it is wired, a
   publish in the Studio needs a manual build. Steps are in `SANITY.md`.
-- **Production domain.** `SITE_URL` is a placeholder, and `IS_PRODUCTION_HOST`
-  is `false`, so every build currently emits `noindex, nofollow`.
+- **Production domain.** Connect it in the Vercel dashboard and both the
+  canonical origin and indexing follow automatically. Until a production
+  deployment exists, every build emits `noindex, nofollow`, which is the correct
+  default rather than something to fix.
 - **Content the client owes.** Privacy policy text, real blog posts, the redirect
   list, and confirmation of the phone number (audit Q10).
 - **A retention window** for stored enquiries. `prune-submissions.mjs` refuses to

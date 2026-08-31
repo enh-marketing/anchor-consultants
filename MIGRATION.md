@@ -1533,6 +1533,37 @@ signed off by me.** `SANITY.md` is the editor's guide and covers pages, sections
 SEO, forms, submissions, redirects, preview and publishing. Whether it is enough
 is answered by watching someone use it, which is a task for the client.
 
+### Domain and indexing from the environment — follow-up
+
+The client confirmed the domain will be connected on Vercel. That would not have
+been enough on its own: `SITE_URL` and `IS_PRODUCTION_HOST` were committed
+constants, so connecting a domain in the dashboard would have left canonicals,
+Open Graph URLs and the sitemap pointing at `anchorconsultants.example` and
+**every page emitting `noindex, nofollow`**. Connecting a domain and shipping
+would have looked successful and been invisible to search engines.
+
+Both are now derived. The origin comes from `VERCEL_PROJECT_PRODUCTION_URL`,
+which is the domain connected in the dashboard, and indexing from
+`VERCEL_ENV === 'production'`. `PUBLIC_SITE_URL` and `SITE_INDEXABLE` remain as
+overrides for a host that is not Vercel.
+
+The gain beyond convenience is that `VERCEL_ENV` distinguishes a preview
+deployment from a production one, which a committed flag cannot. Preview
+deployments are now `noindex` automatically — previously that depended on nobody
+having flipped the flag to `true` and left it there.
+
+Verified across all four cases:
+
+| Build                                              | Canonical                        | Robots              |
+| -------------------------------------------------- | -------------------------------- | ------------------- |
+| Local                                              | `anchorconsultants.example`      | `noindex, nofollow` |
+| Vercel production (`VERCEL_ENV=production`)        | the connected domain             | `index, follow`     |
+| Vercel preview (`VERCEL_ENV=preview`)              | the production domain, correctly | `noindex, nofollow` |
+| Another host (`SITE_INDEXABLE`, `PUBLIC_SITE_URL`) | the given origin                 | `index, follow`     |
+
+The privacy holding page stays `noindex` at route level in every case, and the
+sitemap uses the resolved origin.
+
 ## Open Questions
 
 These need your input. None of them block starting at Milestone 0; I have noted the assumption I will proceed with if you would rather decide later.

@@ -1,12 +1,53 @@
-// Canonical production origin. Used by astro.config.mjs (sitemap, canonicals)
-// and by the SEO helpers.
-//
-// TODO(client): replace with the real production domain before launch.
-// Until then this is a placeholder — it only affects absolute URLs in the
-// sitemap, canonical tags and Open Graph metadata, never local development.
-export const SITE_URL = 'https://anchorconsultants.example';
+/**
+ * Canonical origin, and whether this build may be indexed.
+ *
+ * Read by `astro.config.mjs` (the sitemap and `site:`), by `src/lib/seo.ts`
+ * (canonicals, Open Graph), by `robots.txt.ts` and by the build fixups. It is
+ * build-time only — no client bundle imports it — so reading `process.env`
+ * directly is safe here.
+ *
+ * Both values are derived from the environment rather than committed, because a
+ * committed constant is a constant somebody has to remember to change. The
+ * WordPress staging site was `noindex` sitewide and shipping that to production
+ * would be a serious regression (audit defect #21); so would the reverse, a
+ * staging deployment quietly indexing itself.
+ */
 
-// Set to true only on the production build. Anything else emits
-// `noindex, nofollow`, which is what the WordPress staging site does today
-// and what we must not accidentally ship (audit defect #21).
-export const IS_PRODUCTION_HOST = false;
+const env = (key) => (typeof process === 'undefined' ? undefined : process.env?.[key]);
+
+const trimSlashes = (value) => value.replace(/\/+$/, '');
+
+/**
+ * The origin, in order of preference:
+ *
+ *   1. `PUBLIC_SITE_URL` — an explicit override, for a host that is not Vercel
+ *      or a domain Vercel does not know is the canonical one.
+ *   2. Vercel's own production domain. Once a domain is connected in the Vercel
+ *      dashboard, this is that domain, so connecting it is the only step.
+ *   3. The placeholder, which only ever appears in a local build.
+ */
+const explicitUrl = env('PUBLIC_SITE_URL');
+const vercelDomain = env('VERCEL_PROJECT_PRODUCTION_URL');
+
+export const SITE_URL = explicitUrl
+  ? trimSlashes(explicitUrl.startsWith('http') ? explicitUrl : `https://${explicitUrl}`)
+  : vercelDomain
+    ? `https://${trimSlashes(vercelDomain)}`
+    : 'https://anchorconsultants.example';
+
+/**
+ * Whether this build may be indexed. Anything else emits `noindex, nofollow`.
+ *
+ * `VERCEL_ENV` is `production` only on a production deployment, so preview
+ * deployments and local builds are excluded automatically — which is the part a
+ * committed flag kept getting wrong. `SITE_INDEXABLE=true` is the escape hatch
+ * for a host that is not Vercel.
+ *
+ * The default is deliberately the safe one: not indexable. A build that cannot
+ * prove it is production is treated as though it is not.
+ */
+export const IS_PRODUCTION_HOST =
+  env('SITE_INDEXABLE') === 'true' || env('VERCEL_ENV') === 'production';
+
+/** True when the origin is still the placeholder, so the build can say so. */
+export const SITE_URL_IS_PLACEHOLDER = SITE_URL === 'https://anchorconsultants.example';
