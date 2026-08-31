@@ -1,6 +1,6 @@
 ---
 import type { GetStaticPaths } from 'astro';
-import { Image } from 'astro:assets';
+import CmsImage from '../../components/ui/CmsImage.astro';
 import { getCollection, render } from 'astro:content';
 import PageLayout from '../../layouts/PageLayout.astro';
 import PageBanner from '../../components/shared/PageBanner.astro';
@@ -79,7 +79,7 @@ const articleSchema = {
           <article class="post-body">
             {
               coverImage && (
-                <Image
+                <CmsImage
                   src={coverImage}
                   alt={coverImageAlt ?? ''}
                   widths={[375, 750, 1500]}

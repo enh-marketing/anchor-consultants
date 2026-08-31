@@ -1,0 +1,22 @@
+{
+  "name": "anchor-studio",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Sanity Studio for the Anchor Consultants website",
+  "type": "module",
+  "scripts": {
+    "dev": "sanity dev",
+    "start": "sanity start",
+    "build": "sanity build",
+    "deploy": "sanity deploy",
+    "schema:deploy": "sanity schema deploy",
+    "typegen": "sanity schema extract && sanity typegen generate"
+  },
+  "dependencies": {
+    "@sanity/vision": "^4",
+    "react": "^19",
+    "react-dom": "^19",
+    "sanity": "^4",
+    "styled-components": "^6"
+  }
+}

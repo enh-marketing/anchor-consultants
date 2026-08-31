@@ -1,4 +1,40 @@
-# Sanity migration notes
+# Sanity
+
+**Status: connected.** Project `ld89i91d`, dataset `production`. The Studio is in
+`studio/`, the loaders are in `src/lib/sanity/`, and the switch is the
+`PUBLIC_SANITY_PROJECT_ID` environment variable. The dataset is still empty —
+run the import below to fill it.
+
+## Getting it running
+
+```bash
+cd studio && npm install && npm run dev      # Studio on :3333
+npx sanity schema deploy                      # push the schema
+```
+
+Back at the repository root, import the existing markdown and its images:
+
+```bash
+SANITY_WRITE_TOKEN=... node scripts/migrate-to-sanity.mjs --dry-run
+SANITY_WRITE_TOKEN=... node scripts/migrate-to-sanity.mjs
+```
+
+Create that token at [sanity.io/manage](https://sanity.io/manage) with Editor
+permission. It is only ever read from the environment, never from a file here.
+
+Then flip the site over by setting these in `.env`:
+
+```
+PUBLIC_SANITY_PROJECT_ID=ld89i91d
+PUBLIC_SANITY_DATASET=production
+```
+
+Unset the project id and the site goes back to reading `src/content/`. Both
+paths are validated by the same Zod schemas, so neither can drift.
+
+---
+
+# Original migration notes
 
 The content layer was built for this from the start. Every page reads through
 Astro content collections rather than importing files or hardcoding copy, so

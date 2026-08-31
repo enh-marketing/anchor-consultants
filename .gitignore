@@ -28,3 +28,8 @@ _incoming/
 
 # Chrome for Testing, installed locally for Lighthouse runs. Never committed.
 chrome/
+
+# Sanity Studio build output and local install
+studio/node_modules/
+studio/dist/
+studio/.sanity/

@@ -1,6 +1,6 @@
 ---
-import { Image } from 'astro:assets';
-import type { ImageMetadata } from 'astro';
+import CmsImage from '../ui/CmsImage.astro';
+import type { CmsImageValue } from '../../lib/sanity/image';
 
 /**
  * Inner-page banner.
@@ -24,7 +24,7 @@ interface Props {
   title: string;
   /** Trail after Home. The last entry is the current page. */
   crumb: string;
-  image: ImageMetadata;
+  image: CmsImageValue;
 }
 const { title, crumb, image } = Astro.props;
 ---
@@ -32,7 +32,7 @@ const { title, crumb, image } = Astro.props;
 <section
   class="bg-ink relative isolate flex min-h-[226px] items-center overflow-hidden py-8 lg:py-0"
 >
-  <Image
+  <CmsImage
     src={image}
     alt=""
     aria-hidden="true"

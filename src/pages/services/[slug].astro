@@ -1,5 +1,5 @@
 ---
-import { Image } from 'astro:assets';
+import CmsImage from '../../components/ui/CmsImage.astro';
 import { getCollection, render, type CollectionEntry } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
 import PageLayout from '../../layouts/PageLayout.astro';
@@ -70,7 +70,7 @@ const serviceSchema = {
     {
       d.heroImage && (
         <div class="reveal mx-auto w-full max-w-[1290px] px-3 lg:px-0">
-          <Image
+          <CmsImage
             src={d.heroImage}
             alt={`${d.title} at Anchor Consultants`}
             class="h-auto w-full lg:h-[670px] lg:object-cover"
@@ -100,13 +100,13 @@ const serviceSchema = {
               {d.features.map((feature) => (
                 <li class="flex min-h-[94px] items-center gap-[25px] border border-[#ededed] bg-[rgba(240,240,240,0.1)] px-[30px] py-[20px]">
                   {feature.icon && (
-                    <Image
+                    <CmsImage
                       src={feature.icon}
                       alt=""
                       aria-hidden="true"
                       class="h-[52px] w-[52px] shrink-0 object-contain"
                       loading="lazy"
-                      densities={[1, 2]}
+                      width={52}
                     />
                   )}
                   <h3 class="text-ink text-base leading-[26px] font-bold">{feature.title}</h3>

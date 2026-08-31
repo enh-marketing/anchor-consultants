@@ -1,0 +1,339 @@
+/**
+ * One-off import of the markdown content in `src/content/` into Sanity,
+ * including the local images each entry references.
+ *
+ *   SANITY_WRITE_TOKEN=... node scripts/migrate-to-sanity.mjs --dry-run
+ *   SANITY_WRITE_TOKEN=... node scripts/migrate-to-sanity.mjs
+ *
+ * Create the token yourself at sanity.io/manage (Editor permission is enough)
+ * and pass it through the environment. It is never read from a file in this
+ * repository and must not be committed.
+ *
+ * Safe to re-run: documents are matched on their slug and patched rather than
+ * duplicated, and an image already uploaded is reused by its filename.
+ *
+ * Body copy is converted to Portable Text blocks. The markdown here is plain
+ * paragraphs, so a paragraph-per-block conversion is faithful; anything richer
+ * would need @portabletext/block-tools.
+ */
+import { createClient } from '@sanity/client';
+import { readFile, readdir } from 'node:fs/promises';
+import { existsSync, createReadStream } from 'node:fs';
+import { join, resolve, basename, extname } from 'node:path';
+
+const PROJECT_ID = process.env.SANITY_PROJECT_ID ?? 'ld89i91d';
+const DATASET = process.env.SANITY_DATASET ?? 'production';
+const TOKEN = process.env.SANITY_WRITE_TOKEN;
+const DRY = process.argv.includes('--dry-run');
+
+if (!TOKEN && !DRY) {
+  console.error(
+    'SANITY_WRITE_TOKEN is not set.\n' +
+      'Create a token with Editor permission at https://sanity.io/manage and run:\n' +
+      '  SANITY_WRITE_TOKEN=... node scripts/migrate-to-sanity.mjs --dry-run',
+  );
+  process.exit(1);
+}
+
+const client = createClient({
+  projectId: PROJECT_ID,
+  dataset: DATASET,
+  apiVersion: '2024-10-01',
+  token: TOKEN,
+  useCdn: false,
+});
+
+const CONTENT = resolve('src/content');
+const ASSETS = resolve('src/assets');
+
+/**
+ * Minimal YAML frontmatter reader, sufficient for the flat frontmatter in this
+ * repository: scalars, block scalars, one level of nesting, and string lists.
+ * A key with no inline value looks ahead to decide whether it opens a list or
+ * an object, which is the only genuinely ambiguous case.
+ */
+function parseFrontmatter(raw) {
+  const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/.exec(raw);
+  if (!m) return { data: {}, body: raw.trim() };
+  const [, head, body] = m;
+  const lines = head.split(/\r?\n/);
+  const data = {};
+  // Each frame owns one object and remembers the list currently being filled.
+  const stack = [{ indent: -1, obj: data, listKey: null }];
+
+  const indentOf = (l) => l.length - l.trimStart().length;
+  const nextMeaningful = (from) => {
+    for (let j = from + 1; j < lines.length; j++) {
+      if (lines[j].trim() && !lines[j].trim().startsWith('#')) return lines[j];
+    }
+    return null;
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.trim() || line.trim().startsWith('#')) continue;
+    const indent = indentOf(line);
+
+    while (stack.length > 1 && indent <= stack[stack.length - 1].indent) stack.pop();
+    const frame = stack[stack.length - 1];
+
+    if (line.trim().startsWith('- ')) {
+      if (!frame.listKey) continue;
+      const item = line.trim().slice(2);
+      const inline = /^([\w-]+):\s*(.*)$/.exec(item);
+      if (inline) {
+        // A list of objects, e.g. the service feature cards. Subsequent lines
+        // indented under this dash belong to the same object.
+        const obj = { [inline[1]]: unquote(inline[2]) };
+        frame.obj[frame.listKey].push(obj);
+        const dashIndent = indent + 2;
+        while (
+          i + 1 < lines.length &&
+          lines[i + 1].trim() &&
+          indentOf(lines[i + 1]) >= dashIndent
+        ) {
+          const nxt = lines[i + 1].trim();
+          if (nxt.startsWith('- ')) break;
+          const kv2 = /^([\w-]+):\s*(.*)$/.exec(nxt);
+          if (!kv2) break;
+          obj[kv2[1]] = unquote(kv2[2]);
+          i++;
+        }
+      } else {
+        frame.obj[frame.listKey].push(unquote(item));
+      }
+      continue;
+    }
+
+    const kv = /^\s*([\w-]+):\s*(.*)$/.exec(line);
+    if (!kv) continue;
+    const [, key, rest] = kv;
+    frame.listKey = null;
+
+    if (rest === '>-' || rest === '>' || rest === '|' || rest === '|-') {
+      const parts = [];
+      while (i + 1 < lines.length && lines[i + 1].trim() && indentOf(lines[i + 1]) > indent) {
+        parts.push(lines[++i].trim());
+      }
+      frame.obj[key] = parts.join(' ');
+      continue;
+    }
+
+    if (rest === '') {
+      const peek = nextMeaningful(i);
+      if (peek && indentOf(peek) > indent && peek.trim().startsWith('- ')) {
+        frame.obj[key] = [];
+        frame.listKey = key;
+      } else {
+        frame.obj[key] = {};
+        stack.push({ indent, obj: frame.obj[key], listKey: null });
+      }
+      continue;
+    }
+
+    frame.obj[key] = unquote(rest);
+  }
+  return { data, body: (body ?? '').trim() };
+}
+
+function unquote(v) {
+  const s = v.trim();
+  if (/^'.*'$/.test(s) || /^".*"$/.test(s)) return s.slice(1, -1);
+  if (s === 'true') return true;
+  if (s === 'false') return false;
+  if (/^-?\d+(\.\d+)?$/.test(s)) return Number(s);
+  return s;
+}
+
+/** Paragraphs to Portable Text blocks. */
+function toPortableText(markdown) {
+  if (!markdown) return undefined;
+  return markdown
+    .split(/\n{2,}/)
+    .map((p) => p.replace(/\s*\n\s*/g, ' ').trim())
+    .filter(Boolean)
+    .map((text, i) => ({
+      _type: 'block',
+      _key: `b${i}`,
+      style: 'normal',
+      markDefs: [],
+      children: [{ _type: 'span', _key: `s${i}`, text, marks: [] }],
+    }));
+}
+
+const uploaded = new Map();
+
+/** Uploads a local image once and returns a Sanity image object. */
+async function uploadImage(relPath, alt = '', decorative = false) {
+  if (!relPath) return undefined;
+  // Frontmatter paths are relative to the entry, e.g. ../../assets/images/x.jpg
+  const file = resolve(ASSETS, relPath.replace(/^(\.\.\/)+assets\//, ''));
+  if (!existsSync(file)) {
+    console.warn(`  ! missing image, skipped: ${relPath}`);
+    return undefined;
+  }
+  const name = basename(file);
+  if (!uploaded.has(name)) {
+    if (DRY) {
+      uploaded.set(name, { _id: `image-DRY-${name}` });
+      console.log(`  would upload ${name}`);
+    } else {
+      const asset = await client.assets.upload('image', createReadStream(file), { filename: name });
+      uploaded.set(name, asset);
+      console.log(`  uploaded ${name}`);
+    }
+  }
+  return {
+    _type: 'altImage',
+    asset: { _type: 'reference', _ref: uploaded.get(name)._id },
+    alt,
+    decorative: decorative || !alt,
+  };
+}
+
+async function entries(dir) {
+  const full = join(CONTENT, dir);
+  if (!existsSync(full)) return [];
+  const files = (await readdir(full)).filter((f) => extname(f) === '.md');
+  return Promise.all(
+    files.map(async (f) => {
+      const { data, body } = parseFrontmatter(await readFile(join(full, f), 'utf8'));
+      return { slug: basename(f, '.md'), data, body };
+    }),
+  );
+}
+
+/** Creates or patches a document, matched on its slug so re-runs are safe. */
+async function upsert(type, slug, doc) {
+  if (DRY) {
+    console.log(`  would upsert ${type}: ${slug}`);
+    return;
+  }
+  const existing = await client.fetch(`*[_type == $type && slug.current == $slug][0]._id`, {
+    type,
+    slug,
+  });
+  if (existing) {
+    await client.patch(existing).set(doc).commit();
+    console.log(`  patched ${type}: ${slug}`);
+  } else {
+    await client.create({ _type: type, ...doc });
+    console.log(`  created ${type}: ${slug}`);
+  }
+}
+
+/** Types without a slug are matched on the field that identifies them. */
+async function upsertBy(type, field, value, doc) {
+  if (DRY) {
+    console.log(`  would upsert ${type}: ${value}`);
+    return;
+  }
+  const existing = await client.fetch(`*[_type == $type && ${field} == $value][0]._id`, {
+    type,
+    value,
+  });
+  if (existing) {
+    await client.patch(existing).set(doc).commit();
+    console.log(`  patched ${type}: ${value}`);
+  } else {
+    await client.create({ _type: type, ...doc });
+    console.log(`  created ${type}: ${value}`);
+  }
+}
+
+async function main() {
+  console.log(
+    `${DRY ? 'DRY RUN — nothing will be written' : 'Importing'} into ${PROJECT_ID}/${DATASET}\n`,
+  );
+
+  console.log('services');
+  for (const { slug, data, body } of await entries('services')) {
+    const doc = {
+      title: data.title,
+      slug: { _type: 'slug', current: slug },
+      shortTitle: data.shortTitle,
+      summary: data.summary,
+      icon: await uploadImage(data.icon, '', true),
+      heroImage: await uploadImage(data.heroImage, `${data.title} at Anchor Consultants`),
+      bannerImage: await uploadImage(data.bannerImage, '', true),
+      // Feature cards carry their own icon, so each needs its own upload.
+      features: data.features
+        ? await Promise.all(
+            data.features.map(async (f, i) => ({
+              _type: 'serviceFeature',
+              _key: `f${i}`,
+              title: f.title,
+              icon: await uploadImage(f.icon, '', true),
+            })),
+          )
+        : undefined,
+      checklist: data.checklist,
+      order: data.order ?? 99,
+      body: toPortableText(body),
+      seo: { _type: 'seo', metaDescription: data.seo?.metaDescription },
+    };
+    await upsert('service', slug, doc);
+  }
+
+  console.log('\nposts');
+  for (const { slug, data, body } of await entries('posts')) {
+    const doc = {
+      title: data.title,
+      slug: { _type: 'slug', current: slug },
+      publishedAt: new Date(data.publishedAt).toISOString(),
+      ...(data.updatedAt ? { updatedAt: new Date(data.updatedAt).toISOString() } : {}),
+      author: data.author ?? 'Anchor Consultants',
+      excerpt: data.excerpt,
+      coverImage: await uploadImage(data.coverImage, data.coverImageAlt ?? ''),
+      category: data.category ?? 'Uncategorized',
+      body: toPortableText(body),
+      seo: { _type: 'seo', metaDescription: data.seo?.metaDescription },
+    };
+    await upsert('post', slug, doc);
+    if (data.draft === true) {
+      console.log(`    note: "${slug}" is drafted in markdown — unpublish it in the Studio too.`);
+    }
+  }
+
+  console.log('\nfaqs');
+  for (const { data } of await entries('faqs')) {
+    await upsertBy('faq', 'question', data.question, {
+      question: data.question,
+      answer: data.answer,
+      order: data.order ?? 99,
+    });
+  }
+
+  console.log('\ntestimonials');
+  for (const { data } of await entries('testimonials')) {
+    await upsertBy('testimonial', 'quote', data.quote, {
+      name: data.name,
+      location: data.location,
+      quote: data.quote,
+      order: data.order ?? 99,
+    });
+  }
+
+  console.log('\nteam');
+  for (const { data } of await entries('team')) {
+    await upsertBy('teamMember', 'name', data.name, {
+      name: data.name,
+      role: data.role,
+      bio: data.bio,
+      photo: await uploadImage(data.photo, data.photoAlt ?? data.name),
+      order: data.order ?? 99,
+    });
+  }
+
+  console.log(
+    '\nDone.' +
+      (DRY
+        ? ' Re-run without --dry-run to write.'
+        : '\nNext: set PUBLIC_SANITY_PROJECT_ID in .env and rebuild to read from Sanity.'),
+  );
+}
+
+main().catch((err) => {
+  console.error('\nImport failed:', err.message);
+  process.exit(1);
+});

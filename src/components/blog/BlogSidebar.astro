@@ -1,5 +1,5 @@
 ---
-import { Image } from 'astro:assets';
+import CmsImage from '../ui/CmsImage.astro';
 import { getCollection } from 'astro:content';
 import Icon from '../ui/Icon.astro';
 
@@ -109,12 +109,11 @@ const sortedCategories = [...categories].sort((a, b) => a[1].label.localeCompare
             <li class="flex items-start gap-[18px]">
               {post.data.coverImage && (
                 <a href={`/blog/${post.id}/`} class="shrink-0" tabindex="-1" aria-hidden="true">
-                  <Image
+                  <CmsImage
                     src={post.data.coverImage}
                     alt=""
                     aria-hidden="true"
-                    width={160}
-                    densities={[1, 2]}
+                    width={80}
                     class="h-[70px] w-[80px] object-cover"
                     loading="lazy"
                   />

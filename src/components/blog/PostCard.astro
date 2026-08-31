@@ -1,5 +1,5 @@
 ---
-import { Image } from 'astro:assets';
+import CmsImage from '../ui/CmsImage.astro';
 import type { CollectionEntry } from 'astro:content';
 import Icon from '../ui/Icon.astro';
 
@@ -43,7 +43,7 @@ const dateFmt = new Intl.DateTimeFormat('en-GB', {
   {
     coverImage && (
       <a href={href} tabindex="-1" aria-hidden="true" class="block">
-        <Image
+        <CmsImage
           src={coverImage}
           alt=""
           aria-hidden="true"

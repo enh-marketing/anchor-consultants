@@ -1,0 +1,97 @@
+---
+import { getImage } from 'astro:assets';
+import {
+  isSanityImage,
+  sanityImageAlt,
+  sanityImageSrcSet,
+  sanityImageUrl,
+  type CmsImageValue,
+} from '../../lib/sanity/image';
+
+/**
+ * An image that comes from a content collection, whichever source is active.
+ *
+ * Both sources render one `<img>`. Local files are optimised at build time by
+ * `getImage()`; Sanity images are transformed by its CDN with `auto=format` and
+ * the same quality setting, so the markup and the delivered bytes stay
+ * equivalent either way.
+ *
+ * `getImage()` rather than `<Image>` because that component's props are plain
+ * optionals and this project builds with `exactOptionalPropertyTypes`, so
+ * forwarding an absent prop through it is a type error. Computing the
+ * attributes here avoids that and keeps one code path for both sources.
+ *
+ * Components use this only where the image comes from a collection. Images
+ * imported from `src/assets` keep using `<Image>` directly: they are design
+ * assets rather than content, and are never editable in the CMS.
+ */
+interface Props {
+  src: CmsImageValue;
+  /**
+   * Overrides the alt text stored alongside a Sanity image. Local images carry
+   * no alt of their own, so the caller supplies it.
+   */
+  alt?: string;
+  widths?: number[];
+  sizes?: string;
+  width?: number;
+  class?: string;
+  loading?: 'eager' | 'lazy';
+  fetchpriority?: 'high' | 'low' | 'auto';
+  'aria-hidden'?: 'true';
+}
+
+const {
+  src,
+  alt,
+  widths,
+  sizes,
+  width,
+  class: className,
+  loading = 'lazy',
+  fetchpriority,
+  'aria-hidden': ariaHidden,
+} = Astro.props;
+
+const sanity = isSanityImage(src);
+
+// A Sanity image records whether it is decorative; a local one relies on the
+// caller passing alt="" for the same effect.
+const resolvedAlt = sanity ? (alt ?? sanityImageAlt(src)) : (alt ?? '');
+
+// Widths to generate. A single width still gets a 2x variant so the image holds
+// up on a dense display, which is what `densities={[1, 2]}` did before.
+const targetWidths = widths ?? (width ? [width, width * 2] : [src.width ?? 1200]);
+
+let imgSrc: string;
+let srcSet: string | undefined;
+let intrinsicWidth: number | undefined;
+let intrinsicHeight: number | undefined;
+
+if (isSanityImage(src)) {
+  imgSrc = sanityImageUrl(src, targetWidths[targetWidths.length - 1] ?? 1200);
+  srcSet = sanityImageSrcSet(src, targetWidths);
+  intrinsicWidth = src.width;
+  intrinsicHeight = src.height;
+} else {
+  const optimised = await getImage({ src, widths: targetWidths, format: 'webp' });
+  imgSrc = optimised.src;
+  srcSet = optimised.srcSet.attribute || undefined;
+  intrinsicWidth = Number(optimised.attributes['width'] ?? src.width);
+  intrinsicHeight = Number(optimised.attributes['height'] ?? src.height);
+}
+---
+
+<img
+  src={imgSrc}
+  srcset={srcSet}
+  sizes={sizes}
+  alt={resolvedAlt}
+  aria-hidden={ariaHidden}
+  width={intrinsicWidth}
+  height={intrinsicHeight}
+  loading={loading}
+  fetchpriority={fetchpriority}
+  decoding="async"
+  class={className}
+/>
