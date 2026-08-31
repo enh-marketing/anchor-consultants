@@ -45,11 +45,21 @@ export const SITE_URL = explicitUrl
  *
  * `VERCEL_ENV` is `production` only on a production deployment, so preview
  * deployments and local builds are excluded automatically — which is the part a
- * committed flag kept getting wrong. `SITE_INDEXABLE=true` is the escape hatch
- * for a host that is not Vercel.
+ * committed flag kept getting wrong.
+ *
+ * `SITE_INDEXABLE` overrides in both directions, and the negative case is the
+ * one that matters in practice: a production deployment that goes up before the
+ * real domain is connected would otherwise be indexable at its `.vercel.app`
+ * address, with canonicals pointing there. Getting a temporary hostname into
+ * search results is the same class of mistake as shipping a `noindex` site, and
+ * the first version of this had no way to prevent it.
  *
  * The default is deliberately the safe one: not indexable. A build that cannot
  * prove it is production is treated as though it is not.
  */
+const indexableOverride = env('SITE_INDEXABLE');
+
 export const IS_PRODUCTION_HOST =
-  env('SITE_INDEXABLE') === 'true' || env('VERCEL_ENV') === 'production';
+  indexableOverride === 'false'
+    ? false
+    : indexableOverride === 'true' || env('VERCEL_ENV') === 'production';
