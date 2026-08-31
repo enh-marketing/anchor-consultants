@@ -9,6 +9,12 @@
 export interface NavItem {
   label: string;
   href: string;
+  /**
+   * Marks an item as having a submenu. The children themselves are not listed
+   * here: Header.astro fills them from the `services` collection so the
+   * dropdown and the service pages can never fall out of step.
+   */
+  hasChildren?: boolean;
 }
 
 /** Digits only, E.164, for `tel:` hrefs. */
@@ -50,7 +56,7 @@ export const site = {
   nav: [
     { label: 'Home', href: '/' },
     { label: 'About Us', href: '/about/' },
-    { label: 'Services', href: '/services/' },
+    { label: 'Services', href: '/services/', hasChildren: true },
     { label: 'Testimonials', href: '/testimonials/' },
     { label: 'Blog', href: '/blog/' },
     { label: 'Contact', href: '/contact/' },

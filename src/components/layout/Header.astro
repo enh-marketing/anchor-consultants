@@ -1,5 +1,6 @@
 ---
 import { Image } from 'astro:assets';
+import { getCollection } from 'astro:content';
 import Icon from '../ui/Icon.astro';
 import { site } from '../../data/site';
 import logo from '../../assets/images/brand/logo-anchor.png';
@@ -21,6 +22,33 @@ const isActive = (href: string) =>
 //   nav links 16px / 500 / #1C1E22, 44px gaps, 32px vertical padding
 //   CTA 171x60, #084876, white, 16px / 500, padding 0 35px, radius 3px
 //   mobile nav takes over below 992px (Bootstrap lg)
+//
+// The original has no submenus at all: its markup contains no
+// `menu-item-has-children` and no `sub-menu`. The Services dropdown below is
+// therefore an addition, not a reproduction. It exists because the four
+// service detail pages were otherwise reachable only from /services/ or the
+// homepage tiles. It is built entirely from existing tokens — white panel,
+// --color-line border, the same 16px/500 link type, navy on hover — so it
+// introduces no new visual language.
+//
+// Children come from the content collection rather than being listed in
+// site.ts, so adding or reordering a service updates the menu automatically.
+//
+// The desktop chevron is positioned out of flow, sitting in the existing gap
+// after the label. In flow it widened the Services item by ~22px and pushed
+// Testimonials, Blog and Contact off the x-positions measured from the
+// original, which is a visual change the submenu does not need to make.
+const services = (await getCollection('services', ({ data }) => !data.draft)).sort(
+  (a, b) => a.data.order - b.data.order,
+);
+
+const childrenFor = (href: string) =>
+  href === '/services/'
+    ? services.map((s) => ({
+        label: s.data.shortTitle ?? s.data.title,
+        href: `/services/${s.id}/`,
+      }))
+    : [];
 ---
 
 <header class="bg-white">
@@ -49,17 +77,69 @@ const isActive = (href: string) =>
       <nav aria-label="Primary" class="hidden lg:ml-6 lg:block xl:ml-[148px]">
         <ul class="flex items-center gap-6 xl:gap-[44px]">
           {
-            site.nav.map((item) => (
-              <li>
-                <a
-                  href={item.href}
-                  aria-current={isActive(item.href) ? 'page' : undefined}
-                  class="text-ink hover:text-navy block py-8 text-base leading-[26px] font-medium transition-colors"
-                >
-                  {item.label}
-                </a>
-              </li>
-            ))
+            site.nav.map((item) => {
+              const kids = item.hasChildren ? childrenFor(item.href) : [];
+              const active = isActive(item.href);
+
+              if (!kids.length) {
+                return (
+                  <li>
+                    <a
+                      href={item.href}
+                      aria-current={active ? 'page' : undefined}
+                      class="text-ink hover:text-navy block py-8 text-base leading-[26px] font-medium transition-colors"
+                    >
+                      {item.label}
+                    </a>
+                  </li>
+                );
+              }
+
+              return (
+                <li class="has-menu relative">
+                  {/* The parent stays a real link to /services/ — the page
+                      exists and must remain reachable. The adjacent button is
+                      what opens the panel, so neither job is compromised. */}
+                  <span class="relative flex items-center">
+                    <a
+                      href={item.href}
+                      aria-current={active ? 'page' : undefined}
+                      class="text-ink hover:text-navy block py-8 text-base leading-[26px] font-medium transition-colors"
+                    >
+                      {item.label}
+                    </a>
+                    <button
+                      type="button"
+                      class="submenu-toggle text-ink hover:text-navy absolute top-1/2 left-full inline-flex h-8 w-5 -translate-y-1/2 items-center justify-center transition-colors"
+                      aria-expanded="false"
+                      aria-controls={`submenu-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                    >
+                      <span class="sr-only">{`Show ${item.label} submenu`}</span>
+                      <Icon name="chevron-right" size={12} class="submenu-chevron" />
+                    </button>
+
+                    <ul
+                      id={`submenu-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                      class="submenu border-line absolute top-full left-0 z-40 hidden min-w-[260px] border bg-white py-2 shadow-[0_20px_60px_-24px_rgba(0,0,0,0.28)]"
+                    >
+                      {kids.map((kid) => (
+                        <li>
+                          <a
+                            href={kid.href}
+                            aria-current={
+                              pathname.startsWith(kid.href.replace(/\/$/, '')) ? 'page' : undefined
+                            }
+                            class="text-ink hover:bg-mist hover:text-navy aria-[current=page]:text-navy block px-5 py-2.5 text-base leading-[26px] font-medium transition-colors"
+                          >
+                            {kid.label}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </span>
+                </li>
+              );
+            })
           }
         </ul>
       </nav>
@@ -101,17 +181,65 @@ const isActive = (href: string) =>
     <div class="container-bs">
       <ul class="divide-line divide-y py-1">
         {
-          site.nav.map((item) => (
-            <li>
-              <a
-                href={item.href}
-                aria-current={isActive(item.href) ? 'page' : undefined}
-                class="text-ink hover:text-navy block py-3.5 text-base font-medium transition-colors"
-              >
-                {item.label}
-              </a>
-            </li>
-          ))
+          site.nav.map((item) => {
+            const kids = item.hasChildren ? childrenFor(item.href) : [];
+            const active = isActive(item.href);
+            const id = `m-submenu-${item.label.toLowerCase().replace(/\s+/g, '-')}`;
+
+            if (!kids.length) {
+              return (
+                <li>
+                  <a
+                    href={item.href}
+                    aria-current={active ? 'page' : undefined}
+                    class="text-ink hover:text-navy block py-3.5 text-base font-medium transition-colors"
+                  >
+                    {item.label}
+                  </a>
+                </li>
+              );
+            }
+
+            return (
+              <li class="has-menu">
+                {/* Link and disclosure sit side by side for the same reason as
+                    on desktop: tapping the label must still reach the page. */}
+                <div class="flex items-center justify-between">
+                  <a
+                    href={item.href}
+                    aria-current={active ? 'page' : undefined}
+                    class="text-ink hover:text-navy block flex-1 py-3.5 text-base font-medium transition-colors"
+                  >
+                    {item.label}
+                  </a>
+                  <button
+                    type="button"
+                    class="submenu-toggle text-ink hover:text-navy -mr-2 inline-flex h-11 w-11 items-center justify-center transition-colors"
+                    aria-expanded="false"
+                    aria-controls={id}
+                  >
+                    <span class="sr-only">{`Show ${item.label} submenu`}</span>
+                    <Icon name="chevron-right" size={14} class="submenu-chevron" />
+                  </button>
+                </div>
+                <ul id={id} class="submenu border-line hidden border-t py-1 pl-4">
+                  {kids.map((kid) => (
+                    <li>
+                      <a
+                        href={kid.href}
+                        aria-current={
+                          pathname.startsWith(kid.href.replace(/\/$/, '')) ? 'page' : undefined
+                        }
+                        class="text-body hover:text-navy aria-[current=page]:text-navy block py-2.5 text-base transition-colors"
+                      >
+                        {kid.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            );
+          })
         }
         <li class="pt-4 pb-5">
           <a
@@ -125,6 +253,43 @@ const isActive = (href: string) =>
     </div>
   </nav>
 </header>
+
+<style>
+  /* Desktop submenus also open on hover, which is what visitors expect from a
+     nav like this, while the button keeps them fully operable by keyboard.
+     Hover is scoped to pointer devices so a tap on a touchscreen does not
+     leave a panel stuck open. */
+  @media (min-width: 992px) and (hover: hover) {
+    .has-menu:hover .submenu {
+      display: block;
+    }
+  }
+  /* Driven by a state attribute on the root, not a sibling selector: the
+     panel is not a sibling of the button in either nav, and making it one
+     would fight the mobile layout. `aria-expanded` stays the accessibility
+     source of truth; the script sets both together. */
+  .has-menu[data-open] .submenu {
+    display: block;
+  }
+  /* Tailwind v4's `rotate-90` sets the `rotate` property, not `transform`, so
+     the flipped state has to override the same property to take effect. */
+  /* Both states are set here rather than starting from Tailwind's `rotate-90`.
+     Astro's scoped styles land in the `components` layer and Tailwind's
+     utilities in `utilities`, so a utility always wins regardless of
+     specificity — an override from this block would silently do nothing. */
+  :global(.submenu-chevron) {
+    rotate: 90deg;
+    transition: rotate 0.2s;
+  }
+  .submenu-toggle[aria-expanded='true'] :global(.submenu-chevron) {
+    rotate: 270deg;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :global(.submenu-chevron) {
+      transition: none;
+    }
+  }
+</style>
 
 <script>
   const toggle = document.getElementById('nav-toggle');
@@ -147,19 +312,70 @@ const isActive = (href: string) =>
       setOpen(toggle.getAttribute('aria-expanded') !== 'true');
     });
 
-    // Escape closes and returns focus to the toggle.
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') {
-        setOpen(false);
-        toggle.focus();
-      }
-    });
-
     // Reset when crossing the lg breakpoint so the panel can't be left
     // open and hidden behind the desktop layout.
     const mq = window.matchMedia('(min-width: 992px)');
     mq.addEventListener('change', (e) => {
       if (e.matches) setOpen(false);
+    });
+  }
+
+  // Submenu disclosures, desktop and mobile. Driven by aria-expanded, which
+  // the stylesheet keys off, so the attribute is the single source of truth
+  // for both the panel and the chevron.
+  const toggles = [...document.querySelectorAll<HTMLButtonElement>('.submenu-toggle')];
+
+  const setSubmenu = (t: HTMLButtonElement, open: boolean) => {
+    t.setAttribute('aria-expanded', String(open));
+    const root = t.closest('.has-menu');
+    if (open) root?.setAttribute('data-open', '');
+    else root?.removeAttribute('data-open');
+  };
+
+  const closeAll = (except?: HTMLButtonElement) => {
+    for (const t of toggles) {
+      if (t !== except) setSubmenu(t, false);
+    }
+  };
+
+  for (const t of toggles) {
+    t.addEventListener('click', () => {
+      const open = t.getAttribute('aria-expanded') === 'true';
+      closeAll(t);
+      setSubmenu(t, !open);
+    });
+  }
+
+  if (toggles.length) {
+    // Click outside closes any open panel.
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.submenu-toggle') && !target.closest('.submenu')) closeAll();
+    });
+
+    // Escape closes and returns focus to the button that opened the panel.
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+
+      const openToggle = toggles.find((t) => t.getAttribute('aria-expanded') === 'true');
+      if (openToggle) {
+        setSubmenu(openToggle, false);
+        openToggle.focus();
+        return;
+      }
+      // Otherwise fall through to closing the mobile panel.
+      if (toggle && toggle.getAttribute('aria-expanded') === 'true') {
+        toggle.setAttribute('aria-expanded', 'false');
+        if (panel) panel.hidden = true;
+        toggle.focus();
+      }
+    });
+
+    // Tabbing out of a hover-opened panel should close it behind you.
+    document.addEventListener('focusin', (e) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('.has-menu')) return;
+      closeAll();
     });
   }
 </script>

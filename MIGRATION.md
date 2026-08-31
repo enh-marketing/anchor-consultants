@@ -1612,6 +1612,67 @@ next pass does not chase them: the pane reports `innerWidth` 45px wider than
 looks absent; and `position: fixed` inside a full-height measurement frame
 centres against the frame, not the viewport, so modals look mispositioned.
 
+### Header nav submenus — COMPLETE
+
+- [x] Services dropdown on desktop and a nested disclosure on mobile
+- [x] Children read from the `services` collection, so they cannot drift
+- [x] Nav x-positions unchanged at every width
+
+**The original has no submenus.** Its markup contains no
+`menu-item-has-children` and no `sub-menu`, and its nav is the same flat six
+items already built. So this is an addition, not a reproduction, and the only
+item the content supports a submenu for is Services, which has four real
+detail pages. About, Testimonials, Blog and Contact are single pages.
+
+Those four pages were previously reachable only from `/services/` or the
+homepage tiles, so the dropdown is a genuine navigation gain.
+
+**Design.** Built entirely from existing tokens: white panel, `--color-line`
+border, the same 16px/500 link type, navy on hover, `bg-mist` hover fill, and a
+shadow in the same idiom as the cards. No new visual language.
+
+**The chevron is positioned out of flow.** In flow it widened the Services item
+by about 22px and pushed Testimonials, Blog and Contact off the x-positions
+measured from the original. Out of flow it sits in the existing gap after the
+label, and the nav measures identically to before at 992, 1200 and 1440:
+`Home@363 About Us@451 Services@564 Testimonials@672 Blog@810 Contact@886`.
+
+**Accessibility.** The parent stays a real link to `/services/` with a separate
+adjacent button as the disclosure, so the page remains reachable and the panel
+remains operable — a single element cannot do both jobs properly.
+`aria-expanded` and `aria-controls` on the button, `aria-current` on the active
+child, Escape closes and returns focus, click-outside closes, and tabbing out
+of a hover-opened panel closes it. Desktop hover is scoped to
+`(hover: hover)` so a tap cannot leave a panel stuck open. Mobile child links
+are 46px tall and the toggle is 44x44. Lighthouse accessibility stays at 100.
+
+**Three bugs found and fixed while building it:**
+
+1. **The panel was not a sibling of the button**, in either nav, so
+   `.submenu-toggle[aria-expanded='true'] + .submenu` never matched and the
+   dropdown never opened. Visibility is now driven by a `data-open` attribute
+   on the root, which is structure-independent; `aria-expanded` remains the
+   accessibility source of truth and the script sets both together.
+2. **Astro scoped styles cannot override a Tailwind utility here.** Astro's
+   styles land in the `components` layer and Tailwind's in `utilities`, and
+   layer order beats specificity, so
+   `.submenu-toggle[aria-expanded='true'] .submenu-chevron { rotate: 270deg }`
+   silently lost to `.rotate-90`. Both chevron states are now set from the same
+   block. **Worth remembering: overriding a Tailwind utility from a component
+   `<style>` block will fail silently in this codebase.**
+3. The chevron override also targeted `transform`, but Tailwind v4's `rotate-*`
+   sets the `rotate` property, so the two never met.
+
+Verified: panel opens at (564, 136) 260x202 aligned to the label, fits the
+viewport, correct order and active child, Escape and outside-click close,
+chevron flips 90 to 270 degrees, mobile disclosure opens full width with no
+overflow, 472 internal links with none broken, Lighthouse 100 accessibility.
+
+The chevron rotation reads as unchanged through `getComputedStyle` in the
+preview pane because it never advances the transition — the same artefact as
+milestone 12. Proven correct by disabling the transition, which resolves to
+270deg open and 90deg closed.
+
 ## Open Questions
 
 These need your input. None of them block starting at Milestone 0; I have noted the assumption I will proceed with if you would rather decide later.
