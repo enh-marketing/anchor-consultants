@@ -25,7 +25,11 @@ const faqs = (await getCollection('faqs')).sort((a, b) => a.data.order - b.data.
 <section class="bg-mist py-[30px]">
   <div class="mx-auto w-full max-w-[1320px] px-3 lg:px-[10px]">
     <div class="grid gap-10 lg:grid-cols-[50.769%_49.231%] lg:justify-between lg:gap-0">
-      <!-- Decorative image pair -->
+      <!-- Decorative image pair. The inset is positioned as a percentage of
+           the 660px column rather than at a fixed left-370/200-wide, which
+           together need 570px and spilled into the accordion column between
+           992 and ~1190. 56.061% and 30.303% are exactly 370 and 200 at
+           1440, and their sum can never exceed the column. -->
       <div class="reveal relative hidden lg:block">
         <Image
           src={faq1}
@@ -40,7 +44,7 @@ const faqs = (await getCollection('faqs')).sort((a, b) => a.data.order - b.data.
           src={faq2}
           alt=""
           aria-hidden="true"
-          class="absolute top-[491px] left-[370px] h-[200px] w-[200px] object-cover"
+          class="absolute top-[491px] left-[56.061%] aspect-square h-auto w-[30.303%] object-cover"
           loading="lazy"
           widths={[200, 400]}
           sizes="200px"

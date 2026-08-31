@@ -345,6 +345,15 @@ const M = EMI_LIMITS.months;
     .emi-row label[for] {
       width: 100%;
     }
+    /* The control group sits beside the label from 576px up. Below that the
+       label goes full width and this has to wrap onto its own line, which
+       `flex-1` alone does not do: it resolves to `flex-basis: 0%`, so the
+       group always "fits" beside the label, collapses to zero width, and
+       pushes the input and its unit chip outside the card. A 100% basis makes
+       it wrap and fill the row, which is what the label rule intended. */
+    .emi-row label[for] + div {
+      flex: 1 0 100%;
+    }
   }
 </style>
 

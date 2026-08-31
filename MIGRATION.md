@@ -1534,6 +1534,84 @@ knowing, and how to reproduce the Lighthouse numbers. `SANITY.md` maps every
 collection to its future document type field for field, sequences the swap, and
 flags the two parts that need real thought (image handling and Portable Text).
 
+### UI refinement and QA pass — COMPLETE
+
+Full audit of UI, spacing, responsiveness, SEO, accessibility and performance,
+then fixes. Four real bugs found, all the same underlying fault.
+
+**The fault: fixed pixel offsets at `lg`, sized for 1440.** Between 992 and
+about 1190 there is not enough room for them, and they either collide with the
+adjacent column or spill out of their container. This had already been fixed
+twice — the contact page in milestone 10, five grid tracks in milestone 14 —
+without being generalised. It is now fixed everywhere and worth remembering as
+the single most common defect in this build.
+
+| #   | Where                          | Symptom                                                                                                                                                    | Fix                                                                                                                                                                                                                                                                                 |
+| --- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | EMI calculator, below 576px    | The number input collapsed to 18px and the unit chip (AED / % / Yr-Mo) sat outside the card. **The headline interactive feature was unusable on a phone.** | The label goes full width below 576px, but the control beside it had `flex-1`, which resolves to `flex-basis: 0%` and therefore never wraps — it just collapsed. Given `flex: 1 0 100%` it wraps onto its own line and fills the row, which is what the label rule always intended. |
+| 2   | Homepage About split, 992–1190 | Second image overlapped the copy by up to 111px                                                                                                            | Offsets and widths as percentages of the wrapper                                                                                                                                                                                                                                    |
+| 3   | About page inset, 992–1190     | Absolutely positioned image overlapped the copy by up to 77px, clipping the first character of every heading line                                          | `left` and `width` as percentages of the column                                                                                                                                                                                                                                     |
+| 4   | FAQ collage inset, 992–1190    | Absolutely positioned image overlapped the accordion                                                                                                       | `left` and `width` as percentages of the column                                                                                                                                                                                                                                     |
+
+**All four preserve the 1440 design exactly.** Verified by measurement after
+each change:
+
+| Element               | Before                              | After     |
+| --------------------- | ----------------------------------- | --------- |
+| EMI label / control   | 203 / 275                           | 203 / 275 |
+| Homepage split images | x=70 w=420, x=240 w=420, offset 210 | identical |
+| About inset           | x=220, 420 wide                     | identical |
+| FAQ inset             | 370 from column, 200x200            | identical |
+
+Fixing #2 exposed a subtlety: the grid gives each child `pl-[10px]`, so a
+590px wrapper only has a 580px content box, and percentages landed 7px short.
+Widening the wrapper to 600px at `lg` restores a 590px content box, which is
+exactly the span the image pair occupies (x=70 to x=660). The percentages now
+sum to 100%, so the second image can never push past the column again.
+
+**Audit coverage, and what came back clean:**
+
+| Check                                | Result                                                                              |
+| ------------------------------------ | ----------------------------------------------------------------------------------- |
+| Horizontal overflow                  | 89 page/viewport combinations across 320/375/390/430/768/1024/1280/1440/1920 — zero |
+| Column overlap                       | Every multi-column grid on every page at 992–1920 — zero after fixes                |
+| Section-to-section spacing           | No accidental gaps; every adjacent section butts at 0                               |
+| Trailing margins inside padded boxes | None                                                                                |
+| Container alignment                  | Consistent per page                                                                 |
+| Child overflowing its parent         | None                                                                                |
+| Text overflowing its own box         | None                                                                                |
+| Console errors / failed requests     | Zero on every page                                                                  |
+| Canonicals                           | All 14 match their route                                                            |
+| Trailing slashes                     | Consistent on every internal link                                                   |
+| Sitemap                              | No stray URLs; only the placeholder privacy page excluded, deliberately             |
+| Headings                             | One `h1` per page, no skipped levels                                                |
+| Landmarks                            | `header`, `nav`, `main`, `footer` on every page                                     |
+| JSON-LD                              | All blocks parse                                                                    |
+| Image alt                            | Every image labelled or explicitly decorative                                       |
+| Internal links                       | 360, none broken                                                                    |
+
+**Lighthouse after the fixes** (production build, gzip): homepage 94 / 100 /
+100 / 100, every other page 99 / 100 / 100 / 100, CLS 0 everywhere. The
+homepage gained a point.
+
+**Deliberately not changed.** Section padding varies across the site (110, 120,
+30, 33, 45) because that is what the original Elementor layout does.
+Normalising it would be a redesign, not a fix. One FAQ question wraps to two
+lines and breaks after the hyphen in "non-standard"; the accordion row grows to
+accommodate it, which is the design working, so the layout was left alone.
+Several inline links measure 21–23px tall rather than 24px, which passes WCAG
+2.5.8 through the spacing exception and is confirmed by Lighthouse at 100;
+padding them would risk shifting layout for no measurable gain.
+
+**Four audit findings that turned out to be false positives**, recorded so the
+next pass does not chase them: the pane reports `innerWidth` 45px wider than
+`clientWidth` on the homepage, so fixed-position buttons look like overflow
+(assert on `body.scrollWidth`); `main section` matches the sidebar's nested
+`<section class="widget">`, which looks like a section overlap; iterating
+`cssRules` does not descend into `@layer`, so the global `:focus-visible` rule
+looks absent; and `position: fixed` inside a full-height measurement frame
+centres against the frame, not the viewport, so modals look mispositioned.
+
 ## Open Questions
 
 These need your input. None of them block starting at Milestone 0; I have noted the assumption I will proceed with if you would rather decide later.

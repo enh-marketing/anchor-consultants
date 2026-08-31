@@ -23,11 +23,13 @@ import img2 from '../../assets/images/about/split-1.jpg';
       <!-- Overlapping image pair. On the original the two 420x420 images sit
            at x=63 / x=233 and y=1544 / y=1754, i.e. the second offset +170
            right and +210 down, inside a column padded 10px top and bottom. -->
-      <div class="reveal relative mx-auto w-full max-w-[590px] lg:mx-0 lg:py-[10px]">
+      <div
+        class="reveal relative mx-auto w-full max-w-[590px] lg:mx-0 lg:max-w-[600px] lg:py-[10px]"
+      >
         <Image
           src={img1}
           alt="Anchor advisers discussing mortgage options with a client"
-          class="h-auto w-[71.2%] lg:w-[420px]"
+          class="h-auto w-[71.186%]"
           loading="lazy"
           widths={[300, 420, 840]}
           sizes="(min-width: 992px) 420px, 71vw"
@@ -35,7 +37,7 @@ import img2 from '../../assets/images/about/split-1.jpg';
         <Image
           src={img2}
           alt="Client reviewing property financing paperwork with an adviser"
-          class="-mt-[36%] ml-[28.8%] h-auto w-[71.2%] lg:-mt-[210px] lg:ml-[170px] lg:w-[420px]"
+          class="-mt-[35.593%] ml-[28.814%] h-auto w-[71.186%]"
           loading="lazy"
           widths={[300, 420, 840]}
           sizes="(min-width: 992px) 420px, 71vw"
