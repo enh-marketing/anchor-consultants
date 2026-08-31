@@ -261,3 +261,112 @@
     }
   }
 }
+
+/* ---------------------------------------------------------------------------
+   CMS prose containers
+
+   Rich text from Sanity arrives as real paragraphs, headings and lists with no
+   classes on them, because a CMS cannot attach utility classes. These rules are
+   what give that output the spacing the original markup produced by hand.
+
+   They live here rather than in per-component <style> blocks for one measured
+   reason: a scoped block makes Astro stamp `data-astro-cid-*` on every element
+   in that component, which cost about 1 KB gzipped per page on the About page
+   alone. With several of these containers across the site that adds up, and the
+   rules are not component-specific in the first place.
+
+   Each class is named for the rhythm it produces, not for the section it is
+   used in, so a new section reuses one rather than inventing another.
+   --------------------------------------------------------------------------- */
+@layer components {
+  /* Paragraphs one blank line apart. Reproduces a double <br>, which adds an
+     empty line box of exactly the element's line height. */
+  .prose-para > p {
+    margin: 0;
+  }
+  .prose-para > p + p {
+    margin-top: 26px;
+  }
+
+  /* Paragraphs on consecutive lines with no gap. Reproduces a single <br>. */
+  .prose-lines > p {
+    margin: 0;
+  }
+
+  /* Emphasis inside CMS copy. The original marked these with a utility class on
+     each <b>; the colour has to come from here instead. */
+  .prose-para strong,
+  .prose-lines strong,
+  .prose-copy strong {
+    color: var(--color-ink-strong);
+    font-weight: 700;
+  }
+
+  /* The services skills bars. Moved here with the section that draws them: the
+     rule is two declarations, and a scoped <style> block would have stamped a
+     scope attribute onto every element in that section to carry them. */
+  .skill-bar {
+    transition: width 1.2s var(--ease-out-soft);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .skill-bar {
+      transition: none;
+    }
+  }
+
+  /* Editable prose pages. One rhythm rather than the per-element margins the
+     hand-written pages used: a CMS heading cannot carry its own spacing class,
+     and adding a spacing field per element is the spacing system spec §4 rules
+     out. The values are the ones the legal page used for its common cases. */
+  .cms-prose > * {
+    margin: 0;
+  }
+  .cms-prose > h2 {
+    color: var(--color-ink);
+    font-size: 26px;
+    line-height: 36px;
+    font-weight: 700;
+    margin-top: 50px;
+  }
+  .cms-prose > h3 {
+    color: var(--color-ink);
+    font-size: 22px;
+    line-height: 32px;
+    font-weight: 700;
+    margin-top: 34px;
+  }
+  .cms-prose > h4 {
+    color: var(--color-ink);
+    font-size: 18px;
+    line-height: 28px;
+    font-weight: 700;
+    margin-top: 26px;
+  }
+  .cms-prose > p,
+  .cms-prose > ul,
+  .cms-prose > ol,
+  .cms-prose > blockquote {
+    margin-top: 16px;
+  }
+  .cms-prose > ul,
+  .cms-prose > ol {
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .cms-prose > ul {
+    list-style: disc;
+  }
+  .cms-prose > ol {
+    list-style: decimal;
+  }
+  /* First element never pushes the block down; the container owns the top gap. */
+  .cms-prose > :first-child {
+    margin-top: 0;
+  }
+  .cms-prose a {
+    color: var(--color-navy);
+    text-decoration: underline;
+  }
+}

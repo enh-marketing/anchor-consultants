@@ -1,0 +1,23 @@
+---
+import type { NoticeBlock } from '../../lib/sections';
+
+/**
+ * A bordered callout.
+ *
+ * Body is a plain string, not rich text: a notice is one short paragraph, and a
+ * string keeps the markup identical whichever source it comes from.
+ */
+interface Props {
+  block?: NoticeBlock;
+  title?: string;
+  body?: string;
+}
+const { block, title, body } = Astro.props;
+const heading = block?.title ?? title ?? '';
+const copy = block?.body ?? body ?? '';
+---
+
+<div class="border-navy bg-mist border-l-4 p-6">
+  <h2 class="text-ink text-[22px] leading-[32px] font-bold">{heading}</h2>
+  <p class="text-body mt-3 text-base leading-[26px]">{copy}</p>
+</div>

@@ -709,6 +709,127 @@ M17, which also adds the `[...slug]` route so a new page needs no code. Section
 spacing variants, the stats/CTA/rich-text blocks and the editable 404 come with
 it.
 
+### Inner pages on the builder — Milestone 17 COMPLETE
+
+Every page on the site is now a `page` document, and a page created in the
+Studio is live on the next build with no code change. Ten new block types, one
+catch-all route, and no visual change anywhere.
+
+| Page           | Sections                                       | Source now       |
+| -------------- | ---------------------------------------------- | ---------------- |
+| Home           | 8 home blocks                                  | Sanity           |
+| About          | banner, intro with image pair, copy with image | Sanity           |
+| Services       | banner, service cards, skills panel            | Sanity           |
+| Testimonials   | banner, testimonial grid                       | Sanity           |
+| Blog           | banner, blog listing                           | Sanity           |
+| 404            | banner, error panel                            | Sanity           |
+| Privacy policy | banner, prose                                  | Code, on purpose |
+| Contact        | unchanged this milestone                       | Code             |
+
+**Why the privacy policy is not imported.** Its prose interpolates the live
+contact email, phone and address from Site Settings, and moving that text into a
+CMS body would freeze those values at whatever they are today. It is also a
+holding page waiting on legal text, so importing placeholder copy would gain
+nothing. The route already reads a `page` document if one is created, so this
+reverses by creating the document rather than by changing code.
+
+**Blocks are named for their layout, not generalised.** The About intro's image
+pair is absolutely positioned at measured offsets; the skills panel carries
+proportion bars. One "image and text" block with enough options to cover both
+would be a spacing system in disguise, which is what spec §4 rules out. So there
+are ten specific blocks rather than three flexible ones, and each maps to a
+layout that was measured against the original.
+
+**Presentation stayed out of the CMS.** The red eyebrow on the services page is
+the site's one red and is not a colour field. The highlight row's overlay is
+still Dark or Teal only. Skill percentages are held to 0–100, because a bar
+above 100 renders outside its track and a progressbar whose value exceeds its
+maximum is invalid to a screen reader as well as wrong on screen.
+
+**Rich text where it was needed, plain strings where it was not.** Only three
+bodies needed Portable Text: the About copy, the privacy prose and the 404
+explanation. The rest are plain strings, which keeps the markup identical
+whichever source the copy comes from. The About copy needed two separate fields:
+its original is two `<p>` elements with different rhythms, one holding
+bullet-style lines separated by single `<br>`s (consecutive lines, no gap) and
+one holding sentences separated by a double `<br>` (one blank line). Portable
+Text cannot express that difference, so each original paragraph became its own
+field with its own spacing.
+
+**Prose rules moved to `global.css`.** A scoped `<style>` block makes Astro
+stamp `data-astro-cid-*` on every element in that component, which measured 963
+bytes gzipped on the About page for two declarations. The rules are not
+component-specific, so `.prose-para`, `.prose-lines` and `.cms-prose` now live
+in one place named for the rhythm they produce.
+
+**Two bugs found and fixed.**
+
+- _The 404 lost both its links._ Its body moved to Portable Text, and the
+  importer did not parse `[text](href)` into `markDefs`, so "services" and "get
+  in touch" imported as plain words. A visible-text comparison could not catch
+  this, because the words were all still there. Caught by auditing anchors
+  specifically, then fixed by teaching the importer link marks. Every page's
+  main-content links are now compared against baseline, and all match.
+- _A `srcset` claiming a resolution that did not exist._ Milestone 16 clamped
+  over-large widths by dropping them, which was wrong for an asset whose width
+  falls between two requested widths: the 640px tiles asked for 480 and 960, and
+  dropping 960 left a single 480w candidate, costing dense displays their best
+  option. Over-large requests are now clamped down to the asset's real width
+  instead, so the tiles get `480w, 640w` — two true resolutions. Audited across
+  the build: 72 srcset attributes, 0 over-claiming.
+
+**Verified across all 13 routes.** Visible text, heading structure, image count
+and main-content link count all identical to baseline on every page. Geometry
+measured at 1440 against the original:
+
+| Page         | Element        | Original           | Now                |
+| ------------ | -------------- | ------------------ | ------------------ |
+| About        | banner         | 226px              | 226px              |
+| About        | intro section  | 818px              | 818px              |
+| About        | copy section   | 817px              | 817px              |
+| About        | image pair     | 568×528 / 420×420  | same               |
+| About        | plan image     | 570×500            | 570×500            |
+| Services     | cards section  | 619px              | 619px              |
+| Services     | skills section | 731px              | 731px              |
+| Services     | bars           | 520px              | 520px at 92% / 88% |
+| Testimonials | grid           | 1160px, 3 col      | 1160px, 3 col      |
+| 404          | large number   | 300px, aria-hidden | same               |
+
+**Acceptance test.** A page called "Our Approach" was created entirely in the
+Studio: banner, callout, heading, paragraph with bold, bulleted list and a link.
+It built at `/our-approach/` with the correct title, meta description, canonical
+and `<h1>`, appeared in the sitemap, and took the route count from 12 to 13. No
+code was touched. It was then deleted and the build returned to 12 routes.
+
+**Three things worth knowing for later.**
+
+- `getStaticPaths` is extracted into its own chunk at build time, and that chunk
+  keeps its imports but not the module-level constants around it. The route list
+  and slug normaliser therefore live in `src/lib/page.ts`, not in the route.
+- Sanity deduplicates assets by content hash: the asset id is
+  `image-<sha1>-<dims>-<ext>`, so re-uploading identical bytes reuses the
+  existing asset. Confirmed by re-running the home page import — the asset count
+  went 22 to 29 for eight new files, and `slide-1.png` still has exactly one
+  copy. Re-running an import wastes bandwidth but cannot litter the library.
+- `SectionRenderer` statically imports all 18 block components, so every page
+  carrying it now ships one shared 3.9 KB CSS chunk (about 1 KB gzipped) that
+  includes selectors it does not use. Astro's default inlines it because it is
+  under 4 KB. JavaScript is unaffected: Astro tree-shakes the unused component
+  scripts correctly, verified on the 404, testimonials and privacy pages.
+  `inlineStylesheets: 'never'` was measured as the alternative and rejected: it
+  saves 1.9 KB gzipped across all 12 pages but adds a second render-blocking
+  stylesheet to every page, which is what milestone 14 worked to avoid. Moving
+  the remaining eleven component `<style>` blocks into `global.css` would remove
+  both this chunk and roughly 178 scope attributes per page, and is the right
+  follow-up.
+
+**Checks:** 12 routes, 10 sitemap URLs, 25 tests passing, `astro check` 0 errors
+across 116 files, `sanity schema validate` 0 errors, Prettier clean.
+
+**Not in this milestone.** The contact page keeps its own markup: its form is
+the subject of M21, and converting it twice would be waste. Section spacing
+variants are still absent by design.
+
 ## Open Questions
 
 These need your input. None of them block starting at Milestone 0; I have noted the assumption I will proceed with if you would rather decide later.

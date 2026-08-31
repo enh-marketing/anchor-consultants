@@ -1,0 +1,75 @@
+---
+import PortableText from '../shared/PortableText.astro';
+import { resolveLink, type ErrorPanelBlock } from '../../lib/sections';
+
+/**
+ * The error page panel.
+ *
+ * Measured from the original at 1440:
+ *   `.error section-padding`, 120px 0, container 1320 at x=60
+ *   "404" 300px/700 on a 285px line box, #1C1E22, centred at y=482
+ *   subhead 30px/400/40px at y=767
+ *   "Back to Home" 175x60, centred, at y=857
+ *
+ * The big number is decorative — the accessible page title is the banner h1 —
+ * so it is an aria-hidden <p>, not a heading. 300px type overflows a phone, so
+ * it steps down below the original's desktop size.
+ *
+ * The original's subhead read "We will get back to you as soon as possible.",
+ * which belongs on a form confirmation rather than a missing page (defect #28).
+ * The replacement copy is now editable, which is how it should have been.
+ */
+interface Props {
+  block?: ErrorPanelBlock;
+}
+const { block } = Astro.props;
+
+const code = block?.code ?? '404';
+const heading = block?.heading ?? 'We couldn’t find that page.';
+const body = Array.isArray(block?.body) ? block.body : null;
+const cta = resolveLink(block?.cta, { label: 'Back to Home', href: '/' });
+---
+
+<section class="py-[120px]">
+  <div class="mx-auto w-full max-w-[1320px] px-3 text-center">
+    <p
+      class="text-ink text-[110px] leading-[1] font-bold sm:text-[180px] lg:text-[300px] lg:leading-[285px]"
+      aria-hidden="true"
+    >
+      {code}
+    </p>
+
+    <h2 class="text-ink text-[24px] leading-[34px] font-normal lg:text-[30px] lg:leading-[40px]">
+      {heading}
+    </h2>
+
+    {
+      body ? (
+        <div class="cms-prose text-body mx-auto mt-4 max-w-[560px] text-base leading-[26px]">
+          <PortableText value={body} />
+        </div>
+      ) : (
+        <p class="text-body mx-auto mt-4 max-w-[560px] text-base leading-[26px]">
+          The link may be out of date, or the page may have moved. Try our
+          <a href="/services/" class="text-navy underline">
+            services
+          </a>{' '}
+          pages, or
+          <a href="/contact/" class="text-navy underline">
+            get in touch
+          </a>{' '}
+          and we will point you the right way.
+        </p>
+      )
+    }
+
+    <div class="mt-[50px]">
+      <a
+        href={cta.href}
+        class="bg-navy hover:bg-navy-600 inline-flex h-[60px] items-center rounded-[3px] px-[35px] text-base font-medium text-white transition-colors"
+      >
+        {cta.label}
+      </a>
+    </div>
+  </div>
+</section>

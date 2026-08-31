@@ -171,39 +171,50 @@ function unquote(v) {
 /**
  * One paragraph's inline markdown to Portable Text spans.
  *
- * Only `**strong**` and `*em*` are handled, because those are the only inline
- * marks the migrated content uses. The team bio emphasises four phrases, and
- * those are editorial emphasis rather than styling, so they have to survive the
- * move as marks and not as literal asterisks.
+ * Handles `**strong**`, `*em*` and `[text](href)`. Those are the marks the
+ * migrated content actually uses: the team bio emphasises four phrases, the
+ * About copy bolds its labels, and the 404 body links to two pages. All three
+ * are editorial content rather than styling, so they have to survive the move
+ * as marks and not as literal punctuation.
  *
- * Anything else — links, code, images inside a paragraph — is left as plain
- * text on purpose. Silently half-converting a syntax is worse than not
- * claiming to support it; add it here when content actually needs it.
+ * Links become `markDefs` on the block, which is how Portable Text models them:
+ * the span carries the def's key in its marks, and the def carries the href.
+ *
+ * Anything else is left as plain text on purpose. Silently half-converting a
+ * syntax is worse than not claiming to support it.
  */
 function toSpans(text, blockKey) {
   const spans = [];
-  const pattern = /\*\*(.+?)\*\*|\*(.+?)\*/g;
+  const markDefs = [];
+  const pattern = /\[([^\]]+)\]\(([^)]+)\)|\*\*(.+?)\*\*|\*(.+?)\*/g;
   let last = 0;
   let match;
+
   const push = (value, marks) => {
     if (!value) return;
-    spans.push({
-      _type: 'span',
-      _key: `${blockKey}s${spans.length}`,
-      text: value,
-      marks,
-    });
+    spans.push({ _type: 'span', _key: `${blockKey}s${spans.length}`, text: value, marks });
   };
 
   while ((match = pattern.exec(text)) !== null) {
     push(text.slice(last, match.index), []);
-    push(match[1] ?? match[2], [match[1] ? 'strong' : 'em']);
+
+    const [, linkText, href, strong, em] = match;
+    if (linkText && href) {
+      const key = `${blockKey}l${markDefs.length}`;
+      markDefs.push({ _key: key, _type: 'link', href });
+      push(linkText, [key]);
+    } else if (strong) {
+      push(strong, ['strong']);
+    } else if (em) {
+      push(em, ['em']);
+    }
     last = match.index + match[0].length;
   }
   push(text.slice(last), []);
 
   // A paragraph is never allowed to become an empty block.
-  return spans.length ? spans : [{ _type: 'span', _key: `${blockKey}s0`, text, marks: [] }];
+  if (!spans.length) push(text, []);
+  return { spans, markDefs };
 }
 
 /** Paragraphs to Portable Text blocks. */
@@ -213,13 +224,16 @@ function toPortableText(markdown) {
     .split(/\n{2,}/)
     .map((p) => p.replace(/\s*\n\s*/g, ' ').trim())
     .filter(Boolean)
-    .map((text, i) => ({
-      _type: 'block',
-      _key: `b${i}`,
-      style: 'normal',
-      markDefs: [],
-      children: toSpans(text, `b${i}`),
-    }));
+    .map((text, i) => {
+      const { spans, markDefs } = toSpans(text, `b${i}`);
+      return {
+        _type: 'block',
+        _key: `b${i}`,
+        style: 'normal',
+        markDefs,
+        children: spans,
+      };
+    });
 }
 
 const uploaded = new Map();
@@ -417,6 +431,7 @@ export async function run({ client: injected, dry, only } = {}) {
   if (!skip('pages')) {
     console.log('\npages');
     await importHomePage();
+    await importInnerPages();
   }
 
   console.log(
@@ -582,6 +597,190 @@ async function importHomePage() {
         'UAE mortgage and real-estate finance specialists. We compare leading UAE lenders and structure the right financing for buying, refinancing or building.',
     },
   });
+}
+
+/**
+ * The six inner pages as `page` documents.
+ *
+ * Same principle as the home page: the values are the ones the components ship
+ * with, so importing changes where the content comes from without changing a
+ * word of it, and the result can be diffed against the pre-migration build.
+ *
+ * Five pages, not six. The privacy policy is deliberately not imported: its
+ * prose interpolates the live contact email, phone and address from Site
+ * Settings, and moving that text into a CMS body would freeze those values at
+ * whatever they are today. It is also a holding page waiting on legal text, so
+ * there is nothing to gain from importing placeholder copy. The route already
+ * reads a `page` document if one is ever created, so this is a decision that
+ * can be reversed by creating the document in the Studio.
+ *
+ * The 404 keeps its `noindex` in code. An editable 404 that could be made
+ * indexable would be a real SEO problem.
+ */
+async function importInnerPages() {
+  const img = (rel, alt, decorative = false) => uploadImage(`../../assets/${rel}`, alt, decorative);
+
+  const banner = async (rel) => img(rel, '', true);
+
+  const pages = [
+    {
+      slug: '/about/',
+      title: 'About',
+      description:
+        'Anchor Consultants is a UAE mortgage and property finance advisory built on deep banking experience, with access to multiple lenders across the Emirates.',
+      sections: [
+        {
+          _type: 'pageBanner',
+          _key: 'b',
+          title: 'Who We Are',
+          crumb: 'About',
+          image: await banner('images/banners/about.jpg'),
+        },
+        {
+          _type: 'aboutIntro',
+          _key: 's0',
+          eyebrow: 'About Us',
+          title: 'The Region\u2019s Leading Business & Finance Consultancy',
+          body: 'The Region\u2019s Leading Business & Finance Consultancy With a foundation built on integrity and deep market insights, we bridge the gap between complex financial challenges and successful outcomes. We specialize in navigating the intricate landscapes of UAE real estate and global finance, ensuring our clients achieve sustainable wealth.',
+          images: [
+            await img(
+              'images/about/about-page.jpg',
+              'The Anchor Consultants advisory team in discussion',
+            ),
+            await img(
+              'images/about/split-1.jpg',
+              'Advisers reviewing property financing options with a client',
+            ),
+          ],
+        },
+        {
+          _type: 'copyWithImage',
+          _key: 's1',
+          title: 'Why Choose Anchor Consultants?',
+          body: toPortableText(
+            [
+              '**\u2022 Trusted Mortgage Experts:** Years of experience in UAE banking, mortgage advisory, and property finance.',
+              '**\u2022 Access to Multiple Banks:** Compare mortgage offers from all leading UAE banks to find competitive rates.',
+              '**\u2022 Tailored Financing Solutions:** Personalized advice for first-time homebuyers, investors, and expats.',
+              '**\u2022 Transparent & Efficient Process:** Clear guidance from application to loan approval.',
+            ].join('\n\n'),
+          ),
+          closing: toPortableText(
+            [
+              'At **Anchor Consultants**, we simplify the complex mortgage process and empower you with the knowledge and support you need to make **confident property financing decisions.**',
+              '**Contact us today** to explore the best **mortgage solutions in Dubai, Abu Dhabi, and across the UAE**, and secure your ideal home or investment property with expert guidance.',
+            ].join('\n\n'),
+          ),
+          image: await img(
+            'images/about/plan.jpg',
+            "Anchor advisers planning a client's financing route",
+          ),
+        },
+      ],
+    },
+    {
+      slug: '/services/',
+      title: 'Services',
+      description:
+        'Mortgage solutions, commercial finance, construction and developer finance, and lease rental discounting for residents and investors in the UAE.',
+      sections: [
+        {
+          _type: 'pageBanner',
+          _key: 'b',
+          title: 'What We Do',
+          crumb: 'Services',
+          image: await banner('images/banners/services.jpg'),
+        },
+        { _type: 'serviceCardGrid', _key: 's0', cardLinkLabel: 'Read More' },
+        {
+          _type: 'skillsPanel',
+          _key: 's1',
+          eyebrow: 'Skillset',
+          title: 'Strategy is at the Heart of Growth',
+          body: 'Our mission is to provide expert financial guidance and a variety of strategic solutions to international and local investors in a professional and supportive atmosphere.',
+          skills: [
+            { _key: 'k0', label: 'Financial Advisory', value: 92 },
+            { _key: 'k1', label: 'Market Analysis', value: 88 },
+          ],
+          image: await img(
+            'images/services/carousel-bg.jpg',
+            'Anchor Consultants advisers with a client',
+          ),
+        },
+      ],
+    },
+    {
+      slug: '/testimonials/',
+      title: 'Testimonials',
+      description:
+        'What clients across Dubai say about working with Anchor Consultants on mortgages, refinancing and property finance in the UAE.',
+      sections: [
+        {
+          _type: 'pageBanner',
+          _key: 'b',
+          title: 'Client Feedback',
+          crumb: 'Testimonials',
+          image: await banner('images/banners/testimonials.jpg'),
+        },
+        { _type: 'testimonialGrid', _key: 's0', srHeading: 'What our clients say' },
+      ],
+    },
+    {
+      slug: '/blog/',
+      title: 'Blog',
+      description:
+        'News, guidance and market notes from Anchor Consultants on mortgages, refinancing and property finance for buyers and investors in the UAE.',
+      sections: [
+        {
+          _type: 'pageBanner',
+          _key: 'b',
+          title: 'Blog',
+          crumb: 'Blog',
+          image: await banner('images/banners/generic-2.jpg'),
+        },
+        {
+          _type: 'blogIndex',
+          _key: 's0',
+          emptyBody: 'There are no posts yet. Please check back soon, or',
+          emptyCta: { label: 'get in touch', href: '/contact/' },
+        },
+      ],
+    },
+    {
+      slug: '/404/',
+      title: 'Page not found',
+      description:
+        'The page you were looking for could not be found. Browse our UAE mortgage and property finance services, or get in touch and we will help.',
+      sections: [
+        {
+          _type: 'pageBanner',
+          _key: 'b',
+          title: 'Not Found',
+          crumb: 'Not Found',
+          image: await banner('images/banners/generic-1.jpg'),
+        },
+        {
+          _type: 'errorPanel',
+          _key: 's0',
+          code: '404',
+          heading: 'We couldn\u2019t find that page.',
+          body: toPortableText(
+            'The link may be out of date, or the page may have moved. Try our [services](/services/) pages, or [get in touch](/contact/) and we will point you the right way.',
+          ),
+          cta: { label: 'Back to Home', href: '/' },
+        },
+      ],
+    },
+  ];
+
+  for (const page of pages) {
+    await upsert('page', page.slug, {
+      title: page.title,
+      slug: { _type: 'slug', current: page.slug },
+      sections: page.sections,
+      seo: { _type: 'seo', metaDescription: page.description },
+    });
+  }
 }
 
 // Run only when executed directly; the Studio wrapper imports `run` instead.

@@ -1,0 +1,55 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { getCollection } from 'astro:content';
+import PageLayout from '../layouts/PageLayout.astro';
+import SectionRenderer from '../components/sections/SectionRenderer.astro';
+import { breadcrumbSchema } from '../lib/seo';
+import { NAMED_ROUTES, normalisePath } from '../lib/page';
+
+/**
+ * Pages created in the CMS that have no route of their own.
+ *
+ * This is what makes spec §1 true for pages that do not exist yet: an editor
+ * creates a page, gives it a slug, and it is live on the next build with no
+ * code change.
+ *
+ * Existing pages keep their own named routes. Two reasons, and both matter:
+ * they carry structured data and per-page fallbacks that a catch-all cannot
+ * know about, and `404.astro` has to be a real file because that is where Astro
+ * looks for the not-found page. So this route deliberately skips any slug a
+ * named route already owns rather than competing with it, which would be a
+ * duplicate-URL bug of exactly the kind spec §20 warns about.
+ */
+export const getStaticPaths = (async () => {
+  const pages = await getCollection('pages');
+  return pages
+    .filter((page) => !NAMED_ROUTES.has(normalisePath(page.data.slug)))
+    .map((page) => ({
+      // Astro wants the path without the surrounding slashes.
+      params: { slug: normalisePath(page.data.slug).replace(/^\/|\/$/g, '') },
+      props: { page },
+    }));
+}) satisfies GetStaticPaths;
+
+const { page } = Astro.props;
+const path = normalisePath(page.data.slug);
+
+// A CMS page has no hand-written fallback description, so an empty one is a
+// content mistake worth surfacing rather than hiding behind generated text.
+const description = page.data.seo?.metaDescription ?? '';
+if (!description) {
+  console.warn(
+    `[pages] "${page.data.title}" (${path}) has no meta description. ` +
+      `Add one under the SEO tab in the Studio.`,
+  );
+}
+---
+
+<PageLayout
+  title={page.data.title}
+  description={description}
+  path={path}
+  schemas={[breadcrumbSchema([{ name: page.data.title, path }])]}
+>
+  <SectionRenderer sections={page.data.sections} />
+</PageLayout>

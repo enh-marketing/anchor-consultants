@@ -1,0 +1,60 @@
+---
+import { getCollection } from 'astro:content';
+import CmsImage from '../ui/CmsImage.astro';
+import Icon from '../ui/Icon.astro';
+import type { ServiceCardGridBlock } from '../../lib/sections';
+
+// Measured from the original at 1440:
+//   section 619 tall, padding 110/110, #F7F7F7 at 74%
+//   4 cards at x=71 / 402 / 727 / 1060, 307 wide, padding 60px 30px, white
+//   icon 80x80 centred (dy 180), title 26px/700 on a 36px line box, centred
+//
+// The cards are the `service` documents, ordered by their own `order`. Only the
+// link text is editable here: retyping service names into a section would let
+// this grid and the service pages disagree with each other.
+
+interface Props {
+  block?: ServiceCardGridBlock;
+}
+const { block } = Astro.props;
+const cardLinkLabel = block?.cardLinkLabel ?? 'Read More';
+
+const services = (await getCollection('services'))
+  .filter((s) => !s.data.draft)
+  .sort((a, b) => a.data.order - b.data.order);
+---
+
+<section class="bg-mist/75 py-[110px]">
+  <div class="mx-auto w-full max-w-[1320px] px-3 lg:px-[10px]">
+    <ul class="grid list-none gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:py-[10px]">
+      {
+        services.map((service) => (
+          <li class="reveal flex">
+            <a
+              href={`/services/${service.id}/`}
+              class="group flex w-full flex-col items-center bg-white px-[30px] py-[60px] text-center transition-shadow hover:shadow-[0_0_20px_-6px_rgba(0,0,0,0.25)]"
+            >
+              {service.data.icon && (
+                <CmsImage
+                  src={service.data.icon}
+                  alt=""
+                  aria-hidden="true"
+                  class="h-20 w-20 object-contain"
+                  loading="lazy"
+                  width={80}
+                />
+              )}
+              <h2 class="text-ink mt-[61px] text-[26px] leading-[36px] font-bold">
+                {service.data.shortTitle ?? service.data.title}
+              </h2>
+              <span class="text-body group-hover:text-navy mt-[20px] inline-flex h-[26px] items-center gap-2 text-base leading-[26px] transition-colors">
+                {cardLinkLabel}
+                <Icon name="arrow-right" size={15} />
+              </span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

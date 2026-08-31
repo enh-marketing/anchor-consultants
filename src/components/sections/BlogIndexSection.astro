@@ -1,0 +1,115 @@
+---
+import { getCollection } from 'astro:content';
+import PostCard from '../blog/PostCard.astro';
+import BlogSidebar from '../blog/BlogSidebar.astro';
+import { resolveLink, type BlogIndexBlock } from '../../lib/sections';
+
+// The original is a Bootstrap col-8 / col-4 row: the row cancels the
+// container's 12px gutter and each column re-applies it, which is what puts
+// the content at x=72/856 and x=952/416 at 1440, and at x=28/616 and
+// x=668/296 at 992. Reproduced rather than approximated.
+//
+// The empty state is editable because it is the only thing on the page right
+// now: both posts are drafts. With no posts the sidebar has nothing left to
+// show, so the copy column runs full width rather than leaving a two-thirds
+// gap, and the empty state offers a route to contact rather than apologising.
+
+interface Props {
+  block?: BlogIndexBlock;
+}
+const { block } = Astro.props;
+
+const emptyBody = block?.emptyBody ?? 'There are no posts yet. Please check back soon, or';
+const emptyCta = resolveLink(block?.emptyCta, { label: 'get in touch', href: '/contact/' });
+const emptyTail = 'if you have a question in the meantime.';
+
+const posts = (await getCollection('posts')).sort(
+  (a, b) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime(),
+);
+---
+
+<section class="py-[120px]">
+  <div class="container-bs">
+    <div
+      class:list={['-mx-3 grid gap-y-[30px]', posts.length > 0 && 'lg:grid-cols-[66.667%_33.333%]']}
+    >
+      <div class="min-w-0 px-3">
+        <!-- Announced when a sidebar filter narrows the list. -->
+        <p
+          id="blog-filter-note"
+          role="status"
+          aria-live="polite"
+          class="text-body mb-6 hidden text-base leading-[26px]"
+        >
+        </p>
+
+        <div class="flex flex-col gap-[40px]">
+          {posts.map((post) => <PostCard post={post} />)}
+        </div>
+
+        <p id="blog-empty" class="text-body hidden text-base leading-[26px]">
+          No posts match that filter. <a href="/blog/" class="text-navy underline">Show all posts</a
+          >.
+        </p>
+
+        {
+          posts.length === 0 && (
+            <p class="text-body max-w-[60ch] text-base leading-[26px]">
+              {emptyBody}{' '}
+              <a href={emptyCta.href} class="text-navy underline">
+                {emptyCta.label}
+              </a>{' '}
+              {emptyTail}
+            </p>
+          )
+        }
+      </div>
+
+      {
+        posts.length > 0 && (
+          <div class="min-w-0 px-3">
+            <BlogSidebar />
+          </div>
+        )
+      }
+    </div>
+  </div>
+</section>
+
+<script>
+  // Sidebar search, category and archive links all arrive as query params on
+  // this page, so one filter handles all three. Without JS the page simply
+  // shows every post, which is a reasonable resting state.
+  const params = new URLSearchParams(location.search);
+  const q = (params.get('q') ?? '').trim().toLowerCase();
+  const category = params.get('category') ?? '';
+  const month = params.get('month') ?? '';
+
+  if (q || category || month) {
+    const cards = document.querySelectorAll<HTMLElement>('[data-post]');
+    let shown = 0;
+
+    cards.forEach((card) => {
+      const matches =
+        (!q || (card.dataset['search'] ?? '').includes(q)) &&
+        (!category || card.dataset['category'] === category) &&
+        (!month || card.dataset['month'] === month);
+      card.hidden = !matches;
+      if (matches) shown += 1;
+    });
+
+    const note = document.getElementById('blog-filter-note');
+    if (note) {
+      const label = q
+        ? `matching “${q}”`
+        : category
+          ? `in ${category.replace(/-/g, ' ')}`
+          : 'from that month';
+      note.textContent = `${shown} ${shown === 1 ? 'post' : 'posts'} ${label}.`;
+      note.classList.remove('hidden');
+    }
+
+    const empty = document.getElementById('blog-empty');
+    if (empty && shown === 0) empty.classList.remove('hidden');
+  }
+</script>

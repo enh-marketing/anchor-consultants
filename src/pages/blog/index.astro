@@ -1,39 +1,29 @@
 ---
-import { getCollection } from 'astro:content';
 import PageLayout from '../../layouts/PageLayout.astro';
-import PageBanner from '../../components/shared/PageBanner.astro';
-import PostCard from '../../components/blog/PostCard.astro';
-import BlogSidebar from '../../components/blog/BlogSidebar.astro';
+import SectionRenderer from '../../components/sections/SectionRenderer.astro';
+import PageBannerSection from '../../components/sections/PageBannerSection.astro';
+import BlogIndexSection from '../../components/sections/BlogIndexSection.astro';
+import { pageSections, pageDescription } from '../../lib/page';
 import { breadcrumbSchema } from '../../lib/seo';
 import { SITE_URL } from '../../data/site-url.mjs';
 import banner from '../../assets/images/banners/generic-2.jpg';
 
-/**
- * Blog index.
- *
- * Measured from the original `/blog-grid/` at 1440:
- *   section padding 120px 0; container 1320 at x=60 with 12px gutters
- *   left column 856 wide at x=72; sidebar 416 wide at x=952 (24px apart)
- *   items 40px apart
- *
- * Route: the original lives at `/blog-grid/`; Q5 moved it to `/blog/`, which
- * is where the header and footer already link.
- *
- * There is no banner image for the blog in the client's media library, so
- * this uses one of the generic banners, per the client's instruction.
- *
- * No pagination: the original renders a `.theme__pagination` container but
- * it is empty, since two posts fit on one page. Worth adding once there is
- * real content — see MIGRATION.md Q8.
- */
-const posts = (await getCollection('posts', ({ data }) => !data.draft)).sort(
-  (a, b) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime(),
+// Measured from the original at 1440:
+//   left column 856 wide at x=72; sidebar 416 wide at x=952 (24px apart)
+//
+// Pagination is not reproduced: the original renders a pager even when it is
+// empty, since two posts fit on one page. Worth adding once there is enough
+// content to need it.
+const sections = await pageSections('/blog/');
+const description = await pageDescription(
+  '/blog/',
+  'News, guidance and market notes from Anchor Consultants on mortgages, refinancing and property finance for buyers and investors in the UAE.',
 );
 ---
 
 <PageLayout
   title="Blog"
-  description="News, guidance and market notes from Anchor Consultants on mortgages, refinancing and property finance for buyers and investors in the UAE."
+  description={description}
   path="/blog/"
   schemas={[
     breadcrumbSchema([{ name: 'Blog', path: '/blog/' }]),
@@ -46,105 +36,14 @@ const posts = (await getCollection('posts', ({ data }) => !data.draft)).sort(
     },
   ]}
 >
-  <PageBanner title="Blog" crumb="Blog" image={banner} />
-
-  <section class="py-[120px]">
-    <!-- The original is a Bootstrap col-8 / col-4 row: the row cancels the
-         container's 12px gutter and each column re-applies it, which is what
-         puts the content at x=72/856 and x=952/416 at 1440, and at
-         x=28/616 and x=668/296 at 992. Reproduced rather than approximated. -->
-    <div class="container-bs">
-      <div
-        class:list={[
-          '-mx-3 grid gap-y-[30px]',
-          // With no posts the sidebar has nothing left to show, so the copy
-          // column runs full width rather than leaving a two-thirds gap.
-          posts.length > 0 && 'lg:grid-cols-[66.667%_33.333%]',
-        ]}
-      >
-        <div class="min-w-0 px-3">
-          <!-- Announced when a sidebar filter narrows the list. -->
-          <p
-            id="blog-filter-note"
-            role="status"
-            aria-live="polite"
-            class="text-body mb-6 hidden text-base leading-[26px]"
-          >
-          </p>
-
-          <div class="flex flex-col gap-[40px]">
-            {posts.map((post) => <PostCard post={post} />)}
-          </div>
-
-          <p id="blog-empty" class="text-body hidden text-base leading-[26px]">
-            No posts match that filter. <a href="/blog/" class="text-navy underline"
-              >Show all posts</a
-            >.
-          </p>
-
-          {
-            posts.length === 0 && (
-              <p class="text-body max-w-[60ch] text-base leading-[26px]">
-                There are no posts yet. Please check back soon, or{' '}
-                <a href="/contact/" class="text-navy underline">
-                  get in touch
-                </a>{' '}
-                if you have a question in the meantime.
-              </p>
-            )
-          }
-        </div>
-
-        {
-          posts.length > 0 && (
-            <div class="min-w-0 px-3">
-              <BlogSidebar />
-            </div>
-          )
-        }
-      </div>
-    </div>
-  </section>
-</PageLayout>
-
-<script>
-  // Sidebar search, category and archive links all arrive as query params on
-  // this page, so one filter handles all three. Without JS the page simply
-  // shows every post, which is a reasonable resting state.
-  const params = new URLSearchParams(location.search);
-  const q = (params.get('q') ?? '').trim().toLowerCase();
-  const category = params.get('category') ?? '';
-  const month = params.get('month') ?? '';
-
-  if (q || category || month) {
-    const cards = document.querySelectorAll<HTMLElement>('[data-post]');
-    let shown = 0;
-
-    cards.forEach((card) => {
-      const matches =
-        (!q || (card.dataset['search'] ?? '').includes(q)) &&
-        (!category || card.dataset['category'] === category) &&
-        (!month || card.dataset['month'] === month);
-      card.hidden = !matches;
-      if (matches) shown += 1;
-    });
-
-    const note = document.getElementById('blog-filter-note');
-    if (note) {
-      const label = q
-        ? `matching “${q}”`
-        : category
-          ? `in ${category.replace(/-/g, ' ')}`
-          : 'from that month';
-      note.textContent = `${shown} ${shown === 1 ? 'post' : 'posts'} ${label}.`;
-      note.classList.remove('hidden');
-    }
-
-    const empty = document.getElementById('blog-empty');
-    if (empty && shown === 0) empty.classList.remove('hidden');
-
-    // Reflect the term back into the search box.
-    const input = document.getElementById('blog-search');
-    if (q && input instanceof HTMLInputElement) input.value = q;
+  {
+    sections.length ? (
+      <SectionRenderer sections={sections} />
+    ) : (
+      <>
+        <PageBannerSection title="Blog" crumb="Blog" image={banner} />
+        <BlogIndexSection />
+      </>
+    )
   }
-</script>
+</PageLayout>

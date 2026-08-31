@@ -1,0 +1,109 @@
+---
+import CmsImage from '../ui/CmsImage.astro';
+import SectionHeading from '../ui/SectionHeading.astro';
+import { altProp, type SkillsPanelBlock } from '../../lib/sections';
+import skillBg from '../../assets/images/services/carousel-bg.jpg';
+
+// Measured from the original at 1440:
+//   section 731 tall, padding 110/110
+//   eyebrow "Skillset" is #EC1113 — the one red accent on the site
+//   h2 dy 191 (650 wide), body dy 351 (526 wide)
+//   bars 520 wide, 8px tall, #084876; Financial Advisory 92%, Market Analysis 88%
+//   services-1.jpg 650x511 at x=720 (dy 110), cover
+//
+// The red eyebrow is not exposed as a colour choice. It is the one red on the
+// site and it belongs to this section; a colour field here would invite it
+// somewhere it does not belong.
+//
+// Percentages are clamped 0-100 in the schema. A bar at 140% would render
+// outside its track, and a progressbar whose aria-valuenow exceeds its max is
+// invalid to a screen reader as well as wrong on screen.
+
+interface Props {
+  block?: SkillsPanelBlock;
+}
+const { block } = Astro.props;
+
+const eyebrow = block?.eyebrow ?? 'Skillset';
+const title = block?.title ?? 'Strategy is at the Heart of Growth';
+const body =
+  block?.body ??
+  'Our mission is to provide expert financial guidance and a variety of strategic solutions to international and local investors in a professional and supportive atmosphere.';
+
+const cmsSkills = (block?.skills ?? []).flatMap((s) =>
+  s.label && typeof s.value === 'number'
+    ? [{ label: s.label, value: Math.max(0, Math.min(100, s.value)) }]
+    : [],
+);
+const skills = cmsSkills.length
+  ? cmsSkills
+  : [
+      { label: 'Financial Advisory', value: 92 },
+      { label: 'Market Analysis', value: 88 },
+    ];
+
+const image = block?.image ?? skillBg;
+const imageAlt = block?.imageAlt ?? 'Anchor Consultants advisers with a client';
+---
+
+<section class="py-[110px]">
+  <div class="mx-auto w-full max-w-[1320px] px-3 lg:px-[10px]">
+    <div class="grid items-start gap-12 lg:grid-cols-[50%_50%] lg:justify-between lg:gap-0">
+      <div class="reveal lg:pt-[38px]">
+        <SectionHeading eyebrow={eyebrow} title={title} eyebrowClass="!text-danger" />
+        <p class="text-body mt-[20px] max-w-[526px] text-base leading-[26px]">{body}</p>
+
+        <div class="mt-[43px] max-w-[520px]" data-skills>
+          {
+            skills.map((skill) => (
+              <div class="mb-[30px] last:mb-0">
+                <div class="flex items-baseline justify-between">
+                  <span class="text-ink text-lead leading-7 font-bold">{skill.label}</span>
+                  <span class="text-body text-base">{skill.value}%</span>
+                </div>
+                <div
+                  class="bg-line mt-[12px] h-2 w-full"
+                  role="progressbar"
+                  aria-valuenow={skill.value}
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  aria-label={skill.label}
+                >
+                  <div class="skill-bar bg-navy h-full w-0" data-value={skill.value} />
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+
+      <div class="reveal" data-reveal-delay="0.1">
+        <CmsImage
+          src={image}
+          {...altProp(imageAlt)}
+          class="h-auto w-full lg:h-[511px] lg:w-[650px] lg:object-cover"
+          loading="lazy"
+          widths={[650, 1300]}
+          sizes="(min-width: 992px) 650px, 100vw"
+        />
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  // A width transition needs no tween engine. This used to run through GSAP
+  // + ScrollTrigger, which pulled 43 KB gzipped onto this page for one
+  // effect. `onEnterViewport` gives it the same observer-plus-sweep
+  // guarantee the scroll reveals use, so a deferred IntersectionObserver
+  // callback cannot leave the bars stuck at zero.
+  import { prefersReducedMotion, onEnterViewport } from '../../lib/reveal';
+
+  const bars = [...document.querySelectorAll<HTMLElement>('.skill-bar')];
+  const fill = (bar: HTMLElement) => {
+    bar.style.width = `${Number(bar.dataset['value'] ?? 0)}%`;
+  };
+
+  if (prefersReducedMotion()) bars.forEach(fill);
+  else onEnterViewport(bars, fill);
+</script>

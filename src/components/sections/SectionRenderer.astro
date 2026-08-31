@@ -7,6 +7,15 @@ import EmiCalculator from '../home/EmiCalculator.astro';
 import LeaderProfile from '../home/LeaderProfile.astro';
 import FaqAccordion from '../home/FaqAccordion.astro';
 import TestimonialCarousel from '../home/TestimonialCarousel.astro';
+import PageBannerSection from './PageBannerSection.astro';
+import AboutIntro from './AboutIntro.astro';
+import CopyWithImage from './CopyWithImage.astro';
+import SkillsPanel from './SkillsPanel.astro';
+import ServiceCardGrid from './ServiceCardGrid.astro';
+import TestimonialGrid from './TestimonialGrid.astro';
+import BlogIndexSection from './BlogIndexSection.astro';
+import RichTextSection from './RichTextSection.astro';
+import ErrorPanel from './ErrorPanel.astro';
 import type {
   AboutSplitBlock,
   EmiCalculatorBlock,
@@ -17,6 +26,15 @@ import type {
   ServiceHighlightRowBlock,
   ServicesCarouselBlock,
   TestimonialCarouselBlock,
+  PageBannerBlock,
+  AboutIntroBlock,
+  CopyWithImageBlock,
+  SkillsPanelBlock,
+  ServiceCardGridBlock,
+  TestimonialGridBlock,
+  BlogIndexBlock,
+  RichTextBlock,
+  ErrorPanelBlock,
 } from '../../lib/sections';
 
 /**
@@ -58,6 +76,15 @@ const KNOWN = new Set([
   'leaderProfile',
   'faqAccordion',
   'testimonialCarousel',
+  'pageBanner',
+  'aboutIntro',
+  'copyWithImage',
+  'skillsPanel',
+  'serviceCardGrid',
+  'testimonialGrid',
+  'blogIndex',
+  'richTextSection',
+  'errorPanel',
 ]);
 
 const unknownTypes = [
@@ -90,6 +117,27 @@ const blocks = sections.filter(
     if (block._type === 'faqAccordion') return <FaqAccordion block={block as FaqAccordionBlock} />;
     if (block._type === 'testimonialCarousel')
       return <TestimonialCarousel block={block as TestimonialCarouselBlock} />;
+
+    // Inner-page blocks. The banner needs its fallbacks passed even here,
+    // because it carries the page's h1 and must never render empty.
+    if (block._type === 'pageBanner') {
+      const b = block as PageBannerBlock;
+      return (
+        <PageBannerSection block={b} title={b.title ?? ''} crumb={b.crumb ?? ''} image={b.image!} />
+      );
+    }
+    if (block._type === 'aboutIntro') return <AboutIntro block={block as AboutIntroBlock} />;
+    if (block._type === 'copyWithImage')
+      return <CopyWithImage block={block as CopyWithImageBlock} />;
+    if (block._type === 'skillsPanel') return <SkillsPanel block={block as SkillsPanelBlock} />;
+    if (block._type === 'serviceCardGrid')
+      return <ServiceCardGrid block={block as ServiceCardGridBlock} />;
+    if (block._type === 'testimonialGrid')
+      return <TestimonialGrid block={block as TestimonialGridBlock} />;
+    if (block._type === 'blogIndex') return <BlogIndexSection block={block as BlogIndexBlock} />;
+    if (block._type === 'richTextSection')
+      return <RichTextSection block={block as RichTextBlock} />;
+    if (block._type === 'errorPanel') return <ErrorPanel block={block as ErrorPanelBlock} />;
     return null;
   })
 }

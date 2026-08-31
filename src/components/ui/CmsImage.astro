@@ -61,7 +61,30 @@ const resolvedAlt = sanity ? (alt ?? sanityImageAlt(src)) : (alt ?? '');
 
 // Widths to generate. A single width still gets a 2x variant so the image holds
 // up on a dense display, which is what `densities={[1, 2]}` did before.
-const targetWidths = widths ?? (width ? [width, width * 2] : [src.width ?? 1200]);
+const requestedWidths = widths ?? (width ? [width, width * 2] : [src.width ?? 1200]);
+
+/**
+ * No candidate may claim a width the asset does not have.
+ *
+ * A request above the asset's own width is clamped down to it rather than
+ * dropped: dropping it costs a dense display its best available candidate,
+ * while leaving it costs a wasted download of a byte-identical file under a
+ * descriptor that is simply untrue.
+ *
+ * Both sources need this. Sanity's `fit=max` returns the asset unchanged and
+ * would still be labelled with whatever was asked for. Astro's local pipeline
+ * does the same: a 640px source asked for 480 and 960 emits two files and
+ * labels the second `960w`, which the browser then believes.
+ *
+ * Clamping and deduplicating gives, for a 640px source asked for 480 and 960,
+ * `480w, 640w` — two real resolutions. For a 492px source asked for 492 and
+ * 984 it collapses to one candidate, and a single-candidate srcset is dropped
+ * because it tells the browser nothing `src` did not already say.
+ */
+const assetWidth = src.width;
+const targetWidths = assetWidth
+  ? [...new Set(requestedWidths.map((w) => Math.min(w, assetWidth)))].sort((a, b) => a - b)
+  : [...requestedWidths];
 
 let imgSrc: string;
 let srcSet: string | undefined;
@@ -69,17 +92,8 @@ let intrinsicWidth: number | undefined;
 let intrinsicHeight: number | undefined;
 
 if (isSanityImage(src)) {
-  // Sanity's `fit=max` never upscales, so asking for a width above the asset's
-  // own returns the asset at its real size — and the srcset would then claim a
-  // 2x candidate that is byte-for-byte the 1x one. A dense display would fetch
-  // a second copy for nothing. Astro's local pipeline refuses to upscale for
-  // the same reason, so clamping here keeps the two paths honest about what
-  // resolutions actually exist.
-  const available = src.width ? targetWidths.filter((w) => w <= src.width!) : [...targetWidths];
-  if (!available.length && src.width) available.push(src.width);
-
-  imgSrc = sanityImageUrl(src, available[available.length - 1] ?? 1200);
-  srcSet = available.length > 1 ? sanityImageSrcSet(src, available) : undefined;
+  imgSrc = sanityImageUrl(src, targetWidths[targetWidths.length - 1] ?? 1200);
+  srcSet = targetWidths.length > 1 ? sanityImageSrcSet(src, targetWidths) : undefined;
   intrinsicWidth = src.width;
   intrinsicHeight = src.height;
 } else {

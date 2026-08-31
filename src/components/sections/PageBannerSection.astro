@@ -1,0 +1,28 @@
+---
+import PageBanner from '../shared/PageBanner.astro';
+import type { PageBannerBlock } from '../../lib/sections';
+import type { CmsImageValue } from '../../lib/sanity/image';
+
+/**
+ * The inner-page banner as a block.
+ *
+ * `PageBanner` already took props and already went through `CmsImage`, so this
+ * is a thin adapter. The banner carries the page's `<h1>`, which is why the
+ * schema marks the title required: a page with no h1 is an accessibility and
+ * SEO regression, not a stylistic choice.
+ */
+interface Props {
+  block?: PageBannerBlock;
+  /** Used when no CMS document drives the page. */
+  title: string;
+  crumb: string;
+  image: CmsImageValue;
+}
+const { block, title, crumb, image } = Astro.props;
+---
+
+<PageBanner
+  title={block?.title ?? title}
+  crumb={block?.crumb ?? crumb}
+  image={block?.image ?? image}
+/>

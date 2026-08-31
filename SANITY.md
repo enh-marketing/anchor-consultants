@@ -230,9 +230,13 @@ ordered list of sections.
 - **Add** a section with the add button, then pick a type.
 - **Remove** a section to delete it and its content.
 
-The slug is the URL, and `/` is the home page. Changing a slug changes the
-address, and links to the old one break until a redirect exists (redirects are
-M23).
+The slug is the URL, and `/` is the home page. A page whose slug does not match
+an existing route is published at that address automatically, so creating a new
+page needs no developer. The existing pages keep their own routes because they
+carry structured data the generic route cannot know about.
+
+Changing a slug changes the address, and links to the old one break until a
+redirect exists (redirects are M23).
 
 Some sections pull their own content from elsewhere on purpose, so it is entered
 once: the services carousel reads the `service` documents, the FAQ accordion
@@ -249,7 +253,25 @@ Sections cannot change colours, fonts, sizes or spacing. That is not an
 oversight: the layout was measured against the original site, and the CMS is
 scoped to content so an edit cannot break it.
 
-### Two things that need real thought
+### What is editable where
+
+| Page         | What you can change from the Studio                                   |
+| ------------ | --------------------------------------------------------------------- |
+| Home         | All eight sections: hero slides, tiles, About copy, headings, buttons |
+| About        | Banner, eyebrow, headings, both bodies, image pair, single image      |
+| Services     | Banner, card link text, skills heading, copy, bars, image             |
+| Testimonials | Banner and the screen-reader heading; quotes are `testimonial` docs   |
+| Blog         | Banner and the empty-state copy; posts are `post` docs                |
+| 404          | Banner, large number, heading, body, button                           |
+| Privacy      | Not yet in the CMS — see below                                        |
+| Contact      | Not yet in the CMS — the form is milestone 21                         |
+
+The privacy policy stays on its route on purpose: its prose reads the live
+contact email, phone and address from Site Settings, and a CMS body would freeze
+those. Create a `page` document with slug `/privacy-policy/` when the approved
+legal text arrives and it will take over.
+
+### Two things need real thought
 
 **Images — decided.** Content imagery now lives in Sanity and is served from
 `cdn.sanity.io` through Sanity's image URL builder, wrapped by

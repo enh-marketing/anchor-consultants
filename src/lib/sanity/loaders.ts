@@ -183,7 +183,11 @@ const SECTIONS = `sections[]{
     "images": images[]{ "image": ${IMAGE} }
   },
   _type == "servicesCarousel" => { "background": background${IMAGE} },
-  _type == "leaderProfile" => { "background": background${IMAGE} }
+  _type == "leaderProfile" => { "background": background${IMAGE} },
+  _type == "pageBanner" => { "image": image${IMAGE} },
+  _type == "aboutIntro" => { "images": images[]{ "image": ${IMAGE} } },
+  _type == "copyWithImage" => { "image": image${IMAGE} },
+  _type == "skillsPanel" => { "image": image${IMAGE} }
 }`;
 
 export const sanityPages = () =>

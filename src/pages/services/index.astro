@@ -1,157 +1,35 @@
 ---
-import { Image } from 'astro:assets';
-import CmsImage from '../../components/ui/CmsImage.astro';
-import { getCollection } from 'astro:content';
 import PageLayout from '../../layouts/PageLayout.astro';
-import PageBanner from '../../components/shared/PageBanner.astro';
-import SectionHeading from '../../components/ui/SectionHeading.astro';
-import Icon from '../../components/ui/Icon.astro';
+import SectionRenderer from '../../components/sections/SectionRenderer.astro';
+import PageBannerSection from '../../components/sections/PageBannerSection.astro';
+import ServiceCardGrid from '../../components/sections/ServiceCardGrid.astro';
+import SkillsPanel from '../../components/sections/SkillsPanel.astro';
+import { pageSections, pageDescription } from '../../lib/page';
 import { breadcrumbSchema } from '../../lib/seo';
 import banner from '../../assets/images/banners/services.jpg';
-import skillBg from '../../assets/images/services/carousel-bg.jpg';
 
-// Measured from the original at 1440:
-//   cards section y=362, 619 tall, padding 110/110, #F7F7F7 at 74%
-//     4 cards at x=71 / 402 / 727 / 1060, 307 wide, padding 60px 30px, white
-//     icon 80x80 centred (dy 180), title 26px/700 on a 36px line box, centred
-//   skills section y=981, 731 tall, padding 110/110
-//     eyebrow "Skillset" is #EC1113 — the one red accent on the site
-//     h2 dy 191 (650 wide), body dy 351 (526 wide)
-//     bars 520 wide, 8px tall, #084876; Financial Advisory 92%, Market Analysis 88%
-//     services-1.jpg 650x511 at x=720 (dy 110), cover
-
-const services = (await getCollection('services'))
-  .filter((s) => !s.data.draft)
-  .sort((a, b) => a.data.order - b.data.order);
-
-const skills = [
-  { label: 'Financial Advisory', value: 92 },
-  { label: 'Market Analysis', value: 88 },
-];
+const sections = await pageSections('/services/');
+const description = await pageDescription(
+  '/services/',
+  'Mortgage solutions, commercial finance, construction and developer finance, and lease rental discounting for residents and investors in the UAE.',
+);
 ---
 
 <PageLayout
   title="Services"
-  description="Mortgage solutions, commercial finance, construction and developer finance, and lease rental discounting for residents and investors in the UAE."
+  description={description}
   path="/services/"
   schemas={[breadcrumbSchema([{ name: 'Services', path: '/services/' }])]}
 >
-  <PageBanner title="What We Do" crumb="Services" image={banner} />
-
-  <!-- Service cards -->
-  <section class="bg-mist/75 py-[110px]">
-    <div class="mx-auto w-full max-w-[1320px] px-3 lg:px-[10px]">
-      <ul class="grid list-none gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:py-[10px]">
-        {
-          services.map((service) => (
-            <li class="reveal flex">
-              <a
-                href={`/services/${service.id}/`}
-                class="group flex w-full flex-col items-center bg-white px-[30px] py-[60px] text-center transition-shadow hover:shadow-[0_0_20px_-6px_rgba(0,0,0,0.25)]"
-              >
-                {service.data.icon && (
-                  <CmsImage
-                    src={service.data.icon}
-                    alt=""
-                    aria-hidden="true"
-                    class="h-20 w-20 object-contain"
-                    loading="lazy"
-                    width={80}
-                  />
-                )}
-                <h2 class="text-ink mt-[61px] text-[26px] leading-[36px] font-bold">
-                  {service.data.shortTitle ?? service.data.title}
-                </h2>
-                <span class="text-body group-hover:text-navy mt-[20px] inline-flex h-[26px] items-center gap-2 text-base leading-[26px] transition-colors">
-                  Read More
-                  <Icon name="arrow-right" size={15} />
-                </span>
-              </a>
-            </li>
-          ))
-        }
-      </ul>
-    </div>
-  </section>
-
-  <!-- Skills -->
-  <section class="py-[110px]">
-    <div class="mx-auto w-full max-w-[1320px] px-3 lg:px-[10px]">
-      <div class="grid items-start gap-12 lg:grid-cols-[50%_50%] lg:justify-between lg:gap-0">
-        <div class="reveal lg:pt-[38px]">
-          <SectionHeading
-            eyebrow="Skillset"
-            title="Strategy is at the Heart of Growth"
-            eyebrowClass="!text-danger"
-          />
-          <p class="text-body mt-[20px] max-w-[526px] text-base leading-[26px]">
-            Our mission is to provide expert financial guidance and a variety of strategic solutions
-            to international and local investors in a professional and supportive atmosphere.
-          </p>
-
-          <div class="mt-[43px] max-w-[520px]" data-skills>
-            {
-              skills.map((skill) => (
-                <div class="mb-[30px] last:mb-0">
-                  <div class="flex items-baseline justify-between">
-                    <span class="text-ink text-lead leading-7 font-bold">{skill.label}</span>
-                    <span class="text-body text-base">{skill.value}%</span>
-                  </div>
-                  <div
-                    class="bg-line mt-[12px] h-2 w-full"
-                    role="progressbar"
-                    aria-valuenow={skill.value}
-                    aria-valuemin="0"
-                    aria-valuemax="100"
-                    aria-label={skill.label}
-                  >
-                    <div class="skill-bar bg-navy h-full w-0" data-value={skill.value} />
-                  </div>
-                </div>
-              ))
-            }
-          </div>
-        </div>
-
-        <div class="reveal" data-reveal-delay="0.1">
-          <Image
-            src={skillBg}
-            alt="Anchor Consultants advisers with a client"
-            class="h-auto w-full lg:h-[511px] lg:w-[650px] lg:object-cover"
-            loading="lazy"
-            widths={[650, 1300]}
-            sizes="(min-width: 992px) 650px, 100vw"
-          />
-        </div>
-      </div>
-    </div>
-  </section>
+  {
+    sections.length ? (
+      <SectionRenderer sections={sections} />
+    ) : (
+      <>
+        <PageBannerSection title="What We Do" crumb="Services" image={banner} />
+        <ServiceCardGrid />
+        <SkillsPanel />
+      </>
+    )
+  }
 </PageLayout>
-
-<script>
-  // A width transition needs no tween engine. This used to run through GSAP
-  // + ScrollTrigger, which pulled 43 KB gzipped onto this page for one
-  // effect. `onEnterViewport` gives it the same observer-plus-sweep
-  // guarantee the scroll reveals use, so a deferred IntersectionObserver
-  // callback cannot leave the bars stuck at zero.
-  import { prefersReducedMotion, onEnterViewport } from '../../lib/reveal';
-
-  const bars = [...document.querySelectorAll<HTMLElement>('.skill-bar')];
-  const fill = (bar: HTMLElement) => {
-    bar.style.width = `${Number(bar.dataset['value'] ?? 0)}%`;
-  };
-
-  if (prefersReducedMotion()) bars.forEach(fill);
-  else onEnterViewport(bars, fill);
-</script>
-
-<style>
-  .skill-bar {
-    transition: width 1.2s var(--ease-out-soft);
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .skill-bar {
-      transition: none;
-    }
-  }
-</style>

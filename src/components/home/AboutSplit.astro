@@ -88,7 +88,7 @@ const secondImage = second ?? {
 
         {
           cmsBody ? (
-            <div class="about-body text-body mt-[30px] max-w-[640px] text-base leading-[26px]">
+            <div class="prose-para text-body mt-[30px] max-w-[640px] text-base leading-[26px]">
               <PortableText value={cmsBody} />
             </div>
           ) : (
@@ -128,18 +128,3 @@ const secondImage = second ?? {
     </div>
   </div>
 </section>
-
-<style>
-  /* The shipped copy separated its three parts with a double <br>, which adds
-     one empty 26px line box. Portable Text gives real paragraphs instead, so
-     the same 26px reproduces the original rhythm exactly. */
-  .about-body :global(p) {
-    margin: 0;
-  }
-  .about-body :global(p + p) {
-    margin-top: 26px;
-  }
-  .about-body :global(strong) {
-    color: var(--color-ink-strong);
-  }
-</style>

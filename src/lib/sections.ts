@@ -123,6 +123,96 @@ export interface TestimonialCarouselBlock extends SectionBase {
   title?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Inner-page blocks (milestone 17)
+//
+// Each of these is named for the layout it renders rather than for something
+// generic, because the layouts were measured individually: the About intro's
+// image pair is absolutely positioned at specific offsets, and the skills panel
+// carries progress bars. A single "image and text" block with enough options to
+// cover all of them would be a spacing system in disguise, which is what spec
+// §4 rules out.
+// ---------------------------------------------------------------------------
+
+export interface PageBannerBlock extends SectionBase {
+  _type: 'pageBanner';
+  title?: string;
+  /** Trail after Home. The last entry is the current page. */
+  crumb?: string;
+  image?: CmsImageValue;
+}
+
+export interface AboutIntroBlock extends SectionBase {
+  _type: 'aboutIntro';
+  eyebrow?: string;
+  title?: string;
+  body?: unknown;
+  /** Main image then inset. The inset overlaps the main one. */
+  images?: SectionImage[];
+}
+
+export interface CopyWithImageBlock extends SectionBase {
+  _type: 'copyWithImage';
+  title?: string;
+  /** The bullet-style lines. Rendered with no gap between paragraphs. */
+  body?: unknown;
+  /** The closing paragraphs. Rendered one blank line apart. */
+  closing?: unknown;
+  image?: CmsImageValue;
+  imageAlt?: string;
+}
+
+export interface SkillsPanelBlock extends SectionBase {
+  _type: 'skillsPanel';
+  eyebrow?: string;
+  title?: string;
+  body?: string;
+  skills?: Array<{ label?: string; value?: number }>;
+  image?: CmsImageValue;
+  imageAlt?: string;
+}
+
+export interface ServiceCardGridBlock extends SectionBase {
+  _type: 'serviceCardGrid';
+  /** The cards come from the service documents; this is the link text on each. */
+  cardLinkLabel?: string;
+}
+
+export interface TestimonialGridBlock extends SectionBase {
+  _type: 'testimonialGrid';
+  /** Visually hidden, but it is the section's accessible heading. */
+  srHeading?: string;
+}
+
+export interface BlogIndexBlock extends SectionBase {
+  _type: 'blogIndex';
+  emptyHeading?: string;
+  emptyBody?: string;
+  emptyCta?: SectionLink;
+}
+
+export interface RichTextBlock extends SectionBase {
+  _type: 'richTextSection';
+  /** Optional callout above the prose, inside the same measure. */
+  notice?: { title?: string; body?: string };
+  body?: unknown;
+}
+
+export interface NoticeBlock extends SectionBase {
+  _type: 'notice';
+  title?: string;
+  body?: string;
+}
+
+export interface ErrorPanelBlock extends SectionBase {
+  _type: 'errorPanel';
+  /** Decorative, rendered as an aria-hidden paragraph rather than a heading. */
+  code?: string;
+  heading?: string;
+  body?: unknown;
+  cta?: SectionLink;
+}
+
 export type SectionBlock =
   | HeroCarouselBlock
   | ServiceHighlightRowBlock
@@ -131,7 +221,17 @@ export type SectionBlock =
   | EmiCalculatorBlock
   | LeaderProfileBlock
   | FaqAccordionBlock
-  | TestimonialCarouselBlock;
+  | TestimonialCarouselBlock
+  | PageBannerBlock
+  | AboutIntroBlock
+  | CopyWithImageBlock
+  | SkillsPanelBlock
+  | ServiceCardGridBlock
+  | TestimonialGridBlock
+  | BlogIndexBlock
+  | RichTextBlock
+  | NoticeBlock
+  | ErrorPanelBlock;
 
 /**
  * Drops a link that is missing either half.

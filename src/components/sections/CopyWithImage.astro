@@ -1,0 +1,105 @@
+---
+import CmsImage from '../ui/CmsImage.astro';
+import PortableText from '../shared/PortableText.astro';
+import { altProp, type CopyWithImageBlock } from '../../lib/sections';
+import plan from '../../assets/images/about/plan.jpg';
+
+// Measured from the original at 1440:
+//   section 817 tall, padding 0/110
+//   plan.jpg 570x500 at x=800 (dy 10)
+//   h2 dy 56 (650 wide), body dy 216 and dy 435 (16px/400, 26px line box)
+//
+// The copy here is markup-shaped rather than structure-shaped, which is the
+// whole difficulty. The original is two <p> elements: the first holds four
+// bullet-style lines separated by single <br>s, so they sit on consecutive
+// lines with no gap; the second holds two sentences separated by a double <br>,
+// so they sit one blank line apart.
+//
+// Portable Text has no way to say "line break, no gap" versus "blank line", so
+// the two <p> elements become two separate fields. Each renders into a
+// container carrying the original's own classes and width, and the CSS at the
+// bottom gives the first no gap between paragraphs and the second the 26px that
+// a double <br> produced as an empty line box. The result is the same pixels
+// with fully editable copy.
+//
+// The shipped markup is kept as the fallback, so a build with no CMS document
+// is byte-for-byte what it was.
+
+interface Props {
+  block?: CopyWithImageBlock;
+}
+const { block } = Astro.props;
+
+const title = block?.title ?? 'Why Choose Anchor Consultants?';
+const points = Array.isArray(block?.body) ? block.body : null;
+const closing = Array.isArray(block?.closing) ? block.closing : null;
+
+const image = block?.image ?? plan;
+const imageAlt = block?.imageAlt ?? "Anchor advisers planning a client's financing route";
+---
+
+<section class="pb-[110px]">
+  <div class="mx-auto w-full max-w-[1320px] px-3 lg:px-[10px]">
+    <div class="grid items-start gap-12 lg:grid-cols-[50%_43.846%] lg:justify-between lg:gap-0">
+      <div class="reveal lg:pt-[56px] lg:pb-[90px]">
+        <h2 class="text-section text-ink font-bold">{title}</h2>
+
+        {
+          points ? (
+            <div class="prose-lines text-body mt-[20px] max-w-[628px] text-base leading-[26px]">
+              <PortableText value={points} />
+            </div>
+          ) : (
+            <p class="text-body mt-[20px] max-w-[628px] text-base leading-[26px]">
+              <b class="text-ink-strong">&bull; Trusted Mortgage Experts:</b> Years of experience in
+              UAE banking, mortgage advisory, and property finance.
+              <br />
+              <b class="text-ink-strong">&bull; Access to Multiple Banks:</b> Compare mortgage
+              offers from all leading UAE banks to find competitive rates.
+              <br />
+              <b class="text-ink-strong">&bull; Tailored Financing Solutions:</b> Personalized
+              advice for first-time homebuyers, investors, and expats.
+              <br />
+              <b class="text-ink-strong">&bull; Transparent &amp; Efficient Process:</b> Clear
+              guidance from application to loan approval.
+            </p>
+          )
+        }
+
+        {
+          closing ? (
+            <div class="prose-para text-body mt-[11px] max-w-[624px] text-base leading-[26px]">
+              <PortableText value={closing} />
+            </div>
+          ) : (
+            <p class="text-body mt-[11px] max-w-[624px] text-base leading-[26px]">
+              At <b class="text-ink-strong">Anchor Consultants</b>, we simplify the complex mortgage
+              process and empower you with the knowledge and support you need to make
+              <>
+                <b class="text-ink-strong">confident property financing decisions.</b>
+                <br />
+                <br />
+              </>
+              <b class="text-ink-strong">Contact us today</b> to explore the best
+              <b class="text-ink-strong">
+                mortgage solutions in Dubai, Abu Dhabi, and across the UAE
+              </b>
+              , and secure your ideal home or investment property with expert guidance.
+            </p>
+          )
+        }
+      </div>
+
+      <div class="reveal lg:pt-[10px]" data-reveal-delay="0.1">
+        <CmsImage
+          src={image}
+          {...altProp(imageAlt)}
+          class="h-auto w-full lg:h-[500px] lg:w-[570px] lg:object-cover"
+          loading="lazy"
+          widths={[570, 1140]}
+          sizes="(min-width: 992px) 570px, 100vw"
+        />
+      </div>
+    </div>
+  </div>
+</section>

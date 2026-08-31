@@ -1,11 +1,23 @@
 ---
 import PageLayout from '../layouts/PageLayout.astro';
-import PageBanner from '../components/shared/PageBanner.astro';
+import SectionRenderer from '../components/sections/SectionRenderer.astro';
+import PageBannerSection from '../components/sections/PageBannerSection.astro';
 import { getSite } from '../data/get-site';
+import { pageSections, pageDescription } from '../lib/page';
 import { breadcrumbSchema } from '../lib/seo';
 import banner from '../assets/images/banners/generic-3.jpg';
 
 const site = await getSite();
+
+// This page is the one most likely to be replaced wholesale, since it is
+// waiting on legal text. Its shipped markup is kept as the fallback because the
+// holding copy uses per-element spacing a generic prose rhythm cannot match;
+// once real text arrives through the CMS, `.cms-prose` governs it.
+const pageBlocks = await pageSections('/privacy-policy/');
+const description = await pageDescription(
+  '/privacy-policy/',
+  'How Anchor Consultants handles personal data. Our full privacy policy is being finalised; contact us in the meantime with any privacy enquiry.',
+);
 
 /**
  * Privacy policy.
@@ -40,49 +52,64 @@ const sections = [
 
 <PageLayout
   title="Privacy Policy"
-  description="How Anchor Consultants handles personal data. Our full privacy policy is being finalised; contact us in the meantime with any privacy enquiry."
+  description={description}
   path="/privacy-policy/"
   noindex
   schemas={[breadcrumbSchema([{ name: 'Privacy Policy', path: '/privacy-policy/' }])]}
 >
-  <PageBanner title="Privacy Policy" crumb="Privacy Policy" image={banner} />
+  {
+    pageBlocks.length ? (
+      <SectionRenderer sections={pageBlocks} />
+    ) : (
+      <>
+        <PageBannerSection title="Privacy Policy" crumb="Privacy Policy" image={banner} />
 
-  <section class="py-[120px]">
-    <div class="mx-auto w-full max-w-[860px] px-3">
-      <div class="border-navy bg-mist border-l-4 p-6">
-        <h2 class="text-ink text-[22px] leading-[32px] font-bold">
-          This policy is being finalised
-        </h2>
-        <p class="text-body mt-3 text-base leading-[26px]">
-          We are preparing our full privacy policy. Until it is published, we are happy to answer
-          any question about how we handle your personal data. Contact us and we will respond
-          directly.
-        </p>
-      </div>
+        <section class="py-[120px]">
+          <div class="mx-auto w-full max-w-[860px] px-3">
+            <div class="border-navy bg-mist border-l-4 p-6">
+              <h2 class="text-ink text-[22px] leading-[32px] font-bold">
+                This policy is being finalised
+              </h2>
+              <p class="text-body mt-3 text-base leading-[26px]">
+                We are preparing our full privacy policy. Until it is published, we are happy to
+                answer any question about how we handle your personal data. Contact us and we will
+                respond directly.
+              </p>
+            </div>
 
-      <h2 class="text-ink mt-[50px] text-[26px] leading-[36px] font-bold">
-        What the policy will cover
-      </h2>
-      <ul class="text-body mt-5 list-disc space-y-2 pl-5 text-base leading-[26px]">
-        {sections.map((item) => <li>{item}</li>)}
-      </ul>
+            <h2 class="text-ink mt-[50px] text-[26px] leading-[36px] font-bold">
+              What the policy will cover
+            </h2>
+            <ul class="text-body mt-5 list-disc space-y-2 pl-5 text-base leading-[26px]">
+              {sections.map((item) => (
+                <li>{item}</li>
+              ))}
+            </ul>
 
-      <h2 class="text-ink mt-[50px] text-[26px] leading-[36px] font-bold">Privacy enquiries</h2>
-      <p class="text-body mt-4 text-base leading-[26px]">
-        Write to us at{' '}
-        <a href={site.contact.email.href} class="text-navy underline"
-          >{site.contact.email.address}</a
-        >{' '}
-        or call{' '}
-        <a href={site.contact.phone.href} class="text-navy underline"
-          >{site.contact.phone.display}</a
-        >. Our office is at {site.contact.address.single}.
-      </p>
+            <h2 class="text-ink mt-[50px] text-[26px] leading-[36px] font-bold">
+              Privacy enquiries
+            </h2>
+            <p class="text-body mt-4 text-base leading-[26px]">
+              Write to us at{' '}
+              <a href={site.contact.email.href} class="text-navy underline">
+                {site.contact.email.address}
+              </a>{' '}
+              or call{' '}
+              <a href={site.contact.phone.href} class="text-navy underline">
+                {site.contact.phone.display}
+              </a>
+              . Our office is at {site.contact.address.single}.
+            </p>
 
-      <p class="text-body mt-[50px] text-base leading-[26px]">
-        <a href="/contact/" class="text-navy underline">Get in touch</a> with any question about your
-        data.
-      </p>
-    </div>
-  </section>
+            <p class="text-body mt-[50px] text-base leading-[26px]">
+              <a href="/contact/" class="text-navy underline">
+                Get in touch
+              </a>{' '}
+              with any question about your data.
+            </p>
+          </div>
+        </section>
+      </>
+    )
+  }
 </PageLayout>

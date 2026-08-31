@@ -4,14 +4,23 @@ import { sectionLink } from './objects/sectionLink';
 import { seo } from './objects/seo';
 import { serviceFeature } from './objects/serviceFeature';
 
+import { aboutIntro } from './blocks/aboutIntro';
 import { aboutSplit } from './blocks/aboutSplit';
+import { blogIndex } from './blocks/blogIndex';
+import { copyWithImage } from './blocks/copyWithImage';
+import { errorPanel } from './blocks/errorPanel';
 import { emiCalculator } from './blocks/emiCalculator';
 import { faqAccordion } from './blocks/faqAccordion';
 import { heroCarousel } from './blocks/heroCarousel';
 import { leaderProfile } from './blocks/leaderProfile';
+import { pageBanner } from './blocks/pageBanner';
+import { richTextSection } from './blocks/richTextSection';
+import { serviceCardGrid } from './blocks/serviceCardGrid';
 import { serviceHighlightRow } from './blocks/serviceHighlightRow';
 import { servicesCarousel } from './blocks/servicesCarousel';
+import { skillsPanel } from './blocks/skillsPanel';
 import { testimonialCarousel } from './blocks/testimonialCarousel';
+import { testimonialGrid } from './blocks/testimonialGrid';
 
 import { faq } from './documents/faq';
 import { page } from './documents/page';
@@ -37,6 +46,16 @@ export const schemaTypes = [
   leaderProfile,
   faqAccordion,
   testimonialCarousel,
+  // inner-page blocks
+  pageBanner,
+  aboutIntro,
+  copyWithImage,
+  skillsPanel,
+  serviceCardGrid,
+  testimonialGrid,
+  blogIndex,
+  richTextSection,
+  errorPanel,
   // documents
   siteSettings,
   page,

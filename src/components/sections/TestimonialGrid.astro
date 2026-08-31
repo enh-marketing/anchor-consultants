@@ -1,0 +1,47 @@
+---
+import { getCollection } from 'astro:content';
+import type { TestimonialGridBlock } from '../../lib/sections';
+
+// Measured from the original at 1440:
+//   grid container 1160 wide, centred (x=140), 130px clear above and below
+//   3 columns, cards 385 wide on a 164px row pitch, padding 0 10px 60px
+//   quote 16px/400 #777 on a 26px line box, centred
+//   name 16px/700 #333, centred, 72px below the quote's top
+//
+// The quotes come from the `testimonial` documents, so the same set feeds the
+// home page carousel without being entered twice. All entries appear here; the
+// carousel shows the first five.
+//
+// The heading is visually hidden but real: the section needs an accessible name
+// and the page's h1 is in the banner. It is editable because it is read aloud.
+
+interface Props {
+  block?: TestimonialGridBlock;
+}
+const { block } = Astro.props;
+const srHeading = block?.srHeading ?? 'What our clients say';
+
+const testimonials = (await getCollection('testimonials')).sort(
+  (a, b) => a.data.order - b.data.order,
+);
+---
+
+<section class="py-[130px]">
+  <div class="mx-auto w-full max-w-[1160px] px-3 lg:px-0">
+    <h2 class="sr-only-focusable absolute">{srHeading}</h2>
+    <ul class="grid list-none gap-x-0 sm:grid-cols-2 lg:grid-cols-3">
+      {
+        testimonials.map((t) => (
+          <li class="reveal px-[10px] pb-[60px]">
+            <figure class="pb-[8px] text-center">
+              <blockquote class="text-body text-base leading-[26px]">{t.data.quote}</blockquote>
+              <figcaption class="mt-5 text-base leading-6 font-bold text-[#333]">
+                {t.data.name} &ndash; {t.data.location}
+              </figcaption>
+            </figure>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

@@ -51,6 +51,10 @@ export const page = defineType({
       description:
         'The page, top to bottom. Drag to reorder. Each section has a "Hide" toggle, so a section can be taken off the page without losing its content.',
       of: [
+        // Any page
+        { type: 'pageBanner' },
+        { type: 'richTextSection' },
+        // Home page sections
         { type: 'heroCarousel' },
         { type: 'serviceHighlightRow' },
         { type: 'aboutSplit' },
@@ -59,6 +63,14 @@ export const page = defineType({
         { type: 'leaderProfile' },
         { type: 'faqAccordion' },
         { type: 'testimonialCarousel' },
+        // Inner-page sections
+        { type: 'aboutIntro' },
+        { type: 'copyWithImage' },
+        { type: 'skillsPanel' },
+        { type: 'serviceCardGrid' },
+        { type: 'testimonialGrid' },
+        { type: 'blogIndex' },
+        { type: 'errorPanel' },
       ],
       validation: (Rule) => Rule.required().min(1),
     }),

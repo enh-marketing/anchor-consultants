@@ -1,0 +1,44 @@
+---
+import PortableText from '../shared/PortableText.astro';
+import NoticeSection from './NoticeSection.astro';
+import type { RichTextBlock } from '../../lib/sections';
+
+/**
+ * A page of editable prose, optionally opening with a callout.
+ *
+ * The section wrapper and the 860px measure live here rather than being
+ * separate blocks, because the notice sits inside the same container on the
+ * original. Two top-level blocks would each bring their own 120px padding and
+ * double the gap.
+ *
+ * The type scale is fixed by `.cms-prose` in `global.css`, so an editor writing
+ * a Heading 2 gets the site's h2 and cannot choose a size. Spacing between
+ * elements is a single rhythm rather than the original's per-element values:
+ * generic CSS cannot reproduce "50px above this heading but 16px above that
+ * paragraph", and inventing a spacing field for it is exactly what spec §4
+ * rules out. Pages that need the original rhythm exactly keep their shipped
+ * markup as the fallback.
+ *
+ * `PortableText` escapes every text node, so nothing an editor types can inject
+ * markup.
+ */
+interface Props {
+  block?: RichTextBlock;
+}
+const { block } = Astro.props;
+const body = Array.isArray(block?.body) ? block.body : null;
+const notice = block?.notice;
+---
+
+<section class="py-[120px]">
+  <div class="mx-auto w-full max-w-[860px] px-3">
+    {notice?.title && <NoticeSection title={notice.title} body={notice.body ?? ''} />}
+    {
+      body && (
+        <div class="cms-prose text-body text-base leading-[26px]">
+          {<PortableText value={body} />}
+        </div>
+      )
+    }
+  </div>
+</section>

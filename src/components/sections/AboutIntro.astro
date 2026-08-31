@@ -1,0 +1,73 @@
+---
+import CmsImage from '../ui/CmsImage.astro';
+import SectionHeading from '../ui/SectionHeading.astro';
+import { altProp, type AboutIntroBlock } from '../../lib/sections';
+import aboutMain from '../../assets/images/about/about-page.jpg';
+import aboutInset from '../../assets/images/about/split-1.jpg';
+
+// Measured from the original at 1440:
+//   section 818 tall, padding 110/100
+//   about.jpg 568x528 at x=70 (dy 120), about-1.jpg 420x420 at x=220 (dy 288)
+//   eyebrow dy 204, h2 dy 247 (60px/700, 70px line box, 640 wide)
+//   body dy 487 (18px/400 #777, 28px line box, 666 wide)
+//
+// The inset is absolutely positioned against measured offsets, which is why
+// this is its own block rather than a general "image and text" one: the pair is
+// a fixed composition, not a gallery.
+//
+// The body is a plain string rather than rich text. It is one paragraph with no
+// inline formatting, and a string keeps the markup identical whether the copy
+// comes from the CMS or from the fallback below.
+
+interface Props {
+  block?: AboutIntroBlock;
+}
+const { block } = Astro.props;
+
+const eyebrow = block?.eyebrow ?? 'About Us';
+const title = block?.title ?? 'The Region’s Leading Business & Finance Consultancy';
+const body =
+  typeof block?.body === 'string'
+    ? block.body
+    : 'The Region’s Leading Business & Finance Consultancy With a foundation built on integrity and deep market insights, we bridge the gap between complex financial challenges and successful outcomes. We specialize in navigating the intricate landscapes of UAE real estate and global finance, ensuring our clients achieve sustainable wealth.';
+
+const pair = (block?.images ?? []).flatMap((entry) => (entry.image ? [entry] : []));
+const main = pair[0] ?? {
+  image: aboutMain,
+  alt: 'The Anchor Consultants advisory team in discussion',
+};
+const inset = pair[1] ?? {
+  image: aboutInset,
+  alt: 'Advisers reviewing property financing options with a client',
+};
+---
+
+<section class="pt-[110px] pb-[100px]">
+  <div class="mx-auto w-full max-w-[1320px] px-3 lg:px-[10px]">
+    <div class="grid items-start gap-12 lg:grid-cols-[50.769%_49.231%] lg:justify-between lg:gap-0">
+      <div class="reveal relative lg:h-[608px] lg:py-[10px]">
+        <CmsImage
+          src={main.image!}
+          {...altProp(main.alt)}
+          class="h-auto w-full lg:h-[528px] lg:w-[568px] lg:object-cover"
+          loading="eager"
+          widths={[568, 1136]}
+          sizes="(min-width: 992px) 568px, 100vw"
+        />
+        <CmsImage
+          src={inset.image!}
+          {...altProp(inset.alt)}
+          class="mt-4 h-auto w-[70%] lg:absolute lg:top-[178px] lg:left-[22.727%] lg:mt-0 lg:h-[420px] lg:w-[63.636%] lg:object-cover"
+          loading="lazy"
+          widths={[420, 840]}
+          sizes="(min-width: 992px) 420px, 70vw"
+        />
+      </div>
+
+      <div class="reveal lg:pt-[94px]" data-reveal-delay="0.1">
+        <SectionHeading eyebrow={eyebrow} title={title} />
+        <p class="text-body text-lead mt-[30px] max-w-[666px] leading-7">{body}</p>
+      </div>
+    </div>
+  </div>
+</section>
