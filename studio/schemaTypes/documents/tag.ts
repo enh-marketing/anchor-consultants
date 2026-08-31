@@ -1,5 +1,6 @@
 import { defineType, defineField } from 'sanity';
 import { isUniqueSlug } from '../uniqueSlug';
+import { isSafeSlug } from '../../../src/lib/slug';
 
 /**
  * A blog tag.
@@ -21,7 +22,7 @@ export const tag = defineType({
       name: 'slug',
       type: 'slug',
       options: { source: 'title', maxLength: 96, isUnique: isUniqueSlug },
-      validation: (Rule) => Rule.required(),
+      validation: (Rule) => Rule.required().custom((value) => isSafeSlug(value?.current)),
     }),
   ],
   preview: { select: { title: 'title', subtitle: 'slug.current' } },

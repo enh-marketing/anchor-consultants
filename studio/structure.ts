@@ -22,6 +22,11 @@ export const structure: StructureResolver = (S) =>
       S.documentTypeListItem('author').title('Authors'),
       S.documentTypeListItem('faq').title('FAQs'),
       S.documentTypeListItem('form').title('Forms'),
+      // Its own divider: enquiries are records rather than content, and the
+      // separation is a reminder that editing them is not a thing you do.
+      S.divider(),
+      S.documentTypeListItem('submission').title('Form submissions'),
+      S.divider(),
       S.documentTypeListItem('testimonial').title('Testimonials'),
       S.documentTypeListItem('teamMember').title('Team'),
     ]);

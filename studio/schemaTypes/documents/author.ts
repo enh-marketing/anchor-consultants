@@ -1,5 +1,6 @@
 import { defineType, defineField } from 'sanity';
 import { isUniqueSlug } from '../uniqueSlug';
+import { isSafeSlug } from '../../../src/lib/slug';
 
 /**
  * A post author.
@@ -24,7 +25,7 @@ export const author = defineType({
       options: { source: 'name', maxLength: 96, isUnique: isUniqueSlug },
       description:
         'Not a URL yet. Reserved so author pages can be added without renaming anything.',
-      validation: (Rule) => Rule.required(),
+      validation: (Rule) => Rule.required().custom((value) => isSafeSlug(value?.current)),
     }),
     defineField({
       name: 'role',

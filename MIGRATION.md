@@ -1207,6 +1207,122 @@ credentials, which the client has not supplied. Both paths are implemented and
 the endpoint reports `delivered: false` with the reason rather than pretending,
 which the forms surface in plain words.
 
+### Vercel, submission storage and rate limiting — Milestone 22 COMPLETE
+
+Unblocked by two client decisions: **Vercel** for hosting, and submissions in the
+**same Sanity dataset**.
+
+**Adapter swapped to Vercel.** Output is `.vercel/output/`: 12 static pages and
+one function serving `/api/contact` only. `/404.html` is wired as a real 404
+status rather than a soft 200, and `_astro` gets an immutable cache header. Every
+page verified identical to the previous build. `.vercel/` added to `.gitignore`.
+
+`astro preview` does not exist for this adapter, so `npm run preview` now runs
+`scripts/serve-compressed.mjs`. That is the better local server anyway: milestone
+14 established that an uncompressed preview produces misleading Lighthouse
+numbers.
+
+**A dependency advisory, stated plainly.** `@astrojs/vercel` pulls in
+`@vercel/routing-utils`, which depends on a version of `path-to-regexp` with a
+backtracking-regex advisory (GHSA-9wv6-86v2-598j, high). There is no forward
+fix — `npm audit fix` only offers a semver-major downgrade of the adapter. The
+package runs at build time to compile the routing config, not in the deployed
+function, so exploiting it needs attacker-controlled route patterns.
+
+This site does feed one source of external input into that config: CMS slugs,
+through `[...slug].astro`. So slugs are now constrained. `src/lib/slug.ts`
+restricts them to lower-case letters, numbers and single hyphens or slashes, and
+it is wired into all six slugged types. It lives in `src/` rather than `studio/`
+specifically so `npm test` can exercise it — a validation rule nobody runs is a
+validation rule that quietly stops working. Seven tests cover it, including the
+nested-quantifier shapes the advisory is about.
+
+_Caught by checking against the live dataset:_ the first version of the rule
+rejected `/about/`. Page slugs are stored as full paths with both slashes, while
+every other type stores a bare segment, and a rule that only accepted one shape
+would have made all five existing page documents invalid in the Studio. Both
+shapes are now accepted and both are covered by tests naming the real slugs.
+
+**Submissions.** A `submission` document, written by the form endpoint and read
+only in the Studio. The client chose the shared dataset knowing that anyone who
+can open the Studio can read every enquiry; three things reduce the exposure
+without changing that decision:
+
+- Every field is `readOnly`. An enquiry is a record of what someone sent, not
+  content, and nobody should be able to edit one.
+- **No IP address is stored.** Rate limiting needs to recognise a repeat
+  submitter, not identify one, so only a salted SHA-256 hash is kept. Without
+  `SUBMISSION_SALT` — which lives in the environment — a full copy of the dataset
+  cannot be turned back into a list of addresses.
+- Nothing on the site ever queries the type. No page, loader or collection
+  touches it, so it cannot leak into a build.
+
+Sanity's role-based access can hide the type from ordinary editors later with no
+change here. It sits in its own dividered section of the Studio as a reminder
+that editing enquiries is not a thing anyone does.
+
+Stored per submission: form name, timestamp, a summary for scanning, every
+declared field as a label-and-value pair, attachment filenames, consent, source
+page, and whether the notification email actually sent.
+
+**Consent and source page.** Consent is recorded only when the form has a tick
+box — a stored `false` on a form that never asked would be a claim about
+something nobody was shown. The source page comes from a hidden field and is
+validated as a path, so a tracking parameter cannot ride along into the record.
+Verified: every page reports its own path.
+
+**Rate limiting: five submissions per fingerprint per ten minutes**, counted from
+the stored submissions rather than a separate store. That needs no extra service
+and, unlike an in-memory counter, holds across serverless instances — each cold
+start would otherwise forget everything. It fails open: if the count cannot be
+read the submission is allowed, because blocking a real enquiry over a failed
+query is worse than letting one through, and reCAPTCHA is still in front.
+
+Tested end to end against the real dataset, through the real route:
+
+| Request                    | Result                                    |
+| -------------------------- | ----------------------------------------- |
+| Submissions 1–5, same IP   | 200, all five stored                      |
+| Submission 6, same IP      | **429** with the wait message             |
+| Submission 7, different IP | 200, unaffected                           |
+| Stored fingerprints        | 2 distinct, neither containing the raw IP |
+| Stored entries             | Label and value per field, in form order  |
+
+The write token came from the Sanity CLI's own session, set on that test
+process only. No credential was created, pasted or written to disk.
+
+**reCAPTCHA: the keys stay in the environment.** The plan had the site key moving
+to Site Settings, and that was wrong. A site key and its secret are a matched
+pair; splitting them across the CMS and the deployment lets them drift, and a
+mismatched pair fails every submission silently. What spec §12 actually needs is
+per-form control, so each form has a **Spam protection** toggle instead, on by
+default, with only an explicit `false` turning it off — a half-filled document
+cannot disable it. Turning it off logs a warning, because it is a real reduction
+in protection rather than a preference.
+
+**Retention.** `studio/scripts/prune-submissions.mjs` deletes submissions older
+than a window, in one transaction so a partial failure leaves nothing
+half-deleted. It refuses to run without an explicit `--days`, because the
+retention window is a decision the client makes rather than a default they
+inherit. Enquiries are personal data and keeping them forever is a liability, not
+a feature. **The policy itself is still needed from the client.**
+
+**Everything degrades loudly.** With no write token, enquiries are still emailed
+and nothing is stored — losing the archive is bad, losing the enquiry is worse —
+and the log says so once. With no salt, rate limiting is off and no fingerprint
+is recorded, and the log says that too. Silent degradation is how a site ends up
+believing it has protections it does not.
+
+**Checks:** every page identical to the previous build, no credential or
+submission field anywhere in the client output, 35 tests passing (up from 25),
+`astro check` 0 errors and 0 warnings across 133 files, `sanity schema validate`
+0 errors, Prettier clean.
+
+**Two new environment variables**, documented in `.env.example`:
+`SANITY_WRITE_TOKEN` and `SUBMISSION_SALT`. Both server-only. **The client needs
+to set these on Vercel**, along with the SMTP and reCAPTCHA values still
+outstanding.
+
 ## Open Questions
 
 These need your input. None of them block starting at Milestone 0; I have noted the assumption I will proceed with if you would rather decide later.

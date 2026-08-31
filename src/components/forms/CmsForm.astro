@@ -107,6 +107,12 @@ const ICON_PATHS: Record<string, string> = {
   novalidate
 >
   <input type="hidden" name="kind" value={form.id} />
+  {
+    /* Which page the enquiry came from. Useful when the same form sits on
+      several pages, and it is the page path only — no query string, so a
+      tracking parameter cannot ride along into the stored record. */
+  }
+  <input type="hidden" name="source" value={Astro.url.pathname} />
 
   <!-- Honeypot. Off-screen rather than display:none, which some bots skip. -->
   <div class="sr-only-focusable absolute" aria-hidden="true">

@@ -3,6 +3,13 @@ import nodemailer from 'nodemailer';
 import { validateForm, hasFormErrors, CV_MAX_BYTES, type FormValues } from '../../lib/forms';
 import { getSite } from '../../data/get-site';
 import { getForm } from '../../data/get-forms';
+import {
+  fingerprint,
+  isRateLimited,
+  storeSubmission,
+  RATE_WINDOW_MINUTES,
+  type SubmissionEntry,
+} from '../../lib/submissions';
 
 /**
  * The only server route in the build. Everything else prerenders.
@@ -124,7 +131,28 @@ export const POST: APIRoute = async ({ request }) => {
     }
   }
 
-  const captcha = await verifyRecaptcha(String(form.get('token') ?? '') || undefined);
+  // Rate limit before reCAPTCHA, so a flood costs us no calls to Google.
+  const submitter = fingerprint(request);
+  if (await isRateLimited(submitter)) {
+    return json(
+      {
+        ok: false,
+        delivered: false,
+        reason: `That is several messages in a short time. Please wait ${RATE_WINDOW_MINUTES} minutes, or call us.`,
+      },
+      429,
+    );
+  }
+
+  // `requireCaptcha` defaults to on, and turning it off is a real reduction in
+  // protection rather than a preference — hence the log line.
+  const wantsCaptcha = definition.requireCaptcha !== false;
+  if (!wantsCaptcha) {
+    console.warn(`[contact] reCAPTCHA is disabled for the "${definition.id}" form.`);
+  }
+  const captcha = wantsCaptcha
+    ? await verifyRecaptcha(String(form.get('token') ?? '') || undefined)
+    : null;
   if (captcha && !captcha.ok) {
     return json(
       { ok: false, delivered: false, reason: captcha.reason ?? 'Verification failed.' },
@@ -147,6 +175,26 @@ export const POST: APIRoute = async ({ request }) => {
   const attachedNames = Object.values(files).map((f) => f.name);
   if (attachedNames.length) lines.push('', `Attached: ${attachedNames.join(', ')}`);
 
+  /** The same values as the email, kept as label-and-value pairs for the archive. */
+  const entries: SubmissionEntry[] = definition.fields
+    .filter((field) => field.type !== 'file' && field.type !== 'checkbox')
+    .flatMap((field) => {
+      const value = typeof values[field.name] === 'string' ? String(values[field.name]).trim() : '';
+      return value ? [{ label: field.label, value }] : [];
+    });
+
+  // Consent is only recorded when the form actually asks for it. A stored
+  // `false` on a form with no tick box would be a claim about something nobody
+  // was ever shown.
+  const consentField = definition.fields.find((field) => field.type === 'checkbox');
+  const consent = consentField
+    ? values[consentField.name] === 'on' || values[consentField.name] === 'true'
+    : undefined;
+
+  // Path only, and only if it looks like one. The value arrives from the client.
+  const rawSource = String(form.get('source') ?? '');
+  const sourcePage = /^\/[\w\-/.]*$/.test(rawSource) ? rawSource : '';
+
   // Used for Reply-To and the confirmation, when the form collects an address.
   const emailField = definition.fields.find((field) => field.type === 'email');
   const replyTo = emailField ? String(values[emailField.name] ?? '').trim() : '';
@@ -161,6 +209,22 @@ export const POST: APIRoute = async ({ request }) => {
         `  form: ${definition.id}\n` +
         lines.map((line) => `  ${line}`).join('\n'),
     );
+    // Still archived: the enquiry is real even when the mail is not going out,
+    // and `delivered: false` on the record is what flags it for following up.
+    await storeSubmission(
+      {
+        formId: definition.id,
+        formName: definition.name,
+        summary: submitterName || replyTo || definition.name,
+        entries,
+        attachments: attachedNames,
+        sourcePage,
+        consent,
+        delivered: false,
+      },
+      submitter,
+    );
+
     return json({
       ok: true,
       delivered: false,
@@ -241,6 +305,25 @@ export const POST: APIRoute = async ({ request }) => {
     } catch (error) {
       console.error('[contact] confirmation email failed (enquiry was delivered)', error);
     }
+  }
+
+  const stored = await storeSubmission(
+    {
+      formId: definition.id,
+      formName: definition.name,
+      summary: submitterName || replyTo || definition.name,
+      entries,
+      attachments: attachedNames,
+      sourcePage,
+      consent,
+      delivered: true,
+    },
+    submitter,
+  );
+  if (!stored) {
+    // The visitor is not told: their message was delivered, which is what they
+    // care about. The warning in the log is for whoever runs the deployment.
+    console.warn('[contact] enquiry delivered but not archived');
   }
 
   return json({ ok: true, delivered: true });

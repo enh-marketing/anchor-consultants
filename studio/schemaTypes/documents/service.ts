@@ -1,5 +1,6 @@
 import { defineType, defineField } from 'sanity';
 import { isUniqueSlug } from '../uniqueSlug';
+import { isSafeSlug } from '../../../src/lib/slug';
 
 /**
  * Mirrors the `services` collection in src/content.config.ts field for field,
@@ -20,7 +21,7 @@ export const service = defineType({
       type: 'slug',
       options: { source: 'title', maxLength: 96, isUnique: isUniqueSlug },
       description: 'Sets the URL: /services/<slug>/. Changing it breaks existing links.',
-      validation: (Rule) => Rule.required(),
+      validation: (Rule) => Rule.required().custom((value) => isSafeSlug(value?.current)),
     }),
     defineField({
       name: 'shortTitle',

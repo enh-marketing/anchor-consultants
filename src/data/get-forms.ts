@@ -51,6 +51,7 @@ interface FormDoc {
   validationMessage?: string;
   recipientEmail?: string;
   subjectPrefix?: string;
+  requireCaptcha?: boolean;
   sendConfirmation?: boolean;
   confirmationSubject?: string;
   confirmationBody?: string;
@@ -58,7 +59,7 @@ interface FormDoc {
 
 const QUERY = `*[_type == "form" && !(_id in path("drafts.**"))]{
   formId, name, submitLabel, successMessage, errorMessage, validationMessage,
-  recipientEmail, subjectPrefix, sendConfirmation, confirmationSubject, confirmationBody,
+  recipientEmail, subjectPrefix, requireCaptcha, sendConfirmation, confirmationSubject, confirmationBody,
   "fields": fields[]{
     name, type, label, placeholder, required, helpText, requiredMessage, invalidMessage,
     maxLength, width, icon, rows, autocomplete,
@@ -120,6 +121,9 @@ function merge(doc: FormDoc, fallback: FormDefinition): FormDefinition {
     validationMessage: doc.validationMessage ?? fallback.validationMessage,
     ...(doc.recipientEmail ? { recipientEmail: doc.recipientEmail } : {}),
     subjectPrefix: doc.subjectPrefix ?? fallback.subjectPrefix,
+    // Absent means on. Only an explicit false turns the check off, so a
+    // half-filled document cannot quietly disable spam protection.
+    requireCaptcha: doc.requireCaptcha !== false,
     ...(doc.sendConfirmation ? { sendConfirmation: true } : {}),
     ...(doc.confirmationSubject ? { confirmationSubject: doc.confirmationSubject } : {}),
     ...(doc.confirmationBody ? { confirmationBody: doc.confirmationBody } : {}),

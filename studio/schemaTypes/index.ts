@@ -31,6 +31,7 @@ import { page } from './documents/page';
 import { post } from './documents/post';
 import { service } from './documents/service';
 import { siteSettings } from './documents/siteSettings';
+import { submission } from './documents/submission';
 import { tag } from './documents/tag';
 import { teamMember } from './documents/teamMember';
 import { testimonial } from './documents/testimonial';
@@ -72,6 +73,7 @@ export const schemaTypes = [
   tag,
   faq,
   form,
+  submission,
   testimonial,
   teamMember,
 ];

@@ -58,7 +58,7 @@ and the milestone checklist.
 ```bash
 npm run dev      # dev server on :4321
 npm run build    # static build to dist/
-npm run preview  # serve the build
+npm run preview  # serve the build with gzip, as deployed
 npm run check    # astro check (types + templates)
 ```
 

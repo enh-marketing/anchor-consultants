@@ -2,7 +2,7 @@
 import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 import sitemap from '@astrojs/sitemap';
-import node from '@astrojs/node';
+import vercel from '@astrojs/vercel';
 
 import { SITE_URL } from './src/data/site-url.mjs';
 import { sitemapNoindex } from './src/lib/sitemap-noindex.mjs';
@@ -16,9 +16,13 @@ export default defineConfig({
   // an adapter — reCAPTCHA v3 must verify its token server-side.
   output: 'static',
 
-  // Neutral adapter: runs locally via `npm run preview` and on any Node host.
-  // Swapping to @astrojs/vercel or @astrojs/netlify later is this one line.
-  adapter: node({ mode: 'standalone' }),
+  // Vercel, chosen by the client. Only the form endpoint runs as a function;
+  // everything else is prerendered and served as static files.
+  //
+  // `webAnalytics` is deliberately off. It sets a cookie-free first-party
+  // script, but it is still third-party data collection and turning it on is
+  // the client's call, not a default.
+  adapter: vercel(),
 
   build: {
     // Matches the WordPress URL shape: /about/ rather than /about.html

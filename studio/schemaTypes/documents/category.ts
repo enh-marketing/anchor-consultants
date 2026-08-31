@@ -1,5 +1,6 @@
 import { defineType, defineField } from 'sanity';
 import { isUniqueSlug } from '../uniqueSlug';
+import { isSafeSlug } from '../../../src/lib/slug';
 
 /**
  * A blog category.
@@ -23,7 +24,7 @@ export const category = defineType({
       type: 'slug',
       options: { source: 'title', maxLength: 96, isUnique: isUniqueSlug },
       description: 'Sets the archive URL: /blog/category/<slug>/.',
-      validation: (Rule) => Rule.required(),
+      validation: (Rule) => Rule.required().custom((value) => isSafeSlug(value?.current)),
     }),
     defineField({
       name: 'description',

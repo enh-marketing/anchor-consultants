@@ -256,6 +256,15 @@ export const form = defineType({
       description: 'The submitter’s name is appended, e.g. "Website enquiry — Jane Doe".',
     }),
     defineField({
+      name: 'requireCaptcha',
+      title: 'Spam protection',
+      type: 'boolean',
+      group: 'delivery',
+      description:
+        'On by default. Turning it off means this form accepts submissions without the spam check, which usually means more junk. The reCAPTCHA keys themselves are deployment settings, not content: a site key and its secret must match, and keeping them together is what stops them drifting apart.',
+      initialValue: true,
+    }),
+    defineField({
       name: 'sendConfirmation',
       title: 'Also email the person who submitted',
       type: 'boolean',

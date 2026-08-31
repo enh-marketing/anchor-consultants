@@ -277,6 +277,29 @@ it. A button set to "Go to a page" with no destination is not rendered.
 The phone number is stored once, in international format. Every `tel:` link on
 the site is built from it.
 
+### Form submissions
+
+**Form submissions** in the sidebar lists every enquiry, newest first, with the
+name and email in the title so the list can be scanned.
+
+Everything is read-only. An enquiry is a record of what somebody sent, so it
+cannot be edited — only read, and eventually deleted under the retention policy.
+
+`EMAIL NOT SENT` in a row means the enquiry was received and stored but the
+notification email failed. Those need following up by hand.
+
+Two things worth knowing:
+
+- **No IP addresses are kept.** Rate limiting needs to recognise a repeat
+  submitter, not identify one, so only a one-way hash is stored.
+- **These are personal data.** Anyone who can open this Studio can read every
+  enquiry. If that needs restricting, Sanity's role-based access can hide this
+  section from ordinary editors. Ask before granting Studio access to someone who
+  only needs to edit content.
+
+Old submissions are deleted by a script, not automatically. The retention window
+has not been decided yet — that is a decision for whoever owns the data.
+
 ### Editing a form
 
 **Forms** in the sidebar holds the enquiry form and the CV upload form. Editing

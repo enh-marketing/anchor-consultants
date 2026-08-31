@@ -69,6 +69,15 @@ export interface FormDefinition {
   /** Overrides the site email. */
   recipientEmail?: string;
   subjectPrefix: string;
+  /**
+   * Whether this form requires a reCAPTCHA token.
+   *
+   * Defaults to on. The keys themselves stay in the environment: a site key and
+   * its secret are a matched pair, and splitting them across the CMS and the
+   * deployment would let them drift, which fails every submission silently.
+   * What is worth controlling per form is whether the check applies at all.
+   */
+  requireCaptcha?: boolean;
   /** Sends the submitter an acknowledgement as well as notifying the office. */
   sendConfirmation?: boolean;
   confirmationSubject?: string;
