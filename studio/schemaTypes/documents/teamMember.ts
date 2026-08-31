@@ -7,7 +7,12 @@ export const teamMember = defineType({
   fields: [
     defineField({ name: 'name', type: 'string', validation: (Rule) => Rule.required() }),
     defineField({ name: 'role', type: 'string', validation: (Rule) => Rule.required() }),
-    defineField({ name: 'bio', type: 'text', rows: 5 }),
+    defineField({
+      name: 'bio',
+      type: 'blockContent',
+      description:
+        'The leader bio on the homepage emphasises names, tenure and institutions in bold, so this is rich text rather than a plain textarea.',
+    }),
     defineField({ name: 'photo', type: 'altImage' }),
     defineField({
       name: 'order',

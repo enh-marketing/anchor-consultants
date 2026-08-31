@@ -161,6 +161,8 @@ const team = defineCollection({
       photo: z.union([image(), sanityImage]).optional(),
       photoAlt: z.string().optional(),
       order: z.number().default(99),
+      /** Portable Text from Sanity; the markdown fallback uses the file body. */
+      bio: portableText,
     }),
 });
 

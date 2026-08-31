@@ -10,9 +10,13 @@ and the milestone checklist.
 - **Never copy WordPress or plugin CSS, JS, PHP or markup.** Recreate behaviour
   from scratch. The original runs jQuery, Bootstrap, Swiper (twice), Isotope,
   Font Awesome and Chart.js; none of that belongs here.
-- **No remote assets.** Everything is served locally. `astro.config.mjs` sets
+- **No remote assets, with one sanctioned exception.** `astro.config.mjs` sets
   empty `domains`/`remotePatterns` deliberately: the WordPress build hotlinked
-  the theme author's demo server, and that must never reappear.
+  the theme author's demo server, and that must never reappear. The exception is
+  `cdn.sanity.io`, once a collection is served from Sanity — CMS-managed imagery
+  has to come from the CMS. It goes through `src/components/ui/CmsImage.astro`
+  and Sanity's URL builder, never a bare `<img>`, so `srcset`, `sizes` and WebP
+  survive. Decorative and theme imagery stays in `src/assets/`.
 - **No new dependencies** without a clear reason. Astro, Tailwind, TypeScript
   and GSAP cover almost everything.
 - **Content never lives in markup.** It goes in `src/content/` collections or

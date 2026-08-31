@@ -221,12 +221,21 @@ Order of work:
 
 ### Two things that need real thought
 
-**Images.** `image()` in the current schemas gives Astro's optimiser a local
-file, which is where the responsive `srcset` and WebP output come from. Sanity
-serves images through its own CDN with a different transform API. Either keep
-imagery in the repo and reference it by path from Sanity, or switch the
-components to Sanity's image URL builder — but do not leave them as bare
-`<img>` tags, or the work in milestone 14 on image sizing is lost.
+**Images — decided.** Content imagery now lives in Sanity and is served from
+`cdn.sanity.io` through Sanity's image URL builder, wrapped by
+`src/components/ui/CmsImage.astro`. That component renders one `<img>` from
+either source, so `srcset`, `sizes`, WebP and the milestone 14 sizing all
+survive the move. Two details worth keeping in mind:
+
+- `fit=max` never upscales, so `CmsImage` clamps requested widths to the
+  asset's own width. Without that the srcset advertises a 2x candidate the CDN
+  serves at 1x, and dense displays fetch a second identical copy.
+- Alt text is authored on the image object in the Studio and wins over any
+  sibling `*Alt` frontmatter field, since the person replacing a photo is the
+  person who should describe it.
+
+Decorative and theme imagery (banners, backgrounds, icons) stays in
+`src/assets/` and keeps going through Astro's optimiser.
 
 **Portable Text.** Markdown bodies become Portable Text. The blog post template
 styles its body with a `.prose-body` block in

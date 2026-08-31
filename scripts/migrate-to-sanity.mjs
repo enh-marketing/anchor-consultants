@@ -168,6 +168,44 @@ function unquote(v) {
   return s;
 }
 
+/**
+ * One paragraph's inline markdown to Portable Text spans.
+ *
+ * Only `**strong**` and `*em*` are handled, because those are the only inline
+ * marks the migrated content uses. The team bio emphasises four phrases, and
+ * those are editorial emphasis rather than styling, so they have to survive the
+ * move as marks and not as literal asterisks.
+ *
+ * Anything else — links, code, images inside a paragraph — is left as plain
+ * text on purpose. Silently half-converting a syntax is worse than not
+ * claiming to support it; add it here when content actually needs it.
+ */
+function toSpans(text, blockKey) {
+  const spans = [];
+  const pattern = /\*\*(.+?)\*\*|\*(.+?)\*/g;
+  let last = 0;
+  let match;
+  const push = (value, marks) => {
+    if (!value) return;
+    spans.push({
+      _type: 'span',
+      _key: `${blockKey}s${spans.length}`,
+      text: value,
+      marks,
+    });
+  };
+
+  while ((match = pattern.exec(text)) !== null) {
+    push(text.slice(last, match.index), []);
+    push(match[1] ?? match[2], [match[1] ? 'strong' : 'em']);
+    last = match.index + match[0].length;
+  }
+  push(text.slice(last), []);
+
+  // A paragraph is never allowed to become an empty block.
+  return spans.length ? spans : [{ _type: 'span', _key: `${blockKey}s0`, text, marks: [] }];
+}
+
 /** Paragraphs to Portable Text blocks. */
 function toPortableText(markdown) {
   if (!markdown) return undefined;
@@ -180,7 +218,7 @@ function toPortableText(markdown) {
       _key: `b${i}`,
       style: 'normal',
       markDefs: [],
-      children: [{ _type: 'span', _key: `s${i}`, text, marks: [] }],
+      children: toSpans(text, `b${i}`),
     }));
 }
 
@@ -264,90 +302,116 @@ async function upsertBy(type, field, value, doc) {
   }
 }
 
-export async function run({ client: injected, dry } = {}) {
+/**
+ * @param {object} [options]
+ * @param {import('@sanity/client').SanityClient} [options.client]
+ * @param {boolean} [options.dry]
+ * @param {string[]} [options.only] Sections to import. Defaults to all of them.
+ *   Images are uploaded fresh on every run and Sanity does not deduplicate
+ *   them, so re-importing everything to fix one document would litter the media
+ *   library. Naming a section keeps a re-run proportionate to the change.
+ */
+export async function run({ client: injected, dry, only } = {}) {
   if (dry !== undefined) dryRun = dry;
   client = injected ?? clientFromToken();
+  const wanted = only?.length ? new Set(only) : null;
+  const skip = (section) => {
+    if (!wanted || wanted.has(section)) return false;
+    return true;
+  };
   console.log(
-    `${dryRun ? 'DRY RUN — nothing will be written' : 'Importing'} into ${PROJECT_ID}/${DATASET}\n`,
+    `${dryRun ? 'DRY RUN — nothing will be written' : 'Importing'} into ${PROJECT_ID}/${DATASET}` +
+      (wanted ? ` — only: ${[...wanted].join(', ')}` : '') +
+      '\n',
   );
 
-  console.log('services');
-  for (const { slug, data, body } of await entries('services')) {
-    const doc = {
-      title: data.title,
-      slug: { _type: 'slug', current: slug },
-      shortTitle: data.shortTitle,
-      summary: data.summary,
-      icon: await uploadImage(data.icon, '', true),
-      heroImage: await uploadImage(data.heroImage, `${data.title} at Anchor Consultants`),
-      bannerImage: await uploadImage(data.bannerImage, '', true),
-      // Feature cards carry their own icon, so each needs its own upload.
-      features: data.features
-        ? await Promise.all(
-            data.features.map(async (f, i) => ({
-              _type: 'serviceFeature',
-              _key: `f${i}`,
-              title: f.title,
-              icon: await uploadImage(f.icon, '', true),
-            })),
-          )
-        : undefined,
-      checklist: data.checklist,
-      order: data.order ?? 99,
-      body: toPortableText(body),
-      seo: { _type: 'seo', metaDescription: data.seo?.metaDescription },
-    };
-    await upsert('service', slug, doc);
-  }
-
-  console.log('\nposts');
-  for (const { slug, data, body } of await entries('posts')) {
-    const doc = {
-      title: data.title,
-      slug: { _type: 'slug', current: slug },
-      publishedAt: new Date(data.publishedAt).toISOString(),
-      ...(data.updatedAt ? { updatedAt: new Date(data.updatedAt).toISOString() } : {}),
-      author: data.author ?? 'Anchor Consultants',
-      excerpt: data.excerpt,
-      coverImage: await uploadImage(data.coverImage, data.coverImageAlt ?? ''),
-      category: data.category ?? 'Uncategorized',
-      body: toPortableText(body),
-      seo: { _type: 'seo', metaDescription: data.seo?.metaDescription },
-    };
-    await upsert('post', slug, doc);
-    if (data.draft === true) {
-      console.log(`    note: "${slug}" is drafted in markdown — unpublish it in the Studio too.`);
+  if (!skip('services')) {
+    console.log('services');
+    for (const { slug, data, body } of await entries('services')) {
+      const doc = {
+        title: data.title,
+        slug: { _type: 'slug', current: slug },
+        shortTitle: data.shortTitle,
+        summary: data.summary,
+        icon: await uploadImage(data.icon, '', true),
+        heroImage: await uploadImage(data.heroImage, `${data.title} at Anchor Consultants`),
+        bannerImage: await uploadImage(data.bannerImage, '', true),
+        // Feature cards carry their own icon, so each needs its own upload.
+        features: data.features
+          ? await Promise.all(
+              data.features.map(async (f, i) => ({
+                _type: 'serviceFeature',
+                _key: `f${i}`,
+                title: f.title,
+                icon: await uploadImage(f.icon, '', true),
+              })),
+            )
+          : undefined,
+        checklist: data.checklist,
+        order: data.order ?? 99,
+        body: toPortableText(body),
+        seo: { _type: 'seo', metaDescription: data.seo?.metaDescription },
+      };
+      await upsert('service', slug, doc);
     }
   }
 
-  console.log('\nfaqs');
-  for (const { data } of await entries('faqs')) {
-    await upsertBy('faq', 'question', data.question, {
-      question: data.question,
-      answer: data.answer,
-      order: data.order ?? 99,
-    });
+  if (!skip('posts')) {
+    console.log('\nposts');
+    for (const { slug, data, body } of await entries('posts')) {
+      const doc = {
+        title: data.title,
+        slug: { _type: 'slug', current: slug },
+        publishedAt: new Date(data.publishedAt).toISOString(),
+        ...(data.updatedAt ? { updatedAt: new Date(data.updatedAt).toISOString() } : {}),
+        author: data.author ?? 'Anchor Consultants',
+        excerpt: data.excerpt,
+        coverImage: await uploadImage(data.coverImage, data.coverImageAlt ?? ''),
+        category: data.category ?? 'Uncategorized',
+        body: toPortableText(body),
+        seo: { _type: 'seo', metaDescription: data.seo?.metaDescription },
+      };
+      await upsert('post', slug, doc);
+      if (data.draft === true) {
+        console.log(`    note: "${slug}" is drafted in markdown — unpublish it in the Studio too.`);
+      }
+    }
   }
 
-  console.log('\ntestimonials');
-  for (const { data } of await entries('testimonials')) {
-    await upsertBy('testimonial', 'quote', data.quote, {
-      name: data.name,
-      location: data.location,
-      quote: data.quote,
-      order: data.order ?? 99,
-    });
+  if (!skip('faqs')) {
+    console.log('\nfaqs');
+    for (const { data } of await entries('faqs')) {
+      await upsertBy('faq', 'question', data.question, {
+        question: data.question,
+        answer: data.answer,
+        order: data.order ?? 99,
+      });
+    }
   }
 
-  console.log('\nteam');
-  for (const { data } of await entries('team')) {
-    await upsertBy('teamMember', 'name', data.name, {
-      name: data.name,
-      role: data.role,
-      bio: data.bio,
-      photo: await uploadImage(data.photo, data.photoAlt ?? data.name),
-      order: data.order ?? 99,
-    });
+  if (!skip('testimonials')) {
+    console.log('\ntestimonials');
+    for (const { data } of await entries('testimonials')) {
+      await upsertBy('testimonial', 'quote', data.quote, {
+        name: data.name,
+        location: data.location,
+        quote: data.quote,
+        order: data.order ?? 99,
+      });
+    }
+  }
+
+  if (!skip('team')) {
+    console.log('\nteam');
+    for (const { data, body } of await entries('team')) {
+      await upsertBy('teamMember', 'name', data.name, {
+        name: data.name,
+        role: data.role,
+        bio: toPortableText(body),
+        photo: await uploadImage(data.photo, data.photoAlt ?? data.name),
+        order: data.order ?? 99,
+      });
+    }
   }
 
   console.log(

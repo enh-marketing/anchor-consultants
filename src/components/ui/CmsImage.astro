@@ -69,8 +69,17 @@ let intrinsicWidth: number | undefined;
 let intrinsicHeight: number | undefined;
 
 if (isSanityImage(src)) {
-  imgSrc = sanityImageUrl(src, targetWidths[targetWidths.length - 1] ?? 1200);
-  srcSet = sanityImageSrcSet(src, targetWidths);
+  // Sanity's `fit=max` never upscales, so asking for a width above the asset's
+  // own returns the asset at its real size — and the srcset would then claim a
+  // 2x candidate that is byte-for-byte the 1x one. A dense display would fetch
+  // a second copy for nothing. Astro's local pipeline refuses to upscale for
+  // the same reason, so clamping here keeps the two paths honest about what
+  // resolutions actually exist.
+  const available = src.width ? targetWidths.filter((w) => w <= src.width!) : [...targetWidths];
+  if (!available.length && src.width) available.push(src.width);
+
+  imgSrc = sanityImageUrl(src, available[available.length - 1] ?? 1200);
+  srcSet = available.length > 1 ? sanityImageSrcSet(src, available) : undefined;
   intrinsicWidth = src.width;
   intrinsicHeight = src.height;
 } else {

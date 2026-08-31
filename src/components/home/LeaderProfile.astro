@@ -1,8 +1,10 @@
 ---
 import { Image } from 'astro:assets';
+import { getCollection, render } from 'astro:content';
 import SectionHeading from '../ui/SectionHeading.astro';
+import CmsImage from '../ui/CmsImage.astro';
+import PortableText from '../shared/PortableText.astro';
 import bg from '../../assets/images/services/carousel-bg.jpg';
-import portrait from '../../assets/images/team/samaira-nichani.png';
 
 // One section on the original (top 3661, 762px tall) holding both the leader
 // card and the appointment CTA, over services.jpg with a #436B88 overlay
@@ -17,6 +19,28 @@ import portrait from '../../assets/images/team/samaira-nichani.png';
 // The original's "Get An Appointment" link is #777 on this dark overlay,
 // roughly 1.9:1 (audit defect #27). Rendered white here, which keeps the
 // same understated text-link treatment while being readable.
+//
+// The leader comes from the `team` collection, so the name, role, portrait and
+// bio are all editable. The bio emphasises names, tenure and institutions in
+// bold, which is why it is rich text: the emphasis is part of the content, not
+// styling applied to a fixed string. Those `<strong>` runs are coloured by the
+// `.leader-bio` rule below rather than a class on each one, since a CMS cannot
+// attach utility classes.
+const team = (await getCollection('team')).sort((a, b) => a.data.order - b.data.order);
+const leader = team[0];
+
+// Alt text precedence. In Sanity the alt is authored on the image itself, which
+// is the right place for it — the person editing the portrait is the person who
+// should describe it — so that wins. `photoAlt` is the markdown fallback's
+// frontmatter equivalent. The name is the last resort: it identifies the
+// subject, which beats an empty alt on a portrait that is not decorative.
+const photo = leader?.data.photo;
+const photoAlt =
+  (photo && 'alt' in photo ? photo.alt : undefined) || leader?.data.photoAlt || leader?.data.name;
+
+// Markdown fallback renders the file body; Sanity sends Portable Text.
+const leaderBio = leader && Array.isArray(leader.data.bio) ? leader.data.bio : null;
+const BioContent = leader && !leaderBio ? (await render(leader)).Content : null;
 ---
 
 <section class="relative isolate overflow-hidden pt-[30px]">
@@ -41,33 +65,25 @@ import portrait from '../../assets/images/team/samaira-nichani.png';
       <div
         class="grid items-center gap-8 lg:grid-cols-[533px_minmax(0,1fr)] lg:gap-[30px] lg:pl-[17px]"
       >
-        <Image
-          src={portrait}
-          alt="Samaira Nichani, Managing Director and Founder of Anchor Consultants"
-          class="mx-auto h-auto w-[533px] max-w-full"
-          loading="lazy"
-          widths={[533, 1066]}
-          sizes="(min-width: 992px) 533px, 90vw"
-        />
+        {
+          leader?.data.photo && (
+            <CmsImage
+              src={leader.data.photo}
+              alt={photoAlt ?? ''}
+              class="mx-auto h-auto w-[533px] max-w-full"
+              loading="lazy"
+              widths={[533, 1066]}
+              sizes="(min-width: 992px) 533px, 90vw"
+            />
+          )
+        }
 
         <div class="px-4 pb-8 lg:px-0 lg:pb-0">
-          <p class="text-navy text-base leading-[21px] font-medium">
-            Managing Director &amp; Founder
-          </p>
-          <h3 class="text-section text-ink -mt-[6px] font-bold">Samaira Nichani</h3>
-          <p class="text-body mt-[20px] max-w-[530px] text-base leading-[26px]">
-            Anchor Consultants is led by <strong class="text-ink-strong"
-              >Samaira Nichani (The Founder)</strong
-            >, who brings <strong class="text-ink-strong">15+ years of experience</strong> across home
-            loans, mortgage-backed finance, working capital finance and risk analysis. She has worked
-            with leading institutions including
-            <strong class="text-ink-strong"
-              >Mashreq Bank, Abu Dhabi Commercial Bank and RAKBANK</strong
-            >, and now focuses on building financing solutions for
-            <strong class="text-ink-strong"
-              >HNIs, SMEs, first-time buyers, and real-estate investors across the UAE</strong
-            >.
-          </p>
+          <p class="text-navy text-base leading-[21px] font-medium">{leader?.data.role}</p>
+          <h3 class="text-section text-ink -mt-[6px] font-bold">{leader?.data.name}</h3>
+          <div class="leader-bio text-body mt-[20px] max-w-[530px] text-base leading-[26px]">
+            {leaderBio ? <PortableText value={leaderBio} /> : BioContent && <BioContent />}
+          </div>
         </div>
       </div>
     </div>
@@ -101,3 +117,16 @@ import portrait from '../../assets/images/team/samaira-nichani.png';
     </div>
   </div>
 </section>
+
+<style>
+  /* The bio's <strong> runs carried `text-ink-strong` as a utility class. A CMS
+     cannot attach one, so the colour lives here instead — same result. */
+  .leader-bio :global(strong) {
+    color: var(--color-ink-strong);
+  }
+  /* The bio is a single paragraph; the renderer wraps it in <p>, which must not
+     add the margin the blog prose style gives paragraphs. */
+  .leader-bio :global(p) {
+    margin: 0;
+  }
+</style>
