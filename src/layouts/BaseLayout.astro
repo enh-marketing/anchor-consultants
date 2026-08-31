@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import { resolveSeo, organizationSchema, type SeoInput } from '../lib/seo';
+import { getSite } from '../data/get-site';
 
 interface Props extends SeoInput {
   /** Extra JSON-LD graphs to emit alongside the Organization/WebSite graph. */
@@ -9,8 +10,9 @@ interface Props extends SeoInput {
 }
 
 const { schemas = [], bodyClass = '', ...seoInput } = Astro.props;
-const seo = resolveSeo(seoInput);
-const graphs = [organizationSchema(), ...schemas];
+const site = await getSite();
+const seo = resolveSeo(seoInput, site);
+const graphs = [organizationSchema(site), ...schemas];
 ---
 
 <!doctype html>

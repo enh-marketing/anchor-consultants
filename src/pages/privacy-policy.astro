@@ -1,9 +1,11 @@
 ---
 import PageLayout from '../layouts/PageLayout.astro';
 import PageBanner from '../components/shared/PageBanner.astro';
-import { site } from '../data/site';
+import { getSite } from '../data/get-site';
 import { breadcrumbSchema } from '../lib/seo';
 import banner from '../assets/images/banners/generic-3.jpg';
+
+const site = await getSite();
 
 /**
  * Privacy policy.

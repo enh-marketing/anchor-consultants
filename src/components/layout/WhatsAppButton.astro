@@ -1,6 +1,8 @@
 ---
 import Icon from '../ui/Icon.astro';
-import { site } from '../../data/site';
+import { getSite } from '../../data/get-site';
+
+const site = await getSite();
 
 // Position taken from the original plugin config:
 //   position: fixed; bottom: 85px; right: 19px  (desktop and mobile)

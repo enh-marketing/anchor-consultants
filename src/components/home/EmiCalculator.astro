@@ -3,7 +3,9 @@ import { Image } from 'astro:assets';
 import SectionHeading from '../ui/SectionHeading.astro';
 import { EMI_LIMITS } from '../../lib/emi';
 import planImage from '../../assets/images/about/plan.jpg';
-import { site } from '../../data/site';
+import { getSite } from '../../data/get-site';
+
+const site = await getSite();
 
 // Measured from the original at 1440:
 //   spacer band above: 100px, #F7F7F7, padding 30/70

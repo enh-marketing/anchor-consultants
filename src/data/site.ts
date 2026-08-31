@@ -6,6 +6,40 @@
  * contact details once here makes that class of drift impossible.
  */
 
+/**
+ * The shape of the site-wide data, described explicitly rather than inferred
+ * from the values below. It used to be `typeof site` with `as const`, which
+ * pinned the type to today's literal strings — fine while this file was the
+ * only source, wrong now that the values can come from Sanity.
+ */
+export interface Site {
+  name: string;
+  legalName: string;
+  tagline: string;
+  description: string;
+  contact: {
+    phone: { e164: string; href: string; display: string; compact: string };
+    email: { address: string; href: string };
+    whatsapp: { number: string; href: string };
+    address: {
+      lines: string[];
+      single: string;
+      mapsUrl: string;
+      mapsEmbedQuery: string;
+    };
+  };
+  nav: NavItem[];
+  footerLinks: NavItem[];
+  legalLinks: NavItem[];
+  cta: {
+    primary: { label: string; href: string };
+    header: { label: string; href: string };
+  };
+  disclaimers: { footer: string; calculator: string };
+  credit: { text: string; href: string };
+  social: NavItem[];
+}
+
 export interface NavItem {
   label: string;
   href: string;
@@ -20,7 +54,7 @@ export interface NavItem {
 /** Digits only, E.164, for `tel:` hrefs. */
 const PHONE_E164 = '+971561924606';
 
-export const site = {
+export const site: Site = {
   name: 'Anchor Consultants',
   legalName: 'Anchor Consultants',
   tagline: 'Financing made simple',
@@ -60,7 +94,7 @@ export const site = {
     { label: 'Testimonials', href: '/testimonials/' },
     { label: 'Blog', href: '/blog/' },
     { label: 'Contact', href: '/contact/' },
-  ] satisfies NavItem[],
+  ],
 
   /** Footer "Quick Links" mirrors the primary nav on the original site. */
   footerLinks: [
@@ -70,13 +104,13 @@ export const site = {
     { label: 'Testimonials', href: '/testimonials/' },
     { label: 'Blog', href: '/blog/' },
     { label: 'Contact', href: '/contact/' },
-  ] satisfies NavItem[],
+  ],
 
   /** Bottom bar. Privacy Policy pointed at `#` on the original (defect #7). */
   legalLinks: [
     { label: 'FAQ', href: '/#faq' },
     { label: 'Privacy Policy', href: '/privacy-policy/' },
-  ] satisfies NavItem[],
+  ],
 
   cta: {
     primary: { label: 'Book a Free Consultation', href: '/contact/' },
@@ -102,6 +136,4 @@ export const site = {
    * profiles (audit defect #20). Left empty until real URLs are supplied.
    */
   social: [] as NavItem[],
-} as const;
-
-export type Site = typeof site;
+};

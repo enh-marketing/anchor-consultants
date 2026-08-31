@@ -2,8 +2,10 @@
 import { Image } from 'astro:assets';
 import { getCollection } from 'astro:content';
 import Icon from '../ui/Icon.astro';
-import { site } from '../../data/site';
+import { getSite } from '../../data/get-site';
 import logo from '../../assets/images/brand/logo-anchor.png';
+
+const site = await getSite();
 
 interface Props {
   /** Pathname of the current page, used to mark the active nav item. */

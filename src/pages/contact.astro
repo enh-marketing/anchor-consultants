@@ -3,10 +3,12 @@ import PageLayout from '../layouts/PageLayout.astro';
 import PageBanner from '../components/shared/PageBanner.astro';
 import ContactForm from '../components/shared/ContactForm.astro';
 import Icon from '../components/ui/Icon.astro';
-import { site } from '../data/site';
+import { getSite } from '../data/get-site';
 import { breadcrumbSchema } from '../lib/seo';
 import { SITE_URL } from '../data/site-url.mjs';
 import banner from '../assets/images/banners/contact.jpg';
+
+const site = await getSite();
 
 // Measured from the original at 1440:
 //   map section y=362, 775 tall, padding 110/110; iframe 1300x535 at x=70

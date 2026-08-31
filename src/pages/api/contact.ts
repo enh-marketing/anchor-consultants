@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import nodemailer from 'nodemailer';
 import { validateContact, validateCv, hasErrors, CV_MAX_BYTES } from '../../lib/forms';
-import { site } from '../../data/site';
+import { getSite } from '../../data/get-site';
 
 /**
  * The only server route in the build. Everything else prerenders.
@@ -136,7 +136,7 @@ export const POST: APIRoute = async ({ request }) => {
     auth: { user: env('SMTP_USER'), pass: env('SMTP_PASSWORD') },
   });
 
-  const to = env('CONTACT_TO') ?? site.contact.email.address;
+  const to = env('CONTACT_TO') ?? (await getSite()).contact.email.address;
   const from = env('SMTP_FROM') ?? env('SMTP_USER')!;
   const isCv = kind === 'cv';
 

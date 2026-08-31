@@ -1,4 +1,4 @@
-import { site } from '../data/site';
+import type { Site } from '../data/site';
 import { SITE_URL, IS_PRODUCTION_HOST } from '../data/site-url.mjs';
 
 export interface SeoInput {
@@ -39,7 +39,7 @@ export interface ResolvedSeo {
 
 const DEFAULT_OG_IMAGE = '/og-default.png';
 
-export function resolveSeo(input: SeoInput): ResolvedSeo {
+export function resolveSeo(input: SeoInput, site: Site): ResolvedSeo {
   const title = input.title ? `${input.title} - ${site.name}` : `${site.name} - ${site.tagline}`;
 
   const canonical = new URL(input.path, SITE_URL).href;
@@ -63,8 +63,14 @@ export function resolveSeo(input: SeoInput): ResolvedSeo {
   };
 }
 
-/** Organization + WebSite graph, emitted once per page from BaseLayout. */
-export function organizationSchema() {
+/**
+ * Organization + WebSite graph, emitted once per page from BaseLayout.
+ *
+ * The site data is passed in rather than imported: it now comes from Sanity,
+ * which is async, and threading a promise through here would make every caller
+ * of this module async for no benefit. BaseLayout already awaits it once.
+ */
+export function organizationSchema(site: Site) {
   return {
     '@context': 'https://schema.org',
     '@graph': [

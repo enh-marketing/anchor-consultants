@@ -1,6 +1,8 @@
 ---
 import Icon from '../ui/Icon.astro';
-import { site } from '../../data/site';
+import { getSite } from '../../data/get-site';
+
+const site = await getSite();
 
 // Measured from the WordPress original at 1440px:
 //   band 46px tall, background #084876

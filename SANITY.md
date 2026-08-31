@@ -43,6 +43,30 @@ cd studio && npx sanity exec scripts/import-from-markdown.mjs --with-user-token
 has to be created or stored. `scripts/migrate-to-sanity.mjs` also runs
 standalone with `SANITY_WRITE_TOKEN` in the environment.
 
+## Site Settings
+
+The singleton holds everything that used to live in `src/data/site.ts`: identity,
+contact details, all three link lists, the CTAs, disclaimers and the credit line.
+Re-import it from the committed values with:
+
+```bash
+cd studio && npx sanity exec scripts/import-site-settings.mjs --with-user-token
+```
+
+`src/data/site.ts` stays in the repository as the fallback. `getSite()` merges
+Sanity over it field by field, so a half-filled singleton degrades one field at
+a time rather than emptying the header, and a Sanity outage during a build
+leaves the committed values in place rather than failing the build.
+
+Three things are derived at build time rather than stored, which is the point:
+the `tel:`, `mailto:` and `wa.me` hrefs all come from single canonical fields.
+The WordPress site carried three different phone numbers, one missing a digit,
+and malformed `tel:` links (audit defect #4); that class of drift is now
+impossible.
+
+`SITE_URL` and `IS_PRODUCTION_HOST` deliberately stay in code. They gate
+indexing, and a content edit must not be able to deindex the site.
+
 ## Hiding a document
 
 Sanity has no `draft` field: a document is published or it is not. To hide one

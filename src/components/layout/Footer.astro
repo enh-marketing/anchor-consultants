@@ -1,8 +1,10 @@
 ---
 import { Image } from 'astro:assets';
 import Icon from '../ui/Icon.astro';
-import { site } from '../../data/site';
+import { getSite } from '../../data/get-site';
 import logo from '../../assets/images/brand/logo-anchor.png';
+
+const site = await getSite();
 
 // Measured from the WordPress original at 1440px:
 //   band 1  #084876, padding 80px / 10px

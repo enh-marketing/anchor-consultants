@@ -4,19 +4,13 @@
     {
       "name": "anchor-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": [
-        "run",
-        "dev"
-      ],
+      "runtimeArgs": ["run", "dev"],
       "port": 4321
     },
     {
       "name": "sanity-studio",
       "runtimeExecutable": "npm",
-      "runtimeArgs": [
-        "run",
-        "studio:dev"
-      ],
+      "runtimeArgs": ["run", "studio:dev"],
       "port": 3333
     }
   ]
