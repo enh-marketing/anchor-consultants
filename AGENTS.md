@@ -71,8 +71,24 @@ and shipping that to production would be a serious regression.
 
 ## Not yet wired
 
-- SMTP credentials and reCAPTCHA v3 keys (client to supply). The form endpoint
-  at `src/pages/api/contact.ts` is the only place they belong.
-- Sanity CMS. Content collections are shaped to match the planned document
-  types; see `MIGRATION.md` section H.3.
-- Production domain. `SITE_URL` is a placeholder.
+Everything here is a value or a decision the client owes, not unfinished code.
+Each one degrades loudly rather than silently: the build warns, and the affected
+feature says plainly that it is unconfigured.
+
+- **Credentials, all of them.** SMTP, reCAPTCHA v3, and the Sanity write and
+  preview tokens, plus `SUBMISSION_SALT`. See `.env.example`; they belong in the
+  deployment environment and nowhere else. Without them: forms validate but do
+  not send, submissions are not archived, rate limiting is off, and preview
+  answers 503.
+- **Deploy webhook.** Needs the Vercel project to exist. Until it is wired, a
+  publish in the Studio needs a manual build. Steps are in `SANITY.md`.
+- **Production domain.** `SITE_URL` is a placeholder, and `IS_PRODUCTION_HOST`
+  is `false`, so every build currently emits `noindex, nofollow`.
+- **Content the client owes.** Privacy policy text, real blog posts, the redirect
+  list, and confirmation of the phone number (audit Q10).
+- **A retention window** for stored enquiries. `prune-submissions.mjs` refuses to
+  run without one on purpose.
+
+Sanity itself is connected and is the source of truth for every page, the global
+settings, the blog, forms, redirects and SEO. `CMS-AUDIT.md` lists what is
+editable and the thirteen things deliberately left in code.
