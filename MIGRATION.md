@@ -1609,7 +1609,12 @@ These need your input. None of them block starting at Milestone 0; I have noted 
 
 **Q9. Analytics.** Google Site Kit is installed. Do you want GA4 in the Astro build, and under what consent model?
 
-**Q10. Phone number.** Confirm the correct number. Evidence points to `+971 56 192 4606`.
+**Q10. Phone number.** Confirm the correct number. Evidence points to
+`+971 56 192 4606`, which is what the site uses. **Deferred by the client on
+2026-08-31** rather than answered, so it stays open. The number appears in the
+top bar, the footer, the contact page and the structured data, and every `tel:`
+link is derived from one field — so confirming it later is a one-value change,
+not a hunt.
 
 **Q11. Service imagery.** All four service pages currently share one photo and one icon set. Will distinct images be supplied per service? _Assumption: build the template to support per-service images, ship with the shared photo until you provide replacements._
 
@@ -1638,9 +1643,12 @@ lists what it will cover, and gives a real route for privacy enquiries. It is
 `noindex` and excluded from the sitemap until you supply approved text.
 **This needs your legal input before launch.**
 
-**Q16. Contact email address.** The site still carries
-`info@anchor.enhdemo.com`, which is the WordPress staging domain. It is shown on
-every page, used in the Organization structured data, and is the fallback
-recipient for the enquiry form. Confirm the real address — most likely
-`info@anchorconsultants.ae`, but it needs to be a mailbox that exists.
-**This blocks launch:** enquiries would otherwise default to a staging address.
+**Q16. Contact email address.** **ANSWERED — `info@anchorconsultants.ae`.**
+The site had carried `info@anchor.enhdemo.com`, the WordPress staging domain, on
+every page, in the Organization structured data, and as the fallback recipient
+for the enquiry form. Updated in both places that hold it — `src/data/site.ts`
+and the `siteSettings` document — so neither source can reintroduce it. Verified:
+zero occurrences of `enhdemo` remain in the source or the built site.
+
+_The mailbox has to exist by launch._ Nothing on the site checks that, and an
+enquiry sent to an address that bounces is worse than one that never sent.

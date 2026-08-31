@@ -143,8 +143,8 @@ export const site: Site = {
       compact: '+971561924606',
     },
     email: {
-      address: 'info@anchor.enhdemo.com',
-      href: 'mailto:info@anchor.enhdemo.com',
+      address: 'info@anchorconsultants.ae',
+      href: 'mailto:info@anchorconsultants.ae',
     },
     whatsapp: {
       number: '971561924606',
