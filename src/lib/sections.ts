@@ -204,6 +204,21 @@ export interface NoticeBlock extends SectionBase {
   body?: string;
 }
 
+export interface MapEmbedBlock extends SectionBase {
+  _type: 'mapEmbed';
+  // No content fields: the location comes from Site Settings. The block exists
+  // so the section can be hidden and reordered like any other.
+}
+
+export interface ContactPanelBlock extends SectionBase {
+  _type: 'contactPanel';
+  eyebrow?: string;
+  title?: string;
+  formHeading?: string;
+  /** Which form definition to render. */
+  formId?: string;
+}
+
 export interface ErrorPanelBlock extends SectionBase {
   _type: 'errorPanel';
   /** Decorative, rendered as an aria-hidden paragraph rather than a heading. */
@@ -231,6 +246,8 @@ export type SectionBlock =
   | BlogIndexBlock
   | RichTextBlock
   | NoticeBlock
+  | MapEmbedBlock
+  | ContactPanelBlock
   | ErrorPanelBlock;
 
 /**

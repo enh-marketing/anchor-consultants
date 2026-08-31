@@ -73,6 +73,8 @@ export const page = defineType({
         { type: 'testimonialGrid' },
         { type: 'blogIndex' },
         { type: 'errorPanel' },
+        { type: 'mapEmbed' },
+        { type: 'contactPanel' },
       ],
       validation: (Rule) => Rule.required().min(1),
     }),

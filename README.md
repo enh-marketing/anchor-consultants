@@ -20,15 +20,16 @@ npm run dev
 
 The dev server runs on <http://localhost:4321>.
 
-| Command                | What it does                                                                                                                                                                      |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run dev`          | Dev server with hot reload                                                                                                                                                        |
-| `npm run build`        | Static build to `dist/`                                                                                                                                                           |
-| `npm run preview`      | Serve the build with gzip and production caching. Not `astro preview`: the Vercel adapter has none, and an uncompressed server gave misleading Lighthouse numbers (milestone 14). |
-| `npm run check`        | `astro check` — types and templates                                                                                                                                               |
-| `npm test`             | Unit tests (Node's built-in runner)                                                                                                                                               |
-| `npm run format`       | Prettier across the repo                                                                                                                                                          |
-| `npm run format:check` | Verify formatting without writing                                                                                                                                                 |
+| Command                      | What it does                                                                                                                                                                      |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`                | Dev server with hot reload                                                                                                                                                        |
+| `npm run build`              | Static build to `dist/`                                                                                                                                                           |
+| `npm run preview`            | Serve the build with gzip and production caching. Not `astro preview`: the Vercel adapter has none, and an uncompressed server gave misleading Lighthouse numbers (milestone 14). |
+| `node scripts/cms-audit.mjs` | Regenerate CMS-AUDIT.md from the schema                                                                                                                                           |
+| `npm run check`              | `astro check` — types and templates                                                                                                                                               |
+| `npm test`                   | Unit tests (Node's built-in runner)                                                                                                                                               |
+| `npm run format`             | Prettier across the repo                                                                                                                                                          |
+| `npm run format:check`       | Verify formatting without writing                                                                                                                                                 |
 
 ---
 

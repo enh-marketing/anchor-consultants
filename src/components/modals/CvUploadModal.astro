@@ -1,6 +1,7 @@
 ---
 import Dialog from './Dialog.astro';
 import CmsForm from '../forms/CmsForm.astro';
+import { getForm } from '../../data/get-forms';
 
 // Replaces Popup Maker's pum-1984 ("apply-for-job").
 //
@@ -12,8 +13,17 @@ import CmsForm from '../forms/CmsForm.astro';
 // contact form also uses. They were two near-identical copies of the same
 // validation and status handling, which is how two forms end up behaving
 // differently for no reason.
+
+// The heading and the line under it belong to the form, not to the pop-up:
+// they describe what the form is for, and an editor changing the form's
+// purpose should not have to find a second place to say so.
+const form = await getForm('cv');
 ---
 
-<Dialog id="cv-dialog" title="Upload Your CV" intro="PDF or Word document, up to 5 MB.">
+<Dialog
+  id="cv-dialog"
+  title={form.dialogTitle ?? 'Upload Your CV'}
+  intro={form.dialogIntro ?? 'PDF or Word document, up to 5 MB.'}
+>
   <CmsForm formId="cv" id="cv-form" layout="labelled" />
 </Dialog>

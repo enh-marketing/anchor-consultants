@@ -1,0 +1,40 @@
+---
+import { getSite } from '../../data/get-site';
+import type { MapEmbedBlock } from '../../lib/sections';
+
+/**
+ * The embedded map.
+ *
+ * Measured from the original: 1300px wide, 535px tall, 120px above and below.
+ *
+ * The location comes from Site Settings, so the address, the map link and this
+ * embed cannot disagree — three copies of an address is how the WordPress site
+ * ended up with three different phone numbers. There is nothing to edit here
+ * beyond whether the section appears and where, which is the point: a block with
+ * no content fields still gives an editor ordering and visibility.
+ *
+ * `loading="lazy"` matters more than usual: this is a third-party iframe, and
+ * Google Maps pulls a lot of script. It is below the fold on every viewport the
+ * original was measured at.
+ */
+interface Props {
+  /** Accepted for a uniform block interface; there is nothing in it to read. */
+  block?: MapEmbedBlock;
+}
+
+const site = await getSite();
+const mapSrc = `https://maps.google.com/maps?q=${encodeURIComponent(
+  site.contact.address.mapsEmbedQuery,
+)}&output=embed`;
+---
+
+<section class="py-[120px]">
+  <div class="mx-auto w-full max-w-[1300px]">
+    <iframe
+      src={mapSrc}
+      title={`Map showing ${site.name} at ${site.contact.address.single}`}
+      loading="lazy"
+      referrerpolicy="no-referrer-when-downgrade"
+      class="h-[535px] w-full border-0"></iframe>
+  </div>
+</section>

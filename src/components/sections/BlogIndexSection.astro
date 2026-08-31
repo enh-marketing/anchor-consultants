@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import PostCard from '../blog/PostCard.astro';
 import BlogSidebar from '../blog/BlogSidebar.astro';
 import { resolveLink, type BlogIndexBlock } from '../../lib/sections';
+import { getSite } from '../../data/get-site';
 
 // The original is a Bootstrap col-8 / col-4 row: the row cancels the
 // container's 12px gutter and each column re-applies it, which is what puts
@@ -18,6 +19,8 @@ interface Props {
   block?: BlogIndexBlock;
 }
 const { block } = Astro.props;
+
+const site = await getSite();
 
 const emptyBody = block?.emptyBody ?? 'There are no posts yet. Please check back soon, or';
 const emptyCta = resolveLink(block?.emptyCta, { label: 'get in touch', href: '/contact/' });
@@ -52,8 +55,8 @@ const posts = (await getCollection('posts', ({ data }) => !data.draft)).sort(
         </div>
 
         <p id="blog-empty" class="text-body hidden text-base leading-[26px]">
-          No posts match that filter. <a href="/blog/" class="text-navy underline">Show all posts</a
-          >.
+          {site.blog.filterEmpty}{' '}
+          <a href="/blog/" class="text-navy underline">{site.blog.filterReset}</a>.
         </p>
 
         {

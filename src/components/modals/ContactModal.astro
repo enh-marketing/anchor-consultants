@@ -1,15 +1,21 @@
 ---
 import Dialog from './Dialog.astro';
 import CmsForm from '../forms/CmsForm.astro';
+import { getForm } from '../../data/get-forms';
 
 // Replaces Popup Maker's pum-1979 ("contact-us"), which the original opens
 // from "Lets Connect", "Get An Appointment" and "Free Consultation".
+
+// The heading and the line under it belong to the form, not to the pop-up:
+// they describe what the form is for, and an editor changing the form's
+// purpose should not have to find a second place to say so.
+const form = await getForm('contact');
 ---
 
 <Dialog
   id="contact-dialog"
-  title="Contact Us"
-  intro="Tell us what you need and we will come back with a clear next step."
+  title={form.dialogTitle ?? 'Contact Us'}
+  intro={form.dialogIntro ?? 'Tell us what you need and we will come back with a clear next step.'}
 >
   <CmsForm formId="contact" id="contact-modal-form" layout="modal" />
 </Dialog>

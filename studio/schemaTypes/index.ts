@@ -8,12 +8,14 @@ import { serviceFeature } from './objects/serviceFeature';
 import { aboutIntro } from './blocks/aboutIntro';
 import { aboutSplit } from './blocks/aboutSplit';
 import { blogIndex } from './blocks/blogIndex';
+import { contactPanel } from './blocks/contactPanel';
 import { copyWithImage } from './blocks/copyWithImage';
 import { errorPanel } from './blocks/errorPanel';
 import { emiCalculator } from './blocks/emiCalculator';
 import { faqAccordion } from './blocks/faqAccordion';
 import { heroCarousel } from './blocks/heroCarousel';
 import { leaderProfile } from './blocks/leaderProfile';
+import { mapEmbed } from './blocks/mapEmbed';
 import { pageBanner } from './blocks/pageBanner';
 import { richTextSection } from './blocks/richTextSection';
 import { serviceCardGrid } from './blocks/serviceCardGrid';
@@ -64,6 +66,8 @@ export const schemaTypes = [
   blogIndex,
   richTextSection,
   errorPanel,
+  mapEmbed,
+  contactPanel,
   // documents
   siteSettings,
   page,

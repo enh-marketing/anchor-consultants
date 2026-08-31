@@ -16,6 +16,8 @@ import TestimonialGrid from './TestimonialGrid.astro';
 import BlogIndexSection from './BlogIndexSection.astro';
 import RichTextSection from './RichTextSection.astro';
 import ErrorPanel from './ErrorPanel.astro';
+import MapEmbed from './MapEmbed.astro';
+import ContactPanel from './ContactPanel.astro';
 import type {
   AboutSplitBlock,
   EmiCalculatorBlock,
@@ -35,6 +37,8 @@ import type {
   BlogIndexBlock,
   RichTextBlock,
   ErrorPanelBlock,
+  MapEmbedBlock,
+  ContactPanelBlock,
 } from '../../lib/sections';
 
 /**
@@ -85,6 +89,8 @@ const KNOWN = new Set([
   'blogIndex',
   'richTextSection',
   'errorPanel',
+  'mapEmbed',
+  'contactPanel',
 ]);
 
 const unknownTypes = [
@@ -138,6 +144,8 @@ const blocks = sections.filter(
     if (block._type === 'richTextSection')
       return <RichTextSection block={block as RichTextBlock} />;
     if (block._type === 'errorPanel') return <ErrorPanel block={block as ErrorPanelBlock} />;
+    if (block._type === 'mapEmbed') return <MapEmbed block={block as MapEmbedBlock} />;
+    if (block._type === 'contactPanel') return <ContactPanel block={block as ContactPanelBlock} />;
     return null;
   })
 }

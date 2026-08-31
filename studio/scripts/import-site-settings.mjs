@@ -67,6 +67,14 @@ const doc = {
     url: profile.url,
   })),
 
+  blogSearchLabel: site.blog.searchLabel,
+  blogSearchPlaceholder: site.blog.searchPlaceholder,
+  blogRecentTitle: site.blog.recentTitle,
+  blogArchivesTitle: site.blog.archivesTitle,
+  blogCategoriesTitle: site.blog.categoriesTitle,
+  blogFilterEmpty: site.blog.filterEmpty,
+  blogFilterReset: site.blog.filterReset,
+
   footerPitch: site.footer.pitch,
   footerLinksTitle: site.footer.linksTitle,
   footerContactTitle: site.footer.contactTitle,

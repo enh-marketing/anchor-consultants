@@ -49,6 +49,22 @@ export interface Site {
     footerLogo?: CmsImageValue;
     favicon?: CmsImageValue;
   };
+  /**
+   * The blog sidebar's widget headings.
+   *
+   * Global rather than per-page: the sidebar renders on the blog index, on every
+   * post and on every category archive, so a heading set in one place would have
+   * to be repeated in three.
+   */
+  blog: {
+    searchLabel: string;
+    searchPlaceholder: string;
+    recentTitle: string;
+    archivesTitle: string;
+    categoriesTitle: string;
+    filterEmpty: string;
+    filterReset: string;
+  };
   /** The footer's first column and its two column headings. */
   footer: {
     pitch: string;
@@ -175,6 +191,16 @@ export const site: Site = {
    * build-optimised asset it imports from `src/assets`.
    */
   brand: {},
+
+  blog: {
+    searchLabel: 'Search the blog',
+    searchPlaceholder: 'Search',
+    recentTitle: 'Recent Posts',
+    archivesTitle: 'Archives',
+    categoriesTitle: 'Categories',
+    filterEmpty: 'No posts match that filter.',
+    filterReset: 'Show all posts',
+  },
 
   footer: {
     /**

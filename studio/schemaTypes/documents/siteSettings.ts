@@ -35,6 +35,7 @@ export const siteSettings = defineType({
     { name: 'brand', title: 'Branding' },
     { name: 'contact', title: 'Contact' },
     { name: 'nav', title: 'Navigation' },
+    { name: 'blog', title: 'Blog' },
     { name: 'footer', title: 'Footer' },
     { name: 'cta', title: 'Calls to action' },
     { name: 'legal', title: 'Legal & credits' },
@@ -244,6 +245,56 @@ export const siteSettings = defineType({
           preview: { select: { title: 'platform', subtitle: 'url' } },
         },
       ],
+    }),
+
+    // ---- blog ----
+    //
+    // Global rather than per-page: the sidebar renders on the blog index, on
+    // every post and on every category archive, so a heading set in one place
+    // would otherwise have to be repeated in three.
+    defineField({
+      name: 'blogRecentTitle',
+      title: 'Recent posts heading',
+      type: 'string',
+      group: 'blog',
+    }),
+    defineField({
+      name: 'blogArchivesTitle',
+      title: 'Archives heading',
+      type: 'string',
+      group: 'blog',
+    }),
+    defineField({
+      name: 'blogCategoriesTitle',
+      title: 'Categories heading',
+      type: 'string',
+      group: 'blog',
+    }),
+    defineField({
+      name: 'blogSearchPlaceholder',
+      title: 'Search box placeholder',
+      type: 'string',
+      group: 'blog',
+    }),
+    defineField({
+      name: 'blogSearchLabel',
+      title: 'Search box label',
+      type: 'string',
+      group: 'blog',
+      description: 'Not shown on screen. Read aloud by a screen reader.',
+    }),
+    defineField({
+      name: 'blogFilterEmpty',
+      title: 'No matches message',
+      type: 'string',
+      group: 'blog',
+      description: 'Shown when a search or category filter finds nothing.',
+    }),
+    defineField({
+      name: 'blogFilterReset',
+      title: 'Clear filter link',
+      type: 'string',
+      group: 'blog',
     }),
 
     // ---- footer ----

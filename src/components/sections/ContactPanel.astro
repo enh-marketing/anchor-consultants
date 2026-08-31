@@ -1,0 +1,106 @@
+---
+import Icon from '../ui/Icon.astro';
+import CmsForm from '../forms/CmsForm.astro';
+import { getSite } from '../../data/get-site';
+import type { ContactPanelBlock } from '../../lib/sections';
+
+/**
+ * Contact details beside the enquiry form.
+ *
+ * Measured from the original at 1440: two columns at 50.23% and 45.99%, details
+ * list inset 8px with a 605px cap, form panel on #F7F7F7 with 40px padding.
+ *
+ * Every detail comes from Site Settings rather than being typed here, so the
+ * address, phone and email on this page cannot drift from the ones in the header,
+ * the footer and the structured data.
+ *
+ * Opening hours only appear when Site Settings has them. The original showed
+ * none, so a value there adds a row rather than filling one.
+ */
+interface Props {
+  block?: ContactPanelBlock;
+}
+const { block } = Astro.props;
+
+const site = await getSite();
+
+const eyebrow = block?.eyebrow ?? 'Contact Info';
+const title = block?.title ?? 'Find us here.';
+const formHeading = block?.formHeading ?? 'Ask Question or Get Quote';
+const formId = block?.formId ?? 'contact';
+
+const rows = [
+  {
+    icon: 'map-pin' as const,
+    text: site.contact.address.single,
+    href: site.contact.address.mapsUrl,
+    external: true,
+  },
+  {
+    icon: 'envelope' as const,
+    text: site.contact.email.address,
+    href: site.contact.email.href,
+    external: false,
+  },
+  {
+    icon: 'phone' as const,
+    text: site.contact.phone.display,
+    href: site.contact.phone.href,
+    external: false,
+  },
+];
+
+const hours = site.contact.hours.trim();
+---
+
+<section class="pb-[120px]">
+  <div class="mx-auto w-full max-w-[1320px] px-[10px] md:px-[25px] xl:px-0">
+    <div class="grid gap-12 xl:grid-cols-[50.23%_45.99%] xl:justify-between xl:gap-0">
+      <!-- Contact details -->
+      <div class="reveal">
+        <p class="text-navy mt-[3px] text-base leading-[21px] font-medium">{eyebrow}</p>
+        <h2
+          class="text-ink mt-[22px] text-[32px] leading-[28px] font-bold sm:text-[46px] md:leading-[44px] xl:text-[54px] 2xl:text-[60px]"
+        >
+          {title}
+        </h2>
+
+        <ul class="mt-[70px] ml-[8px] max-w-[605px] list-none">
+          {
+            rows.map((row) => (
+              <li class="border-b border-[#ededed] pb-[10px] not-last:mb-[20px]">
+                <a
+                  href={row.href}
+                  target={row.external ? '_blank' : undefined}
+                  rel={row.external ? 'noopener noreferrer' : undefined}
+                  class="text-body hover:text-navy flex items-center justify-between gap-4 text-base leading-[26px] transition-colors"
+                >
+                  <span>{row.text}</span>
+                  <Icon name={row.icon} size={26} class="text-navy shrink-0" />
+                </a>
+              </li>
+            ))
+          }
+          {
+            hours && (
+              <li class="border-b border-[#ededed] pb-[10px] not-last:mb-[20px]">
+                <div class="text-body flex items-center justify-between gap-4 text-base leading-[26px]">
+                  <span>{hours}</span>
+                  <Icon name="calendar" size={26} class="text-navy shrink-0" />
+                </div>
+              </li>
+            )
+          }
+        </ul>
+      </div>
+
+      <!-- Form panel -->
+      <div class="reveal bg-mist p-[15px] md:p-[40px]" data-reveal-delay="0.1">
+        <h2 class="text-ink text-[24px] leading-[34px] font-bold">{formHeading}</h2>
+        <div class="mt-[25px]">
+          <CmsForm formId={formId} id="contact-page-form" />
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

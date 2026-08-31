@@ -59,6 +59,10 @@ export interface FormDefinition {
   id: string;
   /** Internal name, never rendered. */
   name: string;
+  /** Heading on the pop-up that carries this form. */
+  dialogTitle?: string;
+  /** The line under that heading. */
+  dialogIntro?: string;
   fields: FormField[];
   submitLabel: string;
   sendingLabel: string;
@@ -131,6 +135,8 @@ export const forms: FormDefinition[] = [
   {
     id: 'contact',
     name: 'Enquiry form',
+    dialogTitle: 'Contact Us',
+    dialogIntro: 'Tell us what you need and we will come back with a clear next step.',
     fields: CONTACT_FIELDS,
     submitLabel: 'Submit Now',
     sendingLabel: 'Sending…',
@@ -142,6 +148,8 @@ export const forms: FormDefinition[] = [
   {
     id: 'cv',
     name: 'CV upload form',
+    dialogTitle: 'Upload Your CV',
+    dialogIntro: 'PDF or Word document, up to 5 MB.',
     // Spelled out rather than spread from CONTACT_FIELDS: this form shows real
     // labels above each field, so it carries no placeholders and no in-field
     // icons. Reusing the contact fields would have added both.

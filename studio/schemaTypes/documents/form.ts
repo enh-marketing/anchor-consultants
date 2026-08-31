@@ -56,6 +56,22 @@ export const form = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
+      name: 'dialogTitle',
+      title: 'Pop-up heading',
+      type: 'string',
+      group: 'fields',
+      description:
+        'Shown when this form opens in a pop-up. It describes what the form is for, which is why it lives with the form rather than somewhere else.',
+    }),
+    defineField({
+      name: 'dialogIntro',
+      title: 'Pop-up intro',
+      type: 'text',
+      rows: 2,
+      group: 'fields',
+      description: 'The line under that heading.',
+    }),
+    defineField({
       name: 'fields',
       title: 'Fields',
       type: 'array',

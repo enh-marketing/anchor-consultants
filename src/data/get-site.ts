@@ -64,6 +64,13 @@ interface SettingsDoc {
   footerLinks?: Link[];
   legalLinks?: Link[];
   social?: Array<{ platform?: string; url?: string }>;
+  blogSearchLabel?: string;
+  blogSearchPlaceholder?: string;
+  blogRecentTitle?: string;
+  blogArchivesTitle?: string;
+  blogCategoriesTitle?: string;
+  blogFilterEmpty?: string;
+  blogFilterReset?: string;
   footerPitch?: string;
   footerLinksTitle?: string;
   footerContactTitle?: string;
@@ -96,6 +103,8 @@ const QUERY = `*[_type == "siteSettings" && !(_id in path("drafts.**"))][0]{
   "footerLinks": footerLinks[]{ label, href },
   "legalLinks": legalLinks[]{ label, href },
   "social": social[]{ platform, url },
+  blogSearchLabel, blogSearchPlaceholder, blogRecentTitle, blogArchivesTitle,
+  blogCategoriesTitle, blogFilterEmpty, blogFilterReset,
   footerPitch, footerLinksTitle, footerContactTitle,
   "footerButtons": footerButtons[]{ label, action, dialog, href },
   ctaPrimary{ label, href },
@@ -216,6 +225,16 @@ function merge(doc: SettingsDoc): Site {
       ...(image(doc.logo) ? { logo: image(doc.logo)! } : {}),
       ...(image(doc.footerLogo) ? { footerLogo: image(doc.footerLogo)! } : {}),
       ...(image(doc.favicon) ? { favicon: image(doc.favicon)! } : {}),
+    },
+
+    blog: {
+      searchLabel: doc.blogSearchLabel ?? defaults.blog.searchLabel,
+      searchPlaceholder: doc.blogSearchPlaceholder ?? defaults.blog.searchPlaceholder,
+      recentTitle: doc.blogRecentTitle ?? defaults.blog.recentTitle,
+      archivesTitle: doc.blogArchivesTitle ?? defaults.blog.archivesTitle,
+      categoriesTitle: doc.blogCategoriesTitle ?? defaults.blog.categoriesTitle,
+      filterEmpty: doc.blogFilterEmpty ?? defaults.blog.filterEmpty,
+      filterReset: doc.blogFilterReset ?? defaults.blog.filterReset,
     },
 
     footer: {

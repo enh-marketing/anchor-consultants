@@ -20,6 +20,8 @@ const docs = forms.map((form) => ({
   _type: 'form',
   name: form.name,
   formId: form.id,
+  ...(form.dialogTitle ? { dialogTitle: form.dialogTitle } : {}),
+  ...(form.dialogIntro ? { dialogIntro: form.dialogIntro } : {}),
   fields: form.fields.map((field, i) => ({
     _type: 'formField',
     _key: `f${i}`,

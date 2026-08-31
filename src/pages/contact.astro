@@ -1,61 +1,24 @@
 ---
 import PageLayout from '../layouts/PageLayout.astro';
-import PageBanner from '../components/shared/PageBanner.astro';
-import CmsForm from '../components/forms/CmsForm.astro';
-import Icon from '../components/ui/Icon.astro';
-import { getSite } from '../data/get-site';
+import SectionRenderer from '../components/sections/SectionRenderer.astro';
+import PageBannerSection from '../components/sections/PageBannerSection.astro';
+import MapEmbed from '../components/sections/MapEmbed.astro';
+import ContactPanel from '../components/sections/ContactPanel.astro';
+import { pageSections, pageSeo, pageCrumb } from '../lib/page';
 import { breadcrumbSchema } from '../lib/seo';
 import { SITE_URL } from '../data/site-url.mjs';
 import banner from '../assets/images/banners/contact.jpg';
 
-const site = await getSite();
-
-// Measured from the original at 1440:
-//   map section y=362, 775 tall, padding 110/110; iframe 1300x535 at x=70
-//   info section y=1137, 732 tall, padding 0/110
-//     eyebrow y=1140, "Find us here." 60px/700 on a 44px line box at x=60
-//     three rows at y=1297 / 1354 / 1411, 605 wide, 1px #EDEDED underline,
-//       icon 26px #084876 at the right
-//   form panel #F7F7F7, 40px padding, 607x622 at x=773
-//     heading 24px/700 at y=1177, form 527 wide at y=1236
-//
-// The original prints +97156192460 here, which is missing a digit
-// (audit defect #4). All contact details come from site.ts.
-
-const mapSrc = `https://maps.google.com/maps?q=${encodeURIComponent(
-  site.contact.address.mapsEmbedQuery,
-)}&t=m&z=14&output=embed`;
-
-const rows = [
-  {
-    icon: 'map-pin' as const,
-    text: site.contact.address.single,
-    href: site.contact.address.mapsUrl,
-    external: true,
-  },
-  {
-    icon: 'envelope' as const,
-    text: site.contact.email.address,
-    href: site.contact.email.href,
-    external: false,
-  },
-  {
-    icon: 'phone' as const,
-    text: site.contact.phone.display,
-    href: site.contact.phone.href,
-    external: false,
-  },
-];
-
-/**
- * Opening hours, if Site Settings has any.
- *
- * The original site showed none, so this adds a row rather than filling one
- * that already exists — and it is empty by default, so the page is unchanged
- * until someone deliberately enters hours. It reuses the row styling above but
- * is not a link, because opening hours have no destination.
- */
-const hours = site.contact.hours.trim();
+// The last page to go on the builder. It was held back through M17 because its
+// form was the subject of M21; with the form now driven by a definition, the
+// page has nothing left that needed hardcoding.
+const sections = await pageSections('/contact/');
+const seo = await pageSeo('/contact/', {
+  title: 'Contact',
+  description:
+    'Talk to Anchor Consultants about mortgages, refinancing and property finance in the UAE. Office in Oud Metha Plaza, Dubai. Call, email or send us a question.',
+});
+const crumb = await pageCrumb('/contact/', 'Contact');
 
 const contactSchema = {
   '@context': 'https://schema.org',
@@ -67,75 +30,18 @@ const contactSchema = {
 ---
 
 <PageLayout
-  title="Contact"
-  description="Talk to Anchor Consultants about mortgages, refinancing and property finance in the UAE. Office in Oud Metha Plaza, Dubai. Call, email or send us a question."
-  path="/contact/"
-  schemas={[breadcrumbSchema([{ name: 'Contact', path: '/contact/' }]), contactSchema]}
+  {...seo}
+  schemas={[breadcrumbSchema([{ name: crumb, path: '/contact/' }]), contactSchema]}
 >
-  <PageBanner title="Get In Touch" crumb="Contact" image={banner} />
-
-  <!-- Map -->
-  <section class="py-[120px]">
-    <div class="mx-auto w-full max-w-[1300px]">
-      <iframe
-        src={mapSrc}
-        title={`Map showing Anchor Consultants at ${site.contact.address.single}`}
-        loading="lazy"
-        referrerpolicy="no-referrer-when-downgrade"
-        class="h-[535px] w-full border-0"></iframe>
-    </div>
-  </section>
-
-  <!-- Details + form -->
-  <section class="pb-[120px]">
-    <div class="mx-auto w-full max-w-[1320px] px-[10px] md:px-[25px] xl:px-0">
-      <div class="grid gap-12 xl:grid-cols-[50.23%_45.99%] xl:justify-between xl:gap-0">
-        <!-- Contact details -->
-        <div class="reveal">
-          <p class="text-navy mt-[3px] text-base leading-[21px] font-medium">Contact Info</p>
-          <h2
-            class="text-ink mt-[22px] text-[32px] leading-[28px] font-bold sm:text-[46px] md:leading-[44px] xl:text-[54px] 2xl:text-[60px]"
-          >
-            Find us here.
-          </h2>
-
-          <ul class="mt-[70px] ml-[8px] max-w-[605px] list-none">
-            {
-              rows.map((row) => (
-                <li class="border-b border-[#ededed] pb-[10px] not-last:mb-[20px]">
-                  <a
-                    href={row.href}
-                    target={row.external ? '_blank' : undefined}
-                    rel={row.external ? 'noopener noreferrer' : undefined}
-                    class="text-body hover:text-navy flex items-center justify-between gap-4 text-base leading-[26px] transition-colors"
-                  >
-                    <span>{row.text}</span>
-                    <Icon name={row.icon} size={26} class="text-navy shrink-0" />
-                  </a>
-                </li>
-              ))
-            }
-            {
-              hours && (
-                <li class="border-b border-[#ededed] pb-[10px] not-last:mb-[20px]">
-                  <div class="text-body flex items-center justify-between gap-4 text-base leading-[26px]">
-                    <span>{hours}</span>
-                    <Icon name="calendar" size={26} class="text-navy shrink-0" />
-                  </div>
-                </li>
-              )
-            }
-          </ul>
-        </div>
-
-        <!-- Form panel -->
-        <div class="reveal bg-mist p-[15px] md:p-[40px]" data-reveal-delay="0.1">
-          <h2 class="text-ink text-[24px] leading-[34px] font-bold">Ask Question or Get Quote</h2>
-          <div class="mt-[25px]">
-            <CmsForm formId="contact" id="contact-page-form" />
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+  {
+    sections.length ? (
+      <SectionRenderer sections={sections} />
+    ) : (
+      <>
+        <PageBannerSection title="Get In Touch" crumb="Contact" image={banner} />
+        <MapEmbed />
+        <ContactPanel />
+      </>
+    )
+  }
 </PageLayout>

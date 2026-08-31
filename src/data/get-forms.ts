@@ -44,6 +44,8 @@ interface FieldDoc {
 interface FormDoc {
   formId?: string;
   name?: string;
+  dialogTitle?: string;
+  dialogIntro?: string;
   fields?: FieldDoc[];
   submitLabel?: string;
   successMessage?: string;
@@ -58,7 +60,7 @@ interface FormDoc {
 }
 
 const QUERY = `*[_type == "form" && !(_id in path("drafts.**"))]{
-  formId, name, submitLabel, successMessage, errorMessage, validationMessage,
+  formId, name, dialogTitle, dialogIntro, submitLabel, successMessage, errorMessage, validationMessage,
   recipientEmail, subjectPrefix, requireCaptcha, sendConfirmation, confirmationSubject, confirmationBody,
   "fields": fields[]{
     name, type, label, placeholder, required, helpText, requiredMessage, invalidMessage,
@@ -111,6 +113,12 @@ function merge(doc: FormDoc, fallback: FormDefinition): FormDefinition {
   return {
     id: fallback.id,
     name: doc.name ?? fallback.name,
+    ...((doc.dialogTitle ?? fallback.dialogTitle)
+      ? { dialogTitle: doc.dialogTitle ?? fallback.dialogTitle }
+      : {}),
+    ...((doc.dialogIntro ?? fallback.dialogIntro)
+      ? { dialogIntro: doc.dialogIntro ?? fallback.dialogIntro }
+      : {}),
     // An empty field list means an unfinished document, not a form with no
     // fields. Falling back keeps a working form on the page either way.
     fields: cmsFields.length ? cmsFields : fallback.fields,

@@ -606,7 +606,10 @@ async function importHomePage() {
  * with, so importing changes where the content comes from without changing a
  * word of it, and the result can be diffed against the pre-migration build.
  *
- * Five pages, not six. The privacy policy is deliberately not imported: its
+ * Six pages. The contact page joined them once its form became a definition in
+ * milestone 21 — until then it had markup that needed hardcoding.
+ *
+ * The privacy policy is still deliberately not imported: its
  * prose interpolates the live contact email, phone and address from Site
  * Settings, and moving that text into a CMS body would freeze those values at
  * whatever they are today. It is also a holding page waiting on legal text, so
@@ -743,6 +746,30 @@ async function importInnerPages() {
           _key: 's0',
           emptyBody: 'There are no posts yet. Please check back soon, or',
           emptyCta: { label: 'get in touch', href: '/contact/' },
+        },
+      ],
+    },
+    {
+      slug: '/contact/',
+      title: 'Contact',
+      description:
+        'Talk to Anchor Consultants about mortgages, refinancing and property finance in the UAE. Office in Oud Metha Plaza, Dubai. Call, email or send us a question.',
+      sections: [
+        {
+          _type: 'pageBanner',
+          _key: 'b',
+          title: 'Get In Touch',
+          crumb: 'Contact',
+          image: await banner('images/banners/contact.jpg'),
+        },
+        { _type: 'mapEmbed', _key: 's0' },
+        {
+          _type: 'contactPanel',
+          _key: 's1',
+          eyebrow: 'Contact Info',
+          title: 'Find us here.',
+          formHeading: 'Ask Question or Get Quote',
+          formId: 'contact',
         },
       ],
     },
