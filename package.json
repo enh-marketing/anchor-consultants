@@ -14,7 +14,10 @@
     "lint:types": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "node --experimental-strip-types --test \"src/**/*.test.ts\""
+    "test": "node --experimental-strip-types --test \"src/**/*.test.ts\"",
+    "studio:dev": "npm --prefix studio run dev",
+    "studio:build": "npm --prefix studio run build",
+    "studio:deploy": "npm --prefix studio run deploy"
   },
   "dependencies": {
     "@astrojs/node": "^11.1.4",
@@ -33,7 +36,7 @@
   "allowScripts": {
     "esbuild": true
   },
-  "description": "Anchor Consultants — UAE mortgage and real-estate finance advisory. Astro rebuild.",
+  "description": "Anchor Consultants \u2014 UAE mortgage and real-estate finance advisory. Astro rebuild.",
   "private": true,
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
