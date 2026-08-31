@@ -36,3 +36,9 @@ chrome/
 studio/node_modules/
 studio/dist/
 studio/.sanity/
+
+# Added by `vercel link`. `.vercel/` was already ignored above; the env rule is
+# narrowed so `.env.example` stays tracked — it is the template that documents
+# every variable, and ignoring it would mean a fresh clone had no record of them.
+.env*
+!.env.example
