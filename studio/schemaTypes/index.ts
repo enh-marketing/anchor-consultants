@@ -29,6 +29,7 @@ import { faq } from './documents/faq';
 import { form } from './documents/form';
 import { page } from './documents/page';
 import { post } from './documents/post';
+import { redirect } from './documents/redirect';
 import { service } from './documents/service';
 import { siteSettings } from './documents/siteSettings';
 import { submission } from './documents/submission';
@@ -74,6 +75,7 @@ export const schemaTypes = [
   faq,
   form,
   submission,
+  redirect,
   testimonial,
   teamMember,
 ];

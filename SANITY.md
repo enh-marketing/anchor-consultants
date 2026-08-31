@@ -277,6 +277,29 @@ it. A button set to "Go to a page" with no destination is not rendered.
 The phone number is stored once, in international format. Every `tel:` link on
 the site is built from it.
 
+### Redirects
+
+**Redirects** in the sidebar sends an old address to a new one. Use it whenever a
+URL changes, so links and search results pointing at the old one keep working.
+
+- **Old address** is a path on this site, starting with a slash. It works with or
+  without a trailing slash.
+- **New address** can be a path here or a full URL somewhere else.
+- **Permanent (301)** is almost always right: it tells search engines the page has
+  moved for good and transfers its standing. Turn it off for something temporary.
+- **Active** lets you switch a redirect off without deleting it and losing the note.
+- **Why** is worth filling in. In a year nobody will remember, and an unexplained
+  redirect is one nobody dares remove.
+
+**You cannot redirect a page that still exists.** The Studio will refuse it, and
+so will the build. This is not fussiness: a redirect takes precedence over the
+page, so it would not shadow the page, it would remove it from the site. Rename
+or delete the page first.
+
+Chains are tidied up automatically. If A points to B and B points to C, visitors
+go straight from A to C. A circular set is dropped rather than sending anyone
+round in circles.
+
 ### Form submissions
 
 **Form submissions** in the sidebar lists every enquiry, newest first, with the

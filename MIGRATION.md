@@ -1323,6 +1323,73 @@ submission field anywhere in the client output, 35 tests passing (up from 25),
 to set these on Vercel**, along with the SMTP and reCAPTCHA values still
 outstanding.
 
+### Redirects — Milestone 23 COMPLETE
+
+A `redirect` document maintained in the Studio, emitted as real edge redirects
+with real status codes. Not meta-refresh pages: those are slower, leave the old
+URL in history, and count for less than a 301 to a crawler.
+
+**Verified as real routes.** A test redirect produces
+`{"src": "^/old/?$", "headers": {"Location": "/new/"}, "status": 301}` in the
+Vercel routing config, and no HTML page is emitted for it.
+
+**Fields:** old address, new address, permanent (301) or temporary (302),
+active, and a note. The note is worth having: in a year nobody remembers what a
+redirect was for, and an unexplained one is a redirect nobody dares remove.
+
+**The dangerous one, found by testing.** Astro gives a redirect precedence over
+a page route, and the emitted redirect sits _ahead_ of the filesystem handler. So
+a redirect whose `from` is a page that still exists does not shadow that page —
+**it stops the page being built at all.** Adding a redirect from `/about/`
+deleted the About page from the build entirely, and the only symptom was a
+missing file.
+
+Guarded in two places, because they catch it at different moments:
+
+- The build fetches every path any document publishes — pages, services, posts,
+  category archives — plus the routes that exist regardless of the CMS, and
+  refuses a colliding redirect with an explanation. Verified: the `/about/`
+  redirect is refused and the page is rebuilt.
+- The Studio's `from` field runs the same check, so the editor is told where the
+  mistake is made rather than only in a deploy log they never see. The cheap
+  string checks run first; the query only happens if those pass.
+
+**Trailing slashes.** Astro normalises a redirect key to its no-slash form, so
+`/old-page/` in the config becomes the pattern `^/old-page$`, which does not
+match a request for `/old-page/`. That is the shape most URLs needing a redirect
+actually have, since WordPress served them with a trailing slash — the redirect
+would have missed exactly the traffic it exists for. The build integration
+rewrites `$` to `/?$` on redirect routes only, so both forms match. Verified
+against both.
+
+**Chains and loops.** A chain costs every visitor an extra round trip and a loop
+costs them all of them. Chains are collapsed to the final destination and loops
+are dropped, both with a warning, so the data can stay as the editor wrote it.
+Verified: `/chain-a/` → `/chain-b/` → `/about/` emitted as a single hop to
+`/about/`, and a two-document cycle dropped entirely.
+
+**Two rules for one path** is a contradiction rather than a preference. The first
+alphabetically wins and the clash is reported, because whichever lost would look
+like it simply never worked.
+
+**Everything degrades to no redirects.** A CMS outage should not stop a deploy: a
+site with no redirects still works, one that will not build does not. Verified
+with Sanity switched off — the build completes and emits no redirect routes.
+
+`sitemap-noindex.mjs` became `build-fixups.mjs`, since it now does two things
+that can only be done once the build exists. Both read or rewrite the built
+output rather than being told what to do, which is what keeps them from falling
+out of step with whatever produced it.
+
+**Checks:** every page and the whole routing config identical to the
+pre-milestone build once the test redirects were removed, both content sources
+verified, 35 tests passing, `astro check` 0 errors and 0 warnings,
+`sanity schema validate` 0 errors, Prettier clean.
+
+**Worth doing before launch.** No redirects exist yet. The WordPress URLs that
+should point at their new homes need listing — that is a content task, and the
+audit's URL inventory is the place to start.
+
 ## Open Questions
 
 These need your input. None of them block starting at Milestone 0; I have noted the assumption I will proceed with if you would rather decide later.

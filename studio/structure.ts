@@ -26,6 +26,7 @@ export const structure: StructureResolver = (S) =>
       // separation is a reminder that editing them is not a thing you do.
       S.divider(),
       S.documentTypeListItem('submission').title('Form submissions'),
+      S.documentTypeListItem('redirect').title('Redirects'),
       S.divider(),
       S.documentTypeListItem('testimonial').title('Testimonials'),
       S.documentTypeListItem('teamMember').title('Team'),

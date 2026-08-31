@@ -5,7 +5,13 @@ import { fileURLToPath } from 'node:url';
 import { IS_PRODUCTION_HOST } from '../data/site-url.mjs';
 
 /**
- * Astro integration: removes `noindex` pages from the sitemap after the build.
+ * Astro integration: two things that can only be done once the build exists.
+ *
+ * Both read or rewrite the built output rather than being told what to do, which
+ * is what keeps them from falling out of step with whatever produced it.
+ *
+ * 1. Redirect patterns are widened to tolerate a trailing slash.
+ * 2. `noindex` pages are removed from the sitemap.
  *
  * A sitemap that lists a URL whose page says `noindex` contradicts itself, and
  * the contradiction is the kind a crawler resolves against you.
@@ -44,11 +50,13 @@ function toPath(root, file) {
   return `/${rel}`;
 }
 
-export function sitemapNoindex() {
+export function buildFixups() {
   return {
-    name: 'sitemap-noindex',
+    name: 'build-fixups',
     hooks: {
       'astro:build:done': async ({ dir, logger }) => {
+        await widenRedirectPatterns(logger);
+
         if (!IS_PRODUCTION_HOST) return;
 
         // `dir` is a file URL, and its pathname percent-encodes anything the
@@ -109,4 +117,51 @@ export function sitemapNoindex() {
       },
     },
   };
+}
+
+/**
+ * Makes each redirect match with or without a trailing slash.
+ *
+ * Astro normalises a redirect key to its no-slash form, so `/old-page/` in the
+ * config becomes the pattern `^/old-page$` — which does not match a request for
+ * `/old-page/`. That is the shape most of the URLs needing a redirect actually
+ * have, since WordPress served them with a trailing slash, so the redirect
+ * would have missed exactly the traffic it exists for.
+ *
+ * Rewriting `$` to `/?$` on redirect routes only is the smallest fix that keeps
+ * Astro's own config as the source of truth. Routes that are not redirects are
+ * left alone: the filesystem handler and the function routes are Astro's and
+ * the adapter's business.
+ */
+async function widenRedirectPatterns(logger) {
+  const path = '.vercel/output/config.json';
+  let config;
+  try {
+    config = JSON.parse(await readFile(path, 'utf8'));
+  } catch {
+    // Not a Vercel build. Nothing to do, and nothing worth warning about.
+    return;
+  }
+
+  let widened = 0;
+  for (const route of config.routes ?? []) {
+    const isRedirect =
+      typeof route?.status === 'number' &&
+      route.status >= 300 &&
+      route.status < 400 &&
+      route.headers?.Location &&
+      typeof route.src === 'string';
+    if (!isRedirect) continue;
+    if (route.src.endsWith('/?$')) continue;
+    if (!route.src.endsWith('$')) continue;
+    route.src = `${route.src.slice(0, -1)}/?$`;
+    widened += 1;
+  }
+
+  if (widened) {
+    await writeFile(path, JSON.stringify(config, null, 2));
+    logger.info(
+      `Made ${widened} redirect${widened === 1 ? '' : 's'} match with or without a trailing slash`,
+    );
+  }
 }

@@ -5,11 +5,20 @@ import sitemap from '@astrojs/sitemap';
 import vercel from '@astrojs/vercel';
 
 import { SITE_URL } from './src/data/site-url.mjs';
-import { sitemapNoindex } from './src/lib/sitemap-noindex.mjs';
+import { buildFixups } from './src/lib/build-fixups.mjs';
+import { cmsRedirects } from './src/lib/cms-redirects.mjs';
+
+// Redirects come from Sanity, so the config is built after fetching them. A
+// top-level await here is what lets `redirects` be data rather than a literal.
+const redirects = await cmsRedirects();
 
 // https://astro.build/config
 export default defineConfig({
   site: SITE_URL,
+
+  // Maintained in the Studio under Redirects. Astro turns these into real
+  // routes with real status codes, which the Vercel adapter emits at the edge.
+  redirects,
 
   // Static everywhere. The single form endpoint (src/pages/api/contact.ts)
   // opts out with `export const prerender = false`, which is what requires
@@ -50,7 +59,7 @@ export default defineConfig({
     // in the Studio, which the filter above cannot see, so this reads the built
     // HTML and prunes whatever ended up hidden. Listed after the sitemap
     // integration so it runs once those files exist.
-    sitemapNoindex(),
+    buildFixups(),
   ],
 
   vite: {
