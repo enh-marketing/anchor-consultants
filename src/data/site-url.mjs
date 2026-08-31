@@ -24,7 +24,12 @@ const trimSlashes = (value) => value.replace(/\/+$/, '');
  *      or a domain Vercel does not know is the canonical one.
  *   2. Vercel's own production domain. Once a domain is connected in the Vercel
  *      dashboard, this is that domain, so connecting it is the only step.
- *   3. The placeholder, which only ever appears in a local build.
+ *   3. The production domain, hardcoded as the last resort.
+ *
+ * That last fallback is the real domain rather than a placeholder, now that it is
+ * known. A local build therefore produces correct absolute URLs — still
+ * `noindex`, because indexability is a separate question — which makes the
+ * canonical and Open Graph tags checkable without deploying.
  */
 const explicitUrl = env('PUBLIC_SITE_URL');
 const vercelDomain = env('VERCEL_PROJECT_PRODUCTION_URL');
@@ -33,7 +38,7 @@ export const SITE_URL = explicitUrl
   ? trimSlashes(explicitUrl.startsWith('http') ? explicitUrl : `https://${explicitUrl}`)
   : vercelDomain
     ? `https://${trimSlashes(vercelDomain)}`
-    : 'https://anchorconsultants.example';
+    : 'https://anchorconsultants.ae';
 
 /**
  * Whether this build may be indexed. Anything else emits `noindex, nofollow`.
@@ -48,6 +53,3 @@ export const SITE_URL = explicitUrl
  */
 export const IS_PRODUCTION_HOST =
   env('SITE_INDEXABLE') === 'true' || env('VERCEL_ENV') === 'production';
-
-/** True when the origin is still the placeholder, so the build can say so. */
-export const SITE_URL_IS_PLACEHOLDER = SITE_URL === 'https://anchorconsultants.example';

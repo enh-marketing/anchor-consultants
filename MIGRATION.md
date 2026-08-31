@@ -1538,7 +1538,7 @@ is answered by watching someone use it, which is a task for the client.
 The client confirmed the domain will be connected on Vercel. That would not have
 been enough on its own: `SITE_URL` and `IS_PRODUCTION_HOST` were committed
 constants, so connecting a domain in the dashboard would have left canonicals,
-Open Graph URLs and the sitemap pointing at `anchorconsultants.example` and
+Open Graph URLs and the sitemap pointing at a placeholder domain and
 **every page emitting `noindex, nofollow`**. Connecting a domain and shipping
 would have looked successful and been invisible to search engines.
 
@@ -1556,13 +1556,36 @@ Verified across all four cases:
 
 | Build                                              | Canonical                        | Robots              |
 | -------------------------------------------------- | -------------------------------- | ------------------- |
-| Local                                              | `anchorconsultants.example`      | `noindex, nofollow` |
+| Local                                              | `anchorconsultants.ae`           | `noindex, nofollow` |
 | Vercel production (`VERCEL_ENV=production`)        | the connected domain             | `index, follow`     |
 | Vercel preview (`VERCEL_ENV=preview`)              | the production domain, correctly | `noindex, nofollow` |
 | Another host (`SITE_INDEXABLE`, `PUBLIC_SITE_URL`) | the given origin                 | `index, follow`     |
 
 The privacy holding page stays `noindex` at route level in every case, and the
 sitemap uses the resolved origin.
+
+### Production domain confirmed — `https://anchorconsultants.ae/`
+
+The last-resort fallback in `src/data/site-url.mjs` is now the real domain rather
+than a placeholder. On Vercel it is still `VERCEL_PROJECT_PRODUCTION_URL` that
+supplies it, so connecting the domain remains the only step; the change means a
+local build also produces correct absolute URLs, which makes the canonical and
+Open Graph tags checkable without deploying. Local builds stay `noindex`, because
+indexability is a separate question from what the URLs say.
+
+`robots.txt` is unchanged and still correct: a non-production build disallows
+everything and omits the sitemap reference, matching the per-page meta tag.
+
+**A launch-blocking defect this surfaced.** The contact email is still
+`info@anchor.enhdemo.com` — the WordPress _staging_ domain. It appears five to
+seven times on every page, in the Organization structured data, and it is the
+fallback recipient for the enquiry form when `CONTACT_TO` is unset. Shipping it
+would show visitors a staging address and, worse, could send enquiries to a
+mailbox that stops existing when staging does.
+
+Not guessed at. `info@anchorconsultants.ae` is the obvious candidate but a
+business email is a real thing with a real mailbox behind it, so this needs
+confirming rather than inferring. Logged as **Q16**.
 
 ## Open Questions
 
@@ -1614,3 +1637,10 @@ is currently an honest holding page: it says the policy is being finalised,
 lists what it will cover, and gives a real route for privacy enquiries. It is
 `noindex` and excluded from the sitemap until you supply approved text.
 **This needs your legal input before launch.**
+
+**Q16. Contact email address.** The site still carries
+`info@anchor.enhdemo.com`, which is the WordPress staging domain. It is shown on
+every page, used in the Organization structured data, and is the fallback
+recipient for the enquiry form. Confirm the real address — most likely
+`info@anchorconsultants.ae`, but it needs to be a mailbox that exists.
+**This blocks launch:** enquiries would otherwise default to a staging address.
