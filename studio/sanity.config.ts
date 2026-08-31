@@ -3,6 +3,7 @@ import { structureTool } from 'sanity/structure';
 import { visionTool } from '@sanity/vision';
 import { schemaTypes } from './schemaTypes';
 import { structure } from './structure';
+import { documentActions } from './previewAction';
 
 export default defineConfig({
   name: 'anchor',
@@ -12,6 +13,10 @@ export default defineConfig({
   dataset: 'production',
 
   plugins: [structureTool({ structure }), visionTool()],
+
+  document: {
+    actions: documentActions,
+  },
 
   schema: {
     types: schemaTypes,

@@ -17,7 +17,7 @@ import { sanityClient } from './client';
  */
 
 /** Projection shared by every image field, matching the `altImage` object. */
-const IMAGE = `{
+export const IMAGE = `{
   "src": asset->url,
   "assetId": asset->_id,
   "alt": coalesce(alt, ""),
@@ -49,7 +49,7 @@ const BODY = `body[]{
   }
 }`;
 
-const SEO = `{
+export const SEO = `{
   metaTitle,
   metaDescription,
   canonicalUrl,
@@ -239,7 +239,7 @@ export const sanityTeam = () =>
  * lives on the image object, `CmsImage` reads it from there, and having one
  * place for it is what stopped the leader portrait losing its description.
  */
-const SECTIONS = `sections[]{
+export const SECTIONS = `sections[]{
   ...,
   _type == "heroCarousel" => {
     "slides": slides[]{ eyebrow, title, body, "image": image${IMAGE} },

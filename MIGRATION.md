@@ -1390,6 +1390,85 @@ verified, 35 tests passing, `astro check` 0 errors and 0 warnings,
 should point at their new homes need listing — that is a content task, and the
 audit's URL inventory is the place to start.
 
+### Draft preview — Milestone 24 MOSTLY COMPLETE
+
+Preview is built and tested. The deploy webhook is documented but cannot be
+wired until the Vercel project exists, so this milestone is deliberately not
+marked done.
+
+**Preview renders through `SectionRenderer`**, the same component every real page
+uses, so what an editor sees is what publishing will produce. That is the payoff
+from the page builder: without it, previewing would have meant a second copy of
+every template, and a second copy is a copy that drifts.
+
+**Two routes, both server-rendered.** `/api/preview` exchanges the shared secret
+for an HttpOnly cookie and redirects; `/preview/[...slug]` renders the draft.
+Neither is prerendered, and neither appears in the sitemap.
+
+**The secret is exchanged once, not carried in every link.** It appears in one
+URL on the first hop and then lives in an HttpOnly, SameSite=Lax cookie for four
+hours. `Referrer-Policy: no-referrer` on that route keeps it out of the Referer
+header on the way through.
+
+**The Studio's "Open preview" action deliberately carries no secret.** The Studio
+is client-side JavaScript, so a secret it could read would not be a secret. The
+action opens `/preview/<slug>/` and relies on the cookie, which means the flow is:
+one link from whoever runs the deployment, followed once, and the button works
+for the rest of the session. It is disabled rather than hidden when a page has no
+slug, because hiding it would look like the feature does not exist.
+
+**A separate client, on purpose.** `sanityClient()` stays token-free and pinned
+to `perspective: 'published'` — that pinning is what guarantees unpublished work
+cannot reach a build. Giving it a token and a mode switch would put that
+guarantee one mistaken argument away, so preview has its own client with a
+read-only token and `perspective: 'drafts'`.
+
+**Tested end to end**, with a real draft edit to the About page:
+
+| Case                                          | Result                            |
+| --------------------------------------------- | --------------------------------- |
+| `/preview/about/` with no cookie              | 404, no hint either way           |
+| `/api/preview` with no secret, or a wrong one | 401                               |
+| `?path=https://evil.example`                  | Redirects to `/preview/`          |
+| `?path=//evil.example`                        | Redirects to `/preview/`          |
+| `?path=/../etc/passwd`                        | Redirects to `/preview/`          |
+| Correct secret                                | 302, HttpOnly SameSite=Lax cookie |
+| `/preview/about/` with the cookie             | 200, shows the draft heading      |
+| The published `/about/`                       | Still shows the real heading      |
+| `/preview/no-such-page/`                      | 404 with an explanation           |
+| `?exit=1`                                     | 302 and the cookie cleared        |
+
+Two problems the test found and I fixed: `/../etc/passwd` passed the path check,
+since the pattern allowed dots — `..` is now rejected outright, because no
+legitimate preview path contains it. And a missing page answered 200 with an
+explanation; it now answers 404 with the same explanation, so the editor sees why
+and anything automated sees the status.
+
+**Scope worth stating.** This previews `page` documents. Posts and services have
+their own templates rather than block arrays, so previewing those means
+extracting those templates into components first. Publishing a post and looking
+at it is the way to check one until then.
+
+**The deploy webhook: documented, not wired.** It needs the Vercel project, so
+`SANITY.md` carries the exact steps — Vercel deploy hook, Sanity webhook, dataset
+and method. One detail matters more than it looks: the webhook needs a document
+type filter. Without one it fires on every change including every form
+submission, so each enquiry would rebuild the whole site. `submission` is
+deliberately excluded from the filter for that reason.
+
+**Scheduled publishing is a plan decision, not a code one.** Sanity provides it
+as Content Releases, a paid feature. Everything else in spec §18 — drafts,
+preview, publish, unpublish — works today.
+
+**Three new environment variables**, documented in `.env.example`:
+`SANITY_PREVIEW_TOKEN` (read-only, and separate from the write token for that
+reason), `PREVIEW_SECRET`, and the Studio's own `SANITY_STUDIO_SITE_URL`. With
+either of the first two missing, preview answers 503 and nothing else changes.
+
+**Checks:** all 12 pages unchanged, preview absent from the sitemap, 35 tests
+passing, `astro check` 0 errors and 0 warnings across 139 files, Studio
+type-checks clean, Prettier clean.
+
 ## Open Questions
 
 These need your input. None of them block starting at Milestone 0; I have noted the assumption I will proceed with if you would rather decide later.

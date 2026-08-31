@@ -277,6 +277,27 @@ it. A button set to "Go to a page" with no destination is not rendered.
 The phone number is stored once, in international format. Every `tel:` link on
 the site is built from it.
 
+### Previewing a draft
+
+Editing a page and want to see it before publishing? Save your changes as a
+draft, then use **Open preview** in the document's action menu. It opens the page
+on the site showing your unpublished changes, with a dark bar at the top saying
+so.
+
+**The first time**, you need a one-off link from whoever runs the deployment:
+
+    https://your-domain/api/preview?secret=…&path=/about/
+
+Follow it once and your browser is in preview mode for the next four hours. After
+that, **Open preview** works on its own. "Leave preview" in the bar turns it off.
+
+Preview pages are never indexed by search engines and are not visible to anyone
+without that cookie — a visitor who guesses the address gets a plain 404.
+
+**What can be previewed:** pages. Blog posts and service pages have their own
+templates rather than the section builder, so previewing those is not wired up
+yet; publishing and looking at the result is the way to check one for now.
+
 ### Redirects
 
 **Redirects** in the sidebar sends an old address to a new one. Use it whenever a
@@ -463,3 +484,38 @@ Content decisions that are easy to undo by accident:
   the sitemap exclusion in `astro.config.mjs`.
 - Alt text is content. 44 images carry meaningful alt text and 47 are
   explicitly decorative; a CMS field with no guidance will produce neither.
+
+---
+
+## Publishing to the live site
+
+Publishing in the Studio updates the content, but the site is a static build, so
+the pages a visitor sees are the ones from the last build. Until the step below
+is done, someone has to trigger a build for a change to appear.
+
+### The one thing still to wire up
+
+This needs the Vercel project to exist, so it is a deployment task rather than a
+code one:
+
+1. In Vercel, open the project, then **Settings → Git → Deploy Hooks**. Create
+   one called `sanity-publish` on the production branch. Vercel gives you a URL.
+2. In Sanity, open **manage.sanity.io**, then the project, then **API →
+   Webhooks**. Create a webhook:
+   - **URL** — the deploy hook URL from step 1
+   - **Dataset** — `production`
+   - **Trigger on** — Create, Update, Delete
+   - **Filter** — `_type in ["page", "service", "post", "category", "tag", "author", "siteSettings", "faq", "testimonial", "teamMember", "form", "redirect"]`
+   - **HTTP method** — `POST`
+3. Publish something and check a deployment starts.
+
+The filter matters. Without it, a webhook fires on every document change
+including each form submission, so every enquiry would trigger a rebuild of the
+whole site. `submission` is deliberately absent from that list for that reason.
+
+### Scheduled publishing
+
+Spec §18 asks for it. Sanity provides it as **Content Releases**, which is a paid
+feature on their plans — it is not something that can be built around, so it
+needs a decision about the plan rather than a code change. Everything else in
+that section (drafts, preview, publish, unpublish) works today.

@@ -1,0 +1,128 @@
+---
+import PageLayout from '../../layouts/PageLayout.astro';
+import SectionRenderer from '../../components/sections/SectionRenderer.astro';
+import { PREVIEW_COOKIE, previewAvailable, previewClient } from '../../lib/sanity/preview';
+import { SECTIONS, SEO } from '../../lib/sanity/loaders';
+import { normalisePath } from '../../lib/page';
+
+/**
+ * Draft preview of a page.
+ *
+ * Rendered on request rather than at build, which is the only way to show
+ * content that has not been published. Reachable only with the preview cookie,
+ * which `/api/preview` sets in exchange for the shared secret.
+ *
+ * It renders through `SectionRenderer`, the same component every real page uses,
+ * so what an editor sees here is what publishing will produce. That is the
+ * payoff from the page builder: without it, previewing would have meant a second
+ * copy of every template, and a second copy is a copy that drifts.
+ *
+ * Scope worth being clear about: this previews `page` documents. Posts and
+ * services have their own templates rather than block arrays, so previewing
+ * those means extracting those templates into components first. Publishing a
+ * post and looking at it remains the way to check one for now.
+ */
+export const prerender = false;
+
+const slug = normalisePath(Astro.params.slug ?? '/');
+
+if (!Astro.cookies.has(PREVIEW_COOKIE)) {
+  // No hint about whether the page exists: this is reached without the cookie
+  // either by guessing or by a stale link, and neither deserves an answer.
+  return new Response('Not found', { status: 404 });
+}
+
+if (!previewAvailable()) {
+  return new Response('Preview is not configured on this environment.', { status: 503 });
+}
+
+const QUERY = `*[_type == "page" && slug.current == $slug][0]{
+  title,
+  "slug": slug.current,
+  ${SECTIONS},
+  "seo": seo${SEO}
+}`;
+
+interface PageDoc {
+  title?: string;
+  slug?: string;
+  sections?: Array<Record<string, unknown>>;
+  seo?: { metaDescription?: string };
+}
+
+let page: PageDoc | null = null;
+let error: string | null = null;
+try {
+  page = await previewClient().fetch<PageDoc | null>(QUERY, { slug });
+} catch (cause) {
+  error = cause instanceof Error ? cause.message : String(cause);
+}
+
+// A real status alongside the explanation. The editor sees why, and anything
+// automated sees that the page is not there.
+if (!error && !page) Astro.response.status = 404;
+if (error) Astro.response.status = 500;
+---
+
+{
+  error ? (
+    <PageLayout
+      title="Preview failed"
+      description="Draft preview could not load."
+      path={slug}
+      noindex
+    >
+      <section class="py-[120px]">
+        <div class="mx-auto w-full max-w-[860px] px-3">
+          <h2 class="text-ink text-[26px] leading-[36px] font-bold">Preview could not load</h2>
+          <p class="text-body mt-4 text-base leading-[26px]">{error}</p>
+        </div>
+      </section>
+    </PageLayout>
+  ) : !page ? (
+    <PageLayout
+      title="No such page"
+      description="No page document matches this address."
+      path={slug}
+      noindex
+    >
+      <section class="py-[120px]">
+        <div class="mx-auto w-full max-w-[860px] px-3">
+          <h2 class="text-ink text-[26px] leading-[36px] font-bold">No page at {slug}</h2>
+          <p class="text-body mt-4 text-base leading-[26px]">
+            There is no page document with that address, published or draft. Check the slug in the
+            Studio.
+          </p>
+        </div>
+      </section>
+    </PageLayout>
+  ) : (
+    <PageLayout
+      title={`Preview: ${page.title ?? slug}`}
+      description={page.seo?.metaDescription ?? 'Draft preview.'}
+      path={slug}
+      noindex
+    >
+      {/* Says plainly that this is not the live site. Without it a preview URL
+          shared by accident is indistinguishable from production. */}
+      <div class="bg-ink text-white" data-preview-banner>
+        <div class="container-bs">
+          <div class="flex min-h-[46px] flex-wrap items-center justify-between gap-x-6 gap-y-1 py-2">
+            <p class="text-small leading-[22px]">
+              <strong class="font-bold">Draft preview</strong> — showing unpublished changes for{' '}
+              <span class="font-bold">{slug}</span>. Not visible to visitors.
+            </p>
+            <a
+              href="/api/preview?exit=1"
+              class="text-small underline underline-offset-2 hover:no-underline"
+            >
+              Leave preview
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <SectionRenderer sections={page.sections ?? []} />
+    </PageLayout>
+  )
+}
