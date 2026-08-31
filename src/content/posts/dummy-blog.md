@@ -8,6 +8,9 @@ excerpt: >-
 coverImage: ../../assets/images/blog/dummy-blog-cover.jpg
 coverImageAlt: Three colleagues reviewing paperwork together across a meeting-room table
 category: Uncategorized
+# Placeholder content carried over from WordPress. Drafted so it stays out
+# of the build, the sitemap and the sidebar until real posts are supplied.
+draft: true
 seo:
   metaDescription: >-
     Placeholder post carried over from the WordPress site. The body is filler

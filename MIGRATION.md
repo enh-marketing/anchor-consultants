@@ -1673,6 +1673,39 @@ preview pane because it never advances the transition — the same artefact as
 milestone 12. Proven correct by disabling the transition, which resolves to
 270deg open and 90deg closed.
 
+### Placeholder posts drafted — COMPLETE
+
+Both blog posts are now `draft: true`, so they are out of the build, out of the
+sitemap and out of the sidebar. They stay in the repository, frontmatter and
+body intact, ready to be republished or replaced.
+
+|                 | Before | After |
+| --------------- | ------ | ----- |
+| Routes built    | 14     | 12    |
+| URLs in sitemap | 12     | 10    |
+| Internal links  | 472    | 390   |
+
+The two placeholder posts would otherwise have been submitted for indexing on
+the first crawl — one of them is literal keyboard mash.
+
+**Knock-on effect handled.** With no posts the sidebar's Recent Posts, Archives
+and Categories widgets all collapse, leaving a search box that could find
+nothing. The blog index now drops the sidebar entirely when there are no posts
+and runs the copy column full width, and the empty state offers a route to
+`/contact/` rather than just apologising. When real posts arrive the sidebar
+returns on its own — nothing needs undoing.
+
+**The 404 page already existed** from milestone 11 and was not rebuilt.
+Verified: `dist/client/404.html`, banner h1 "Not Found" with breadcrumb, a
+decorative 300px "404" that is an aria-hidden `<p>` rather than a heading,
+`noindex, nofollow`, header and footer present, and an unknown path returns a
+real HTTP 404 rather than a soft 200.
+
+Still indexed and in the sitemap: `/blog/` itself, which is now an empty
+index. It is linked from both the header and the footer so it has to exist;
+worth deciding whether to `noindex` it until there is content, since an empty
+index is thin.
+
 ## Open Questions
 
 These need your input. None of them block starting at Milestone 0; I have noted the assumption I will proceed with if you would rather decide later.

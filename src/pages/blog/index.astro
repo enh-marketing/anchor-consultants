@@ -54,7 +54,14 @@ const posts = (await getCollection('posts', ({ data }) => !data.draft)).sort(
          puts the content at x=72/856 and x=952/416 at 1440, and at
          x=28/616 and x=668/296 at 992. Reproduced rather than approximated. -->
     <div class="container-bs">
-      <div class="-mx-3 grid gap-y-[30px] lg:grid-cols-[66.667%_33.333%]">
+      <div
+        class:list={[
+          '-mx-3 grid gap-y-[30px]',
+          // With no posts the sidebar has nothing left to show, so the copy
+          // column runs full width rather than leaving a two-thirds gap.
+          posts.length > 0 && 'lg:grid-cols-[66.667%_33.333%]',
+        ]}
+      >
         <div class="min-w-0 px-3">
           <!-- Announced when a sidebar filter narrows the list. -->
           <p
@@ -77,16 +84,24 @@ const posts = (await getCollection('posts', ({ data }) => !data.draft)).sort(
 
           {
             posts.length === 0 && (
-              <p class="text-body text-base leading-[26px]">
-                There are no posts yet. Please check back soon.
+              <p class="text-body max-w-[60ch] text-base leading-[26px]">
+                There are no posts yet. Please check back soon, or{' '}
+                <a href="/contact/" class="text-navy underline">
+                  get in touch
+                </a>{' '}
+                if you have a question in the meantime.
               </p>
             )
           }
         </div>
 
-        <div class="min-w-0 px-3">
-          <BlogSidebar />
-        </div>
+        {
+          posts.length > 0 && (
+            <div class="min-w-0 px-3">
+              <BlogSidebar />
+            </div>
+          )
+        }
       </div>
     </div>
   </section>
