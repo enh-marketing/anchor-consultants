@@ -67,7 +67,10 @@ npm run studio:deploy  # publish it to anchor-consultants.sanity.studio
 
 The hosted Studio is `https://anchor-consultants.sanity.studio` — `/content` for
 the site, `/submissions` for form enquiries. Both paths exist because Sanity
-requires every workspace `basePath` to have the same segment count.
+requires every workspace `basePath` to have the same segment count. The site
+redirects `/admin` and `/admin/submissions` to them; those two live in
+`astro.config.mjs`, not in the Studio's Redirects list, so an editor cannot
+delete them and they still work when Sanity is unreachable.
 
 ## Environment
 

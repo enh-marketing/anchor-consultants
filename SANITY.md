@@ -34,10 +34,17 @@ what the pages expect.
 
 The Studio is deployed. Editors do not need the repo, Node, or a terminal:
 
-| Workspace      | URL                                                  |
-| -------------- | ---------------------------------------------------- |
-| Site content   | https://anchor-consultants.sanity.studio/content     |
-| Form enquiries | https://anchor-consultants.sanity.studio/submissions |
+| Workspace      | URL                                                  | Shortcut             |
+| -------------- | ---------------------------------------------------- | -------------------- |
+| Site content   | https://anchor-consultants.sanity.studio/content     | `/admin`             |
+| Form enquiries | https://anchor-consultants.sanity.studio/submissions | `/admin/submissions` |
+
+The shortcuts are 302s from the site itself, so `<site>/admin` reaches the
+Studio without anyone having to remember the `sanity.studio` hostname. They are
+defined in `astro.config.mjs` rather than as Redirect documents: an editor
+cannot delete them, and they survive a Sanity outage, which is when someone is
+most likely to be typing `/admin`. They are also spread after the CMS redirects,
+so a document cannot claim the same path.
 
 The two paths are why the content workspace is not at the root: Sanity requires
 every workspace `basePath` to have the same number of segments, so `/content`
