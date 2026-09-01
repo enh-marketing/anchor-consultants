@@ -39,6 +39,15 @@ The Studio is deployed. Editors do not need the repo, Node, or a terminal:
 | Site content   | https://anchor-consultants.sanity.studio/content     | `/admin`             |
 | Form enquiries | https://anchor-consultants.sanity.studio/submissions | `/admin/submissions` |
 
+Inside the content Studio there is also a **Form enquiries** item in the left
+sidebar. It cannot list the enquiries, because a Sanity workspace is bound to
+one dataset and these live in a separate private one; it is a signpost with a
+button across. It exists because without it the sidebar made no mention of
+enquiries at all, and the only route was the workspace menu, which you have to
+know to look for. The link is built by swapping the workspace segment of the
+current URL (`src/lib/studio-workspace.ts`, tested), because the deployed Studio
+is served under a host prefix where a hardcoded `/submissions` would be wrong.
+
 The shortcuts are 302s from the site itself, so `<site>/admin` reaches the
 Studio without anyone having to remember the `sanity.studio` hostname. They are
 defined in `astro.config.mjs` rather than as Redirect documents: an editor
