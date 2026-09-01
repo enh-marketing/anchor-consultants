@@ -8,9 +8,40 @@ import { SITE_URL } from './src/data/site-url.mjs';
 import { buildFixups } from './src/lib/build-fixups.mjs';
 import { cmsRedirects } from './src/lib/cms-redirects.mjs';
 
+/**
+ * `/admin` opens the Studio.
+ *
+ * Kept in code rather than in the Studio's own Redirects list, because it is
+ * infrastructure and not editorial content. Two failure modes decide it: an
+ * editor could delete the document and lose the shortcut, and `cmsRedirects()`
+ * returns nothing when Sanity cannot be reached — which is precisely the moment
+ * someone is most likely to be typing `/admin`.
+ *
+ * 302 rather than 301 on purpose. A permanent redirect is cached by the browser
+ * and hard to take back, and this destination is a hostname that could move;
+ * the cost of guessing wrong is an editor with a stale address baked into their
+ * browser and no obvious way to clear it.
+ *
+ * It points at `/content` rather than the Studio root so the link lands on the
+ * site's content, not a workspace picker. The enquiries workspace is one click
+ * away, and `/admin/submissions` below goes straight there.
+ */
+const STUDIO = 'https://anchor-consultants.sanity.studio';
+
+// Annotated so `302` keeps its literal type. Astro's `status` is a union of
+// specific codes, and a bare object literal widens it to `number`.
+/** @type {NonNullable<import('astro').AstroUserConfig['redirects']>} */
+const studioRedirects = {
+  '/admin': { status: 302, destination: `${STUDIO}/content` },
+  '/admin/submissions': { status: 302, destination: `${STUDIO}/submissions` },
+};
+
 // Redirects come from Sanity, so the config is built after fetching them. A
 // top-level await here is what lets `redirects` be data rather than a literal.
-const redirects = await cmsRedirects();
+//
+// The code-defined ones are spread last so they win. An editor cannot take
+// `/admin` away by adding a redirect that claims the same path.
+const redirects = { ...(await cmsRedirects()), ...studioRedirects };
 
 // https://astro.build/config
 export default defineConfig({
