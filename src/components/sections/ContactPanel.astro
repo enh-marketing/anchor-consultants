@@ -48,6 +48,18 @@ const rows = [
     href: site.contact.phone.href,
     external: false,
   },
+  // Appended rather than merged into the row above, so each number is its own
+  // link. Dropped entirely when there is no landline, rather than left blank.
+  ...(site.contact.landline
+    ? [
+        {
+          icon: 'phone-landline' as const,
+          text: site.contact.landline.display,
+          href: site.contact.landline.href,
+          external: false,
+        },
+      ]
+    : []),
 ];
 
 const hours = site.contact.hours.trim();

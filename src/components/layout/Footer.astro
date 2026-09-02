@@ -148,6 +148,21 @@ const year = new Date().getFullYear();
                 <span>{site.contact.phone.display}</span>
               </a>
             </li>
+            {
+              /* The landline is a second row rather than a second number in the
+                 same row, so each one is its own tap target on a phone. */
+              site.contact.landline && (
+                <li>
+                  <a
+                    href={site.contact.landline.href}
+                    class="text-lead flex gap-3 leading-[26px] text-white/90 transition-colors hover:text-white"
+                  >
+                    <Icon name="phone-landline" size={20} class="mt-1 shrink-0" />
+                    <span>{site.contact.landline.display}</span>
+                  </a>
+                </li>
+              )
+            }
             <li>
               <a
                 href={site.contact.email.href}

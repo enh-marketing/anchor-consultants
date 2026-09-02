@@ -186,7 +186,11 @@ export function organizationSchema(site: Site) {
         name: site.name,
         url: SITE_URL,
         description: site.description,
-        telephone: site.contact.phone.e164,
+        // An array only when there is a second number. Schema.org allows either,
+        // and a one-element array for the common case would be noise.
+        telephone: site.contact.landline
+          ? [site.contact.phone.e164, site.contact.landline.e164]
+          : site.contact.phone.e164,
         email: site.contact.email.address,
         address: {
           '@type': 'PostalAddress',

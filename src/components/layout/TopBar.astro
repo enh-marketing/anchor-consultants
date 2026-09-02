@@ -10,6 +10,12 @@ const site = await getSite();
 //   email at x=82, phone at x=313, tagline right-aligned ending x=1358
 //
 // The original wraps to two centred lines below ~576px. Reproduced here.
+//
+// A third item, the landline, was added at the client's request. The measured
+// x-positions above therefore no longer describe this bar exactly: the row is a
+// flex group with a fixed 32px gap, so email and mobile keep their positions
+// and the landline follows the mobile. The band height, type and colours are
+// untouched, and the wrap behaviour still comes from the same flex rules.
 ---
 
 <div class="bg-navy text-white">
@@ -36,6 +42,21 @@ const site = await getSite();
             <span>{site.contact.phone.compact}</span>
           </a>
         </li>
+        {
+          site.contact.landline && (
+            <li>
+              <a
+                href={site.contact.landline.href}
+                class="text-small inline-flex items-center gap-2 leading-[26px] text-white/95 transition-colors hover:text-white"
+              >
+                <Icon name="phone-landline" size={15} class="shrink-0 opacity-90" />
+                {/* `e164` is already the digits-only form the bar uses, so there
+                    is no separate compact field to keep in step. */}
+                <span>{site.contact.landline.e164}</span>
+              </a>
+            </li>
+          )
+        }
       </ul>
 
       <p class="text-small leading-[26px] text-white/95">{site.tagline}</p>

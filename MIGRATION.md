@@ -1856,6 +1856,55 @@ Not verified from here: the Studio rendering once logged in. Browser access to
 that host is blocked in this environment, so the evidence is the successful
 deploy, the bundle contents, the CORS probes and 200s on both workspace paths.
 
+### New office address, and a second phone number
+
+Client change on 2 September 2026. The office moved to **508, Business Atrium
+Building, Oud Metha, Dubai, UAE**, and a Dubai landline, **04 585 1238**, was
+added alongside the mobile.
+
+Both were changed in Sanity, which is the source of truth, and in
+`src/data/site.ts`, which is the fallback the build uses when Sanity is
+unreachable. Changing only one would have left the two disagreeing.
+
+**The address was in more places than Site Settings.** A sweep of the built
+output found the old office still named in the contact page's hand-written meta
+description, which said "Office in Oud Metha Plaza" — and that lived in two
+places of its own, `src/pages/contact.astro` and the `/contact/` page document's
+`seo.metaDescription`. Both corrected. The build now contains zero occurrences
+of "Unique World", "Oud Metha Plaza" or the old `share.google` map link.
+
+**The map link is derived rather than replaced.** The previous value was a
+`share.google` link to the old office, and there is no way to produce the
+equivalent for a new address without inventing it; a wrong pin is worse than a
+search that resolves. `mapsUrl` is now built from the address with Google's
+documented `maps/search/?api=1&query=` scheme. Paste a Business Profile link
+into Site Settings to override it.
+
+**The landline is optional everywhere.** `landlineE164` and `landlineDisplay`
+are new Site Settings fields, and unlike the mobile they can be cleared: the
+mobile backs every `tel:` link and the top bar, so it stays required. Clearing
+the landline removes its row rather than rendering an empty one. `get-site.ts`
+spreads the value in conditionally, because `exactOptionalPropertyTypes` rejects
+`landline: undefined`, and the GROQ projection lists both new fields — a field
+missing from that projection is a field the site silently loses, which is how
+the footer buttons once lost their `action`.
+
+It appears in the top bar, the footer, the contact page details and the
+Organization structured data, where `telephone` becomes an array only when a
+second number exists. Placement went to the footer and contact page first, on
+the reasoning that the top bar's item positions were measured against the
+original; the client then asked for the top bar too, so the measured x-positions
+in `TopBar.astro` no longer describe that row exactly. The band height, type and
+colours are untouched.
+
+**The icon took four attempts, and is the one place this deviates from the icon
+set's style.** Stroked desk phones at 1.8px inside a 24px box read as a handbag,
+then an iron, then a kitchen scale — checked by rendering each at the sizes
+actually used, 15px in the top bar and 20px elsewhere, rather than judging them
+at full size. Three shapes will not survive there. The shipped glyph is a filled
+silhouette, which the set already accepts for the social marks, and it is
+distinct from the handset used for the mobile.
+
 ## Open Questions
 
 These need your input. None of them block starting at Milestone 0; I have noted the assumption I will proceed with if you would rather decide later.
@@ -1884,6 +1933,10 @@ These need your input. None of them block starting at Milestone 0; I have noted 
 top bar, the footer, the contact page and the structured data, and every `tel:`
 link is derived from one field — so confirming it later is a one-value change,
 not a hunt.
+
+_Partly answered on 2026-09-02:_ the client supplied a landline, `04 585 1238`,
+which is now live as a second number. That is confirmed. **The mobile above is
+still the unconfirmed one**, so this question stays open for it alone.
 
 **Q11. Service imagery.** All four service pages currently share one photo and one icon set. Will distinct images be supplied per service? _Assumption: build the template to support per-service images, ship with the shared photo until you provide replacements._
 

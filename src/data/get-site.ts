@@ -51,6 +51,8 @@ interface SettingsDoc {
   description?: string;
   phoneE164?: string;
   phoneDisplay?: string;
+  landlineE164?: string;
+  landlineDisplay?: string;
   email?: string;
   whatsappNumber?: string;
   addressLines?: string[];
@@ -94,7 +96,7 @@ const IMAGE = `{
 
 const QUERY = `*[_type == "siteSettings" && !(_id in path("drafts.**"))][0]{
   name, legalName, tagline, description,
-  phoneE164, phoneDisplay, email, whatsappNumber,
+  phoneE164, phoneDisplay, landlineE164, landlineDisplay, email, whatsappNumber,
   addressLines, mapsUrl, mapsEmbedQuery, businessHours,
   "logo": logo${IMAGE},
   "footerLogo": footerLogo${IMAGE},
@@ -166,6 +168,12 @@ function socials(value: SettingsDoc['social']): SocialProfile[] {
 
 function merge(doc: SettingsDoc): Site {
   const e164 = doc.phoneE164 ?? defaults.contact.phone.e164;
+  // Falls back to the shipped landline only when the field is absent. A field
+  // an editor has deliberately emptied stays empty, so the row can be removed.
+  const landline =
+    doc.landlineE164 === undefined
+      ? defaults.contact.landline?.e164
+      : doc.landlineE164.trim() || undefined;
   const email = doc.email ?? defaults.contact.email.address;
   const whatsapp = doc.whatsappNumber ?? defaults.contact.whatsapp.number;
   const addressLines =
@@ -206,6 +214,18 @@ function merge(doc: SettingsDoc): Site {
         display: doc.phoneDisplay ?? e164,
         compact: e164.replace(/\s/g, ''),
       },
+      // Spread rather than assigned, because `exactOptionalPropertyTypes` rejects
+      // `landline: undefined` against `landline?:`. Clearing the field in the
+      // Studio therefore removes the row rather than rendering an empty one.
+      ...(landline
+        ? {
+            landline: {
+              e164: landline,
+              href: `tel:${landline}`,
+              display: doc.landlineDisplay ?? landline,
+            },
+          }
+        : {}),
       email: { address: email, href: `mailto:${email}` },
       whatsapp: { number: whatsapp, href: `https://wa.me/${whatsapp}` },
       address: {

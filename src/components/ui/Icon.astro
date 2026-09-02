@@ -8,6 +8,8 @@
 export type IconName =
   | 'envelope'
   | 'phone'
+  /** A desk phone, for a landline. Distinct from `phone`, which is a handset. */
+  | 'phone-landline'
   | 'map-pin'
   | 'whatsapp'
   | 'arrow-up'
@@ -83,6 +85,26 @@ const a11y = label
         stroke-width="1.8"
         stroke-linejoin="round"
       />
+    )
+  }
+  {
+    name === 'phone-landline' && (
+      <>
+        {/* Filled rather than stroked, unlike its neighbours.
+            Three stroked attempts at a desk phone all read as something else at
+            the sizes this is used (15px in the top bar, 20px elsewhere): a
+            handbag, an iron, then a kitchen scale. A 1.8px outline cannot carry
+            three shapes inside 24px. A solid silhouette survives, and the set
+            already makes this trade for the social marks. */}
+        {/* Handset: a thin bar, deliberately unlike the chunky base below, so
+            the pair reads as two objects rather than one stacked box. */}
+        <rect x="4" y="4" width="16" height="3.6" rx="1.8" fill="currentColor" />
+        {/* Base, tapering out to the desk. */}
+        <path
+          d="M6 11h12a1.5 1.5 0 0 1 1.46 1.15l1.5 6.2A1.5 1.5 0 0 1 19.5 20.2h-15a1.5 1.5 0 0 1-1.46-1.85l1.5-6.2A1.5 1.5 0 0 1 6 11Z"
+          fill="currentColor"
+        />
+      </>
     )
   }
   {

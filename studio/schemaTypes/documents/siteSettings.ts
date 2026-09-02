@@ -120,6 +120,37 @@ export const siteSettings = defineType({
       group: 'contact',
       description: 'Optional grouping for readability, e.g. +971 56 192 4606.',
     }),
+    /**
+     * The landline is optional where the mobile is required. One number is a
+     * working site; the mobile is the one every `tel:` link and the top bar
+     * depend on, so it cannot be emptied. Clearing the landline simply removes
+     * the extra row from the footer and the contact page.
+     */
+    defineField({
+      name: 'landlineE164',
+      title: 'Landline number',
+      type: 'string',
+      group: 'contact',
+      description:
+        'Optional second number. International format, no spaces, e.g. +97145851238. ' +
+        'A local form like 045851238 will not dial from outside the UAE.',
+      // A custom rule rather than `regex`, so an empty value stays valid. This
+      // field is meant to be clearable, and a regex rule would object to blank.
+      validation: (Rule) =>
+        Rule.custom((value) => {
+          if (typeof value !== 'string' || !value.trim()) return true;
+          return /^\+[1-9]\d{6,14}$/.test(value.trim())
+            ? true
+            : 'Use international format with no spaces, e.g. +97145851238';
+        }),
+    }),
+    defineField({
+      name: 'landlineDisplay',
+      title: 'Landline number, as displayed',
+      type: 'string',
+      group: 'contact',
+      description: 'Optional grouping for readability, e.g. +971 4 585 1238.',
+    }),
     defineField({
       name: 'email',
       type: 'string',

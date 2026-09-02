@@ -21,6 +21,17 @@ export interface Site {
   description: string;
   contact: {
     phone: { e164: string; href: string; display: string; compact: string };
+    /**
+     * A second, landline number, shown next to the mobile in the footer and on
+     * the contact page. Optional because it is genuinely optional: a site with
+     * one number renders one number rather than an empty row.
+     *
+     * No `compact` form, because it would duplicate `e164`. The mobile has one
+     * only because the top bar shows digits without spaces while the footer
+     * shows them grouped; `e164` is already that digits-only form, so the top
+     * bar uses it directly rather than carrying a third copy of the number.
+     */
+    landline?: { e164: string; href: string; display: string };
     email: { address: string; href: string };
     whatsapp: { number: string; href: string };
     address: {
@@ -126,6 +137,23 @@ export interface NavItem {
 /** Digits only, E.164, for `tel:` hrefs. */
 const PHONE_E164 = '+971561924606';
 
+/**
+ * The Dubai landline, given by the client as 04 585 1238.
+ *
+ * Stored in E.164 like the mobile, because a `tel:` href with a local trunk
+ * prefix does not dial from abroad. The conversion is the standard one: drop
+ * the trunk `0`, prefix the country code.
+ */
+const LANDLINE_E164 = '+97145851238';
+
+/**
+ * The office address, in one place so the lines, the single-line form, the map
+ * link and the map embed cannot disagree. Three copies of an address is how the
+ * WordPress site ended up with three different phone numbers (defect #4).
+ */
+const ADDRESS_LINES = ['508, Business Atrium Building', 'Oud Metha, Dubai, UAE'];
+const ADDRESS_SINGLE = ADDRESS_LINES.join(', ');
+
 export const site: Site = {
   name: 'Anchor Consultants',
   legalName: 'Anchor Consultants',
@@ -142,6 +170,12 @@ export const site: Site = {
       /** Compact form used in the top bar on the original site. */
       compact: '+971561924606',
     },
+    /** Client-supplied on 2 September 2026, so this one needs no confirming. */
+    landline: {
+      e164: LANDLINE_E164,
+      href: `tel:${LANDLINE_E164}`,
+      display: '+971 4 585 1238',
+    },
     email: {
       address: 'info@anchorconsultants.ae',
       href: 'mailto:info@anchorconsultants.ae',
@@ -151,10 +185,18 @@ export const site: Site = {
       href: 'https://wa.me/971561924606',
     },
     address: {
-      lines: ['Office No: 37, Unique World', 'Oud Metha Plaza, Dubai, UAE'],
-      single: 'Office No: 37, Unique World, Oud Metha Plaza, Dubai, UAE',
-      mapsUrl: 'https://share.google/dhZtx2q6smETbWxYM',
-      mapsEmbedQuery: '37, Unique World, Oud Metha Plaza, Dubai, UAE',
+      lines: ADDRESS_LINES,
+      single: ADDRESS_SINGLE,
+      /**
+       * Derived from the address rather than a Business Profile share link.
+       * The previous value was a `share.google` link to the old office, and
+       * there is no way to invent the equivalent for a new one — a wrong pin is
+       * worse than a search that resolves. This form is Google's documented
+       * URL scheme, so it lands on the building. Paste a proper Business
+       * Profile link into Site Settings to override it.
+       */
+      mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ADDRESS_SINGLE)}`,
+      mapsEmbedQuery: ADDRESS_SINGLE,
     },
     /** Empty on purpose. The original showed no opening hours. */
     hours: '',
