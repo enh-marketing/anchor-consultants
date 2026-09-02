@@ -90,19 +90,32 @@ const a11y = label
   {
     name === 'phone-landline' && (
       <>
-        {/* Filled rather than stroked, unlike its neighbours.
-            Three stroked attempts at a desk phone all read as something else at
-            the sizes this is used (15px in the top bar, 20px elsewhere): a
-            handbag, an iron, then a kitchen scale. A 1.8px outline cannot carry
-            three shapes inside 24px. A solid silhouette survives, and the set
-            already makes this trade for the social marks. */}
-        {/* Handset: a thin bar, deliberately unlike the chunky base below, so
-            the pair reads as two objects rather than one stacked box. */}
-        <rect x="4" y="4" width="16" height="3.6" rx="1.8" fill="currentColor" />
-        {/* Base, tapering out to the desk. */}
+        {/* Stroked, to match the other icons.
+            Earlier stroked attempts failed by adding detail: cradle prongs, a
+            keypad, a dial. Each disappeared or muddied at the sizes this is
+            used (15px in the top bar, 20px elsewhere), leaving a handbag, an
+            iron and a kitchen scale. This is the two-shape geometry that read
+            correctly as a filled silhouette, outlined instead: the whole
+            silhouette does the work, so there is nothing else to add. */}
+        {/* Handset: a thin bar, narrower than the base is wide at the desk. */}
+        <rect
+          x="4.6"
+          y="3.8"
+          width="14.8"
+          height="4.2"
+          rx="2.1"
+          stroke="currentColor"
+          stroke-width="1.8"
+        />
+        {/* Base: widest where it meets the desk, and wider there than the
+            handset above it. That ordering is the cue. When the bar was the
+            widest shape the silhouette read as a lidded container, and a
+            parallel-sided box read as two stacked boxes. */}
         <path
-          d="M6 11h12a1.5 1.5 0 0 1 1.46 1.15l1.5 6.2A1.5 1.5 0 0 1 19.5 20.2h-15a1.5 1.5 0 0 1-1.46-1.85l1.5-6.2A1.5 1.5 0 0 1 6 11Z"
-          fill="currentColor"
+          d="M6.8 11.4h10.4L20 20.2H4Z"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linejoin="round"
         />
       </>
     )

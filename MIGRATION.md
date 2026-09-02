@@ -1897,13 +1897,19 @@ original; the client then asked for the top bar too, so the measured x-positions
 in `TopBar.astro` no longer describe that row exactly. The band height, type and
 colours are untouched.
 
-**The icon took four attempts, and is the one place this deviates from the icon
-set's style.** Stroked desk phones at 1.8px inside a 24px box read as a handbag,
-then an iron, then a kitchen scale — checked by rendering each at the sizes
-actually used, 15px in the top bar and 20px elsewhere, rather than judging them
-at full size. Three shapes will not survive there. The shipped glyph is a filled
-silhouette, which the set already accepts for the social marks, and it is
-distinct from the handset used for the mobile.
+**The icon took six attempts.** Stroked desk phones read as a handbag, then an
+iron, then a kitchen scale, each checked by rendering at the sizes actually used
+— 15px in the top bar, 20px elsewhere — rather than judged at full size. The
+lesson was that detail is the enemy: cradle prongs, a keypad and a dial all
+either vanished or muddied the shape. A filled silhouette of just two shapes
+read correctly, but the client asked for an outline to match the rest of the
+set, so the shipped glyph is that same two-shape geometry stroked at 1.8px like
+its neighbours.
+
+Two things make it read as a desk phone rather than a box. The base tapers, and
+it is widest where it meets the desk — wider there than the handset above it.
+With the bar as the widest shape it read as a lidded container; with parallel
+sides, as two stacked boxes.
 
 ## Open Questions
 
